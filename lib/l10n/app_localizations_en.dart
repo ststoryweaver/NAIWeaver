@@ -620,13 +620,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpShortcutFavCategories => 'Favorites by category';
 
   @override
-  String get helpShortcutSourceAction => 'Character performing action';
+  String get helpShortcutWildcardBrowse => 'Browse and insert saved wildcards';
 
   @override
-  String get helpShortcutTargetAction => 'Character receiving action';
-
-  @override
-  String get helpShortcutMutualAction => 'Shared action between characters';
+  String get helpShortcutHoldDismiss => 'Dismiss a character, vibe, or reference from its shelf';
 
   @override
   String get helpShortcutEnter => 'Generate (or select tag suggestion)';

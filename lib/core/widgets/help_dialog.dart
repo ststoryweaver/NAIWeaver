@@ -18,13 +18,15 @@ void showHelpDialog(BuildContext context) {
           l.helpTitle.toUpperCase(),
           style: TextStyle(
             color: t.textPrimary,
-            fontSize: t.fontSize(14),
+            fontSize: t.fontSize(16),
             fontWeight: FontWeight.w900,
             letterSpacing: 4,
           ),
         ),
         content: SizedBox(
-          width: 520,
+          width: MediaQuery.of(context).size.width * 0.9 > 520
+              ? 520
+              : MediaQuery.of(context).size.width * 0.9,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -52,7 +54,7 @@ void showHelpDialog(BuildContext context) {
               l.commonClose.toUpperCase(),
               style: TextStyle(
                 color: t.accent,
-                fontSize: t.fontSize(10),
+                fontSize: t.fontSize(12),
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2,
               ),
@@ -69,7 +71,7 @@ Widget _sectionHeader(dynamic t, String label) {
     label,
     style: TextStyle(
       color: t.textSecondary,
-      fontSize: t.fontSize(9),
+      fontSize: t.fontSize(11),
       fontWeight: FontWeight.bold,
       letterSpacing: 2,
     ),
@@ -78,17 +80,17 @@ Widget _sectionHeader(dynamic t, String label) {
 
 Widget _shortcutRow(dynamic t, String syntax, String description) {
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
+    padding: const EdgeInsets.symmetric(vertical: 6),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 180,
+          width: 160,
           child: Text(
             syntax,
             style: TextStyle(
               color: t.accent,
-              fontSize: t.fontSize(9.5),
+              fontSize: t.fontSize(12),
               fontFamily: 'Consolas',
               fontFamilyFallback: const ['monospace'],
             ),
@@ -99,7 +101,7 @@ Widget _shortcutRow(dynamic t, String syntax, String description) {
             description,
             style: TextStyle(
               color: t.textTertiary,
-              fontSize: t.fontSize(9.5),
+              fontSize: t.fontSize(12),
             ),
           ),
         ),
@@ -110,7 +112,7 @@ Widget _shortcutRow(dynamic t, String syntax, String description) {
 
 Widget _featureRow(BuildContext context, dynamic t, _Feature feature) {
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
+    padding: const EdgeInsets.symmetric(vertical: 5),
     child: Row(
       children: [
         Expanded(
@@ -121,7 +123,7 @@ Widget _featureRow(BuildContext context, dynamic t, _Feature feature) {
                   text: feature.name,
                   style: TextStyle(
                     color: t.textSecondary,
-                    fontSize: t.fontSize(9.5),
+                    fontSize: t.fontSize(12),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -129,7 +131,7 @@ Widget _featureRow(BuildContext context, dynamic t, _Feature feature) {
                   text: '  ${feature.description}',
                   style: TextStyle(
                     color: t.textTertiary,
-                    fontSize: t.fontSize(9.5),
+                    fontSize: t.fontSize(12),
                   ),
                 ),
               ],
@@ -152,7 +154,7 @@ Widget _featureRow(BuildContext context, dynamic t, _Feature feature) {
               '\u2192',
               style: TextStyle(
                 color: t.accent,
-                fontSize: t.fontSize(10),
+                fontSize: t.fontSize(12),
               ),
             ),
           ),
@@ -172,11 +174,10 @@ class _Shortcut {
 
 List<_Shortcut> _getShortcuts(dynamic l) => [
   _Shortcut('__name__', l.helpShortcutWildcard),
+  _Shortcut('__', l.helpShortcutWildcardBrowse),
   _Shortcut('/f', l.helpShortcutFavorites),
   _Shortcut('/fa /fc /fg /fr /fm', l.helpShortcutFavCategories),
-  _Shortcut('source#action', l.helpShortcutSourceAction),
-  _Shortcut('target#action', l.helpShortcutTargetAction),
-  _Shortcut('mutual#action', l.helpShortcutMutualAction),
+  _Shortcut('Hold tap', l.helpShortcutHoldDismiss),
   _Shortcut('Enter', l.helpShortcutEnter),
   _Shortcut('Drag & drop PNG', l.helpShortcutDragDrop),
 ];

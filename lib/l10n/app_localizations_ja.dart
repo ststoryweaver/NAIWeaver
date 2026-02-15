@@ -608,13 +608,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get helpShortcutFavCategories => 'カテゴリ別お気に入り';
 
   @override
-  String get helpShortcutSourceAction => 'アクションを実行するキャラクター';
+  String get helpShortcutWildcardBrowse => '保存済みワイルドカードを閲覧・挿入';
 
   @override
-  String get helpShortcutTargetAction => 'アクションを受けるキャラクター';
-
-  @override
-  String get helpShortcutMutualAction => 'キャラクター間の共有アクション';
+  String get helpShortcutHoldDismiss => 'キャラクター、バイブ、リファレンスをシェルフから削除';
 
   @override
   String get helpShortcutEnter => '生成（またはタグ候補を選択）';

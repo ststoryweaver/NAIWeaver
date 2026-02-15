@@ -1226,23 +1226,17 @@ abstract class AppLocalizations {
   /// **'Favorites by category'**
   String get helpShortcutFavCategories;
 
-  /// No description provided for @helpShortcutSourceAction.
+  /// No description provided for @helpShortcutWildcardBrowse.
   ///
   /// In en, this message translates to:
-  /// **'Character performing action'**
-  String get helpShortcutSourceAction;
+  /// **'Browse and insert saved wildcards'**
+  String get helpShortcutWildcardBrowse;
 
-  /// No description provided for @helpShortcutTargetAction.
+  /// No description provided for @helpShortcutHoldDismiss.
   ///
   /// In en, this message translates to:
-  /// **'Character receiving action'**
-  String get helpShortcutTargetAction;
-
-  /// No description provided for @helpShortcutMutualAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Shared action between characters'**
-  String get helpShortcutMutualAction;
+  /// **'Dismiss a character, vibe, or reference from its shelf'**
+  String get helpShortcutHoldDismiss;
 
   /// No description provided for @helpShortcutEnter.
   ///
