@@ -5,11 +5,11 @@ import '../../features/gallery/ui/gallery_screen.dart';
 import '../../features/tools/tools_hub_screen.dart';
 
 void showHelpDialog(BuildContext context) {
+  final t = context.tRead;
+  final l = context.l;
   showDialog(
     context: context,
     builder: (context) {
-      final t = context.t;
-      final l = context.l;
       final shortcuts = _getShortcuts(l);
       final features = _getFeatures(l);
       return AlertDialog(
