@@ -5,7 +5,7 @@ A cross-platform frontend for NovelAI's image generation API (Diffusion V4.5). B
 ## Features
 
 ### Image Generation
-- Full NovelAI V4.5 API integration (txt2img, img2img, inpainting)
+- NovelAI V4.5 API integration (txt2img, img2img, inpainting, precise reference, vibe transfer, multiple characters)
 - Multi-character generation with pixel-level positioning and interactions
 - PNG metadata round-trip — settings embedded in images, re-importable via drag-and-drop
 - Seed control with randomization toggle for reproducible generations
