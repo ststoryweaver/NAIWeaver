@@ -1,0 +1,401 @@
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/l10n/l10n_extensions.dart';
+import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/responsive.dart';
+import '../../../generation/providers/generation_notifier.dart';
+import '../providers/img2img_notifier.dart';
+import '../services/img2img_request_builder.dart';
+import 'mask_canvas.dart';
+import 'mask_toolbar.dart';
+import 'img2img_settings_panel.dart';
+import 'source_image_picker.dart';
+
+/// Top-level img2img editor.
+/// No session -> shows source image picker.
+/// Active session -> shows canvas + toolbar + settings + generate button.
+class Img2ImgEditor extends StatefulWidget {
+  const Img2ImgEditor({super.key});
+
+  @override
+  State<Img2ImgEditor> createState() => _Img2ImgEditorState();
+}
+
+class _Img2ImgEditorState extends State<Img2ImgEditor> {
+  final TextEditingController _promptController = TextEditingController();
+  final TextEditingController _negativePromptController = TextEditingController(
+    text: 'lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]',
+  );
+
+  bool _showResult = false;
+
+  @override
+  void dispose() {
+    _promptController.dispose();
+    _negativePromptController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final img2imgNotifier = context.watch<Img2ImgNotifier>();
+    final genNotifier = context.watch<GenerationNotifier>();
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: img2imgNotifier.hasSession
+          ? _buildWorkspace(context, img2imgNotifier, genNotifier)
+          : const SourceImagePicker(),
+    );
+  }
+
+  Widget _buildWorkspace(
+    BuildContext context,
+    Img2ImgNotifier img2imgNotifier,
+    GenerationNotifier genNotifier,
+  ) {
+    final t = context.t;
+    final l = context.l;
+    final isLoading = genNotifier.state.isLoading;
+    final session = img2imgNotifier.session!;
+    final hasResult = session.resultImageBytes != null;
+
+    // If we're showing result but it was cleared, switch back
+    if (_showResult && !hasResult) {
+      _showResult = false;
+    }
+
+    final mobile = isMobile(context);
+
+    Widget canvasArea = Column(
+      children: [
+        Expanded(
+          child: Stack(
+            children: [
+              if (_showResult && hasResult)
+                _buildResultView(session.resultImageBytes!, img2imgNotifier)
+              else
+                const MaskCanvas(),
+
+              // Source / Result label badge
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (_showResult && hasResult)
+                        ? const Color(0xCC00CC66)
+                        : const Color(0xCC000000),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    (_showResult && hasResult) ? l.img2imgResult : l.img2imgSource,
+                    style: TextStyle(
+                      color: t.textPrimary,
+                      fontSize: t.fontSize(9),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!_showResult || !hasResult) const MaskToolbar(),
+      ],
+    );
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            _buildHeader(context, img2imgNotifier, genNotifier, isLoading),
+            Expanded(
+              child: mobile
+                  ? canvasArea
+                  : Row(
+                      children: [
+                        Expanded(flex: 3, child: canvasArea),
+                        SizedBox(
+                          width: 280,
+                          child: Img2ImgSettingsPanel(
+                            promptController: _promptController,
+                            negativePromptController: _negativePromptController,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+        // Mobile FAB for settings
+        if (mobile)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: t.accentEdit,
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: t.surfaceHigh,
+                  builder: (_) => DraggableScrollableSheet(
+                    initialChildSize: 0.6,
+                    maxChildSize: 0.9,
+                    minChildSize: 0.3,
+                    expand: false,
+                    builder: (_, scrollController) => SingleChildScrollView(
+                      controller: scrollController,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Img2ImgSettingsPanel(
+                          promptController: _promptController,
+                          negativePromptController: _negativePromptController,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: const Icon(Icons.tune, size: 20),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildResultView(Uint8List resultBytes, Img2ImgNotifier img2imgNotifier) {
+    final t = context.t;
+    final l = context.l;
+
+    return Container(
+      color: t.background,
+      child: Column(
+        children: [
+          // Result image
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Image.memory(
+                resultBytes,
+                gaplessPlayback: true,
+              ),
+            ),
+          ),
+
+          // Action bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: t.surfaceHigh,
+              border: Border(top: BorderSide(color: t.borderSubtle)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Back to canvas
+                TextButton.icon(
+                  onPressed: () => setState(() => _showResult = false),
+                  icon: const Icon(Icons.brush, size: 14),
+                  label: Text(l.img2imgCanvas),
+                  style: TextButton.styleFrom(
+                    foregroundColor: t.textTertiary,
+                    textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Use as source
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await img2imgNotifier.useResultAsSource();
+                    setState(() => _showResult = false);
+                  },
+                  icon: const Icon(Icons.refresh, size: 14),
+                  label: Text(l.img2imgUseAsSource),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: t.accentEdit,
+                    foregroundColor: t.textPrimary,
+                    textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    elevation: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+    BuildContext context,
+    Img2ImgNotifier img2imgNotifier,
+    GenerationNotifier genNotifier,
+    bool isLoading,
+  ) {
+    final t = context.t;
+    final l = context.l;
+    final session = img2imgNotifier.session;
+    final hasResult = session?.resultImageBytes != null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: t.surfaceHigh,
+        border: Border(bottom: BorderSide(color: t.borderSubtle)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back, size: 16, color: t.textDisabled),
+            onPressed: () => img2imgNotifier.clearSession(),
+            tooltip: l.img2imgBackToPicker,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  img2imgNotifier.hasMask ? l.img2imgInpainting : l.img2imgTitle,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: t.fontSize(12),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+                Text(
+                  session != null
+                      ? '${session.sourceWidth} x ${session.sourceHeight}'
+                      : l.img2imgEditorLabel,
+                  style: TextStyle(
+                    color: t.accentEdit,
+                    fontSize: t.fontSize(8),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+
+          // Result / Canvas toggle (only when result exists)
+          if (hasResult) ...[
+            SizedBox(
+              height: 36,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _showResult = !_showResult),
+                icon: Icon(
+                  _showResult ? Icons.brush : Icons.image,
+                  size: 14,
+                ),
+                label: Text(_showResult ? l.img2imgCanvas : l.img2imgResult),
+                style: TextButton.styleFrom(
+                  foregroundColor: t.textTertiary,
+                  textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+
+          // Generate button — icon-only on mobile when result toggle is visible
+          if (isMobile(context) && hasResult)
+            SizedBox(
+              height: 36,
+              child: IconButton(
+                onPressed: isLoading ? null : () => _generate(img2imgNotifier, genNotifier),
+                icon: isLoading
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: t.background),
+                      )
+                    : const Icon(Icons.auto_awesome, size: 14),
+                style: IconButton.styleFrom(
+                  backgroundColor: t.accent,
+                  foregroundColor: t.background,
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 36,
+              child: ElevatedButton.icon(
+                onPressed: isLoading ? null : () => _generate(img2imgNotifier, genNotifier),
+                icon: isLoading
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: t.background),
+                      )
+                    : const Icon(Icons.auto_awesome, size: 14),
+                label: Text(isLoading ? l.img2imgGenerating : l.img2imgGenerate),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: t.accent,
+                  foregroundColor: t.background,
+                  textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _generate(
+    Img2ImgNotifier img2imgNotifier,
+    GenerationNotifier genNotifier,
+  ) async {
+    final session = img2imgNotifier.session;
+    if (session == null) return;
+
+    // Sync prompt text to session
+    img2imgNotifier.setPrompt(_promptController.text);
+    img2imgNotifier.setNegativePrompt(_negativePromptController.text);
+
+    try {
+      // Build the request using current generation settings for resolution
+      final genState = genNotifier.state;
+      final request = await Img2ImgRequestBuilder.build(
+        session: session.copyWith(
+          prompt: _promptController.text,
+          negativePrompt: _negativePromptController.text,
+        ),
+        targetWidth: session.sourceWidth,
+        targetHeight: session.sourceHeight,
+        scale: genState.scale,
+        steps: genState.steps.toInt(),
+        sampler: genState.sampler,
+      );
+
+      final resultBytes = await genNotifier.generateImg2Img(request);
+
+      // Show result in the editor if generation succeeded
+      if (resultBytes != null) {
+        img2imgNotifier.setResultImage(resultBytes);
+        setState(() => _showResult = true);
+      }
+    } catch (e) {
+      debugPrint('Img2Img generate error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l.img2imgGenerationFailed(e.toString()))),
+        );
+      }
+    }
+  }
+}

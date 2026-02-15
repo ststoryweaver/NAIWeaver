@@ -1,0 +1,62 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+
+/// Resolves all application paths from a single base directory.
+///
+/// In debug mode (flutter run), uses the project root (detected by pubspec.yaml).
+/// In release mode, uses the platform's application support directory.
+class PathService {
+  final String baseDir;
+
+  PathService(this.baseDir);
+
+  String get outputDir => p.join(baseDir, 'output');
+  String get wildcardDir => p.join(baseDir, 'wildcards');
+  String get tagFilePath => p.join(baseDir, 'Tags', 'high-frequency-tags-list.json');
+  String get presetsFilePath => p.join(baseDir, 'presets.json');
+  String get stylesFilePath => p.join(baseDir, 'prompt_styles.json');
+  String get examplesDir => p.join(baseDir, 'Tags', 'Examples');
+  String get referenceLibraryFilePath => p.join(baseDir, 'reference_library.json');
+
+  static Future<PathService> initialize() async {
+    // In debug mode, the working directory is the project root
+    if (kDebugMode) {
+      final currentDir = Directory.current.path;
+      if (await File(p.join(currentDir, 'pubspec.yaml')).exists()) {
+        return PathService(currentDir);
+      }
+    }
+
+    // Release mode: use platform-appropriate app support directory
+    final appSupport = await getApplicationSupportDirectory();
+    return PathService(appSupport.path);
+  }
+
+  /// Ensures all required directories exist.
+  Future<void> ensureDirectories() async {
+    await Directory(outputDir).create(recursive: true);
+    await Directory(wildcardDir).create(recursive: true);
+    await Directory(p.dirname(tagFilePath)).create(recursive: true);
+  }
+
+  /// Copies bundled assets to app support directory if they don't already exist.
+  Future<void> seedAssets() async {
+    await _copyAssetIfMissing('prompt_styles.json', stylesFilePath);
+    await _copyAssetIfMissing('Tags/high-frequency-tags-list.json', tagFilePath);
+  }
+
+  Future<void> _copyAssetIfMissing(String assetPath, String targetPath) async {
+    final file = File(targetPath);
+    if (!await file.exists()) {
+      try {
+        final data = await rootBundle.loadString(assetPath);
+        await file.writeAsString(data);
+      } catch (e) {
+        debugPrint('Could not seed asset $assetPath: $e');
+      }
+    }
+  }
+}
