@@ -17,7 +17,7 @@ Upload reference images to guide character appearance or artistic style. Support
 Apply the aesthetic "vibe" of reference images to generations. Each vibe has independent strength and information extraction controls, allowing fine-tuned style influence without precise character matching.
 
 ### Cascade System
-Multi-beat sequential scene generation. Define characters, environment tags, and styles across a sequence of beats. A stitching service assembles final prompts from character appearances, environment, and global styles, then generates each beat in order.
+WIP sequential scene generation. Define setting, placement, actions, emotion, and state for each scene. Once your story is made, head back to the main editor, add your characters, and watch them play out the scenes.
 
 ### Gallery
 - Favorites, search, multi-select with drag-to-select
