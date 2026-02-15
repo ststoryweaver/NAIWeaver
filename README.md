@@ -23,7 +23,6 @@ Multi-beat sequential scene generation. Define characters, environment tags, and
 - Favorites, search, multi-select with drag-to-select
 - Virtual albums (folder-like organization without moving files)
 - Sort by date, name, or file size
-- Side-by-side image comparison with synced zoom
 - Image info overlay on hover
 - Demo mode with PIN lock and biometric unlock for privacy
 
