@@ -4,7 +4,7 @@
 
 # NAIWeaver
 
-A cross-platform frontend for NovelAI's image generation API (Diffusion V4.5). Built with Flutter for Windows, Android, and Web.
+An unofficial cross-platform frontend for NovelAI's image generation API (Diffusion V4.5). Built with Flutter for Windows, Android, and Web.
 
 Check out the github page to test it out, https://ststoryweaver.github.io/NAIWeaver/
 
