@@ -614,16 +614,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpShortcutWildcard => 'Random line from wildcards/name.txt';
 
   @override
+  String get helpShortcutWildcardBrowse => 'Browse wildcard file to insert';
+
+  @override
+  String get helpShortcutHoldDismiss => 'Dismiss tag suggestion';
+
+  @override
   String get helpShortcutFavorites => 'Show all favorite tags';
 
   @override
   String get helpShortcutFavCategories => 'Favorites by category';
 
   @override
-  String get helpShortcutWildcardBrowse => 'Browse and insert saved wildcards';
+  String get helpShortcutSourceAction => 'Character performing action';
 
   @override
-  String get helpShortcutHoldDismiss => 'Dismiss a character, vibe, or reference from its shelf';
+  String get helpShortcutTargetAction => 'Character receiving action';
+
+  @override
+  String get helpShortcutMutualAction => 'Shared action between characters';
 
   @override
   String get helpShortcutEnter => 'Generate (or select tag suggestion)';

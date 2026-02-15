@@ -1214,6 +1214,18 @@ abstract class AppLocalizations {
   /// **'Random line from wildcards/name.txt'**
   String get helpShortcutWildcard;
 
+  /// No description provided for @helpShortcutWildcardBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse wildcard file to insert'**
+  String get helpShortcutWildcardBrowse;
+
+  /// No description provided for @helpShortcutHoldDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss tag suggestion'**
+  String get helpShortcutHoldDismiss;
+
   /// No description provided for @helpShortcutFavorites.
   ///
   /// In en, this message translates to:
@@ -1226,17 +1238,23 @@ abstract class AppLocalizations {
   /// **'Favorites by category'**
   String get helpShortcutFavCategories;
 
-  /// No description provided for @helpShortcutWildcardBrowse.
+  /// No description provided for @helpShortcutSourceAction.
   ///
   /// In en, this message translates to:
-  /// **'Browse and insert saved wildcards'**
-  String get helpShortcutWildcardBrowse;
+  /// **'Character performing action'**
+  String get helpShortcutSourceAction;
 
-  /// No description provided for @helpShortcutHoldDismiss.
+  /// No description provided for @helpShortcutTargetAction.
   ///
   /// In en, this message translates to:
-  /// **'Dismiss a character, vibe, or reference from its shelf'**
-  String get helpShortcutHoldDismiss;
+  /// **'Character receiving action'**
+  String get helpShortcutTargetAction;
+
+  /// No description provided for @helpShortcutMutualAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared action between characters'**
+  String get helpShortcutMutualAction;
 
   /// No description provided for @helpShortcutEnter.
   ///

@@ -193,6 +193,8 @@
   "helpShortcuts": "ショートカット",
   "helpFeatures": "機能",
   "helpShortcutWildcard": "wildcards/name.txtからランダムに1行選択",
+  "helpShortcutWildcardBrowse": "ワイルドカードファイルを参照して挿入",
+  "helpShortcutHoldDismiss": "タグ候補を閉じる",
   "helpShortcutFavorites": "すべてのお気に入りタグを表示",
   "helpShortcutFavCategories": "カテゴリ別お気に入り",
   "helpShortcutSourceAction": "アクションを実行するキャラクター",

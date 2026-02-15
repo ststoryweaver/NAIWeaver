@@ -210,6 +210,8 @@
   "helpShortcuts": "Shortcuts",
   "helpFeatures": "Features",
   "helpShortcutWildcard": "Random line from wildcards/name.txt",
+  "helpShortcutWildcardBrowse": "Browse wildcard file to insert",
+  "helpShortcutHoldDismiss": "Dismiss tag suggestion",
   "helpShortcutFavorites": "Show all favorite tags",
   "helpShortcutFavCategories": "Favorites by category",
   "helpShortcutSourceAction": "Character performing action",
