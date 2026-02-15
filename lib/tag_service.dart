@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class DanbooruTag {
   final String tag;
@@ -77,6 +78,14 @@ class TagService {
 
   Future<void> loadTags() async {
     try {
+      if (kIsWeb) {
+        final content = await rootBundle.loadString('Tags/high-frequency-tags-list.json');
+        _tags = await compute(_parseTags, content);
+        _tags.sort((a, b) => b.count.compareTo(a.count));
+        _tagSet = null;
+        _isLoaded = true;
+        return;
+      }
       final file = File(filePath);
       if (!await file.exists()) {
         debugPrint("Tag file not found: $filePath");

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class PromptStyle {
   final String name;
@@ -37,6 +38,11 @@ class PromptStyle {
 class StyleStorage {
   static Future<List<PromptStyle>> loadStyles(String filePath) async {
     try {
+      if (kIsWeb) {
+        final content = await rootBundle.loadString('prompt_styles.json');
+        final List<dynamic> jsonList = jsonDecode(content);
+        return jsonList.map((j) => PromptStyle.fromJson(j)).toList();
+      }
       final file = File(filePath);
       if (await file.exists()) {
         final content = await file.readAsString();

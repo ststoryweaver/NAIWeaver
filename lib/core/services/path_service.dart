@@ -22,6 +22,7 @@ class PathService {
   String get referenceLibraryFilePath => p.join(baseDir, 'reference_library.json');
 
   static Future<PathService> initialize() async {
+    if (kIsWeb) return PathService('');
     // In debug mode, the working directory is the project root
     if (kDebugMode) {
       final currentDir = Directory.current.path;
@@ -37,6 +38,7 @@ class PathService {
 
   /// Ensures all required directories exist.
   Future<void> ensureDirectories() async {
+    if (kIsWeb) return;
     await Directory(outputDir).create(recursive: true);
     await Directory(wildcardDir).create(recursive: true);
     await Directory(p.dirname(tagFilePath)).create(recursive: true);
@@ -44,6 +46,7 @@ class PathService {
 
   /// Copies bundled assets to app support directory if they don't already exist.
   Future<void> seedAssets() async {
+    if (kIsWeb) return;
     await _copyAssetIfMissing('prompt_styles.json', stylesFilePath);
     await _copyAssetIfMissing('Tags/high-frequency-tags-list.json', tagFilePath);
   }
