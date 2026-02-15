@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="NAIWeaver" width="128" />
+</p>
+
 # NAIWeaver
 
 A cross-platform frontend for NovelAI's image generation API (Diffusion V4.5). Built with Flutter for Windows, Android, and Web.
