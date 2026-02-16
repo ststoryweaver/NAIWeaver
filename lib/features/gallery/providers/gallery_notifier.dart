@@ -273,12 +273,29 @@ class GalleryNotifier extends ChangeNotifier {
         if (isPng(bytes)) {
           pngBytes = bytes;
         } else {
-          final result = await compute(convertToPng, bytes);
-          if (result == null) {
-            errors.add(p.basename(filePaths[i]));
-            continue;
+          // Check if the original file had a .png extension — Android's photo
+          // picker may have transcoded it, losing PNG metadata chunks.
+          final ext = p.extension(filePaths[i]).toLowerCase();
+          if (ext == '.png') {
+            // Source claimed to be PNG but bytes aren't — likely transcoded.
+            // Try to recover metadata from original bytes and re-inject.
+            final result = await compute(convertToPngPreservingMetadata, {
+              'bytes': bytes,
+              'originalBytes': bytes,
+            });
+            if (result == null) {
+              errors.add(p.basename(filePaths[i]));
+              continue;
+            }
+            pngBytes = result;
+          } else {
+            final result = await compute(convertToPng, bytes);
+            if (result == null) {
+              errors.add(p.basename(filePaths[i]));
+              continue;
+            }
+            pngBytes = result;
           }
-          pngBytes = result;
           converted++;
         }
 

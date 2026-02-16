@@ -285,7 +285,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
     final gallery = context.read<GalleryNotifier>();
 
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif'],
       allowMultiple: true,
     );
     if (result == null || result.files.isEmpty) return;

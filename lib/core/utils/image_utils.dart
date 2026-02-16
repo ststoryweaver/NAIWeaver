@@ -68,6 +68,29 @@ Uint8List? convertToPng(Uint8List bytes) {
   return Uint8List.fromList(img.encodePng(image));
 }
 
+/// Converts image bytes to PNG while preserving metadata from the original source.
+/// [data] must contain 'bytes' (possibly-transcoded) and 'originalBytes' (raw source).
+/// Extracts text chunks from originalBytes (if valid PNG) and re-injects them.
+/// Intended for use via compute() in an isolate.
+Uint8List? convertToPngPreservingMetadata(Map<String, dynamic> data) {
+  final bytes = data['bytes'] as Uint8List;
+  final originalBytes = data['originalBytes'] as Uint8List;
+
+  // Try to extract metadata from the original source
+  final origImage = img.decodePng(originalBytes);
+  final textData = origImage?.textData;
+
+  // Decode the (possibly-transcoded) bytes
+  final image = img.decodeImage(bytes);
+  if (image == null) return null;
+
+  final encoder = img.PngEncoder();
+  if (textData != null && textData.isNotEmpty) {
+    encoder.textData = textData;
+  }
+  return Uint8List.fromList(encoder.encode(image));
+}
+
 /// Parses the JSON from a PNG Comment chunk.
 /// Tries direct decode first, falls back to trimming trailing garbage.
 Map<String, dynamic>? parseCommentJson(String comment) {
