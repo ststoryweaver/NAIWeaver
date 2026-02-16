@@ -212,9 +212,9 @@ class GenerationNotifier extends ChangeNotifier {
        _stylesFilePath = stylesFilePath,
        _galleryNotifier = galleryNotifier {
     _service = NovelAIService(''); // initialized with empty key, loaded async
-    _wildcardProcessor = WildcardProcessor(wildcardDir: wildcardDir);
     _tagService = TagService(filePath: tagFilePath);
     _wildcardService = WildcardService(wildcardDir: wildcardDir);
+    _wildcardProcessor = WildcardProcessor(wildcardDir: wildcardDir, wildcardService: _wildcardService);
     _sessionFilePath = p.join(p.dirname(presetsFilePath), 'session_snapshot.json');
 
     negativePromptController.text = "";

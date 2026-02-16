@@ -33,12 +33,13 @@ class BeatCharacterSlot {
   BeatCharacterSlot copyWith({
     NaiCoordinate? position,
     String? actionTag,
+    bool clearActionTag = false,
     String? positivePrompt,
     String? negativePrompt,
   }) {
     return BeatCharacterSlot(
       position: position ?? this.position,
-      actionTag: actionTag ?? this.actionTag,
+      actionTag: clearActionTag ? null : (actionTag ?? this.actionTag),
       positivePrompt: positivePrompt ?? this.positivePrompt,
       negativePrompt: negativePrompt ?? this.negativePrompt,
     );

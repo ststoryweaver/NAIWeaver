@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/utils/tag_suggestion_helper.dart';
+import '../../../../core/widgets/tag_suggestion_overlay.dart';
 import '../providers/cascade_notifier.dart';
 import '../models/cascade_beat.dart';
 import '../../../generation/widgets/nai_grid_selector.dart';
@@ -22,15 +24,31 @@ class DirectorView extends StatefulWidget {
 
 class _DirectorViewState extends State<DirectorView> {
   final TextEditingController _envController = TextEditingController();
+  final FocusNode _envFocusNode = FocusNode();
   final Map<int, TextEditingController> _posControllers = {};
   final Map<int, TextEditingController> _negControllers = {};
   final Map<int, FocusNode> _posFocusNodes = {};
   final Map<int, FocusNode> _negFocusNodes = {};
   int? _lastBeatIndex;
 
+  // Tag suggestion state
+  List<DanbooruTag> _suggestions = [];
+  Timer? _debounce;
+  TextEditingController? _activeSuggestionController;
+  ValueChanged<String>? _activeSuggestionOnChanged;
+
+  @override
+  void initState() {
+    super.initState();
+    _envFocusNode.addListener(_onFocusChanged);
+  }
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _envController.dispose();
+    _envFocusNode.removeListener(_onFocusChanged);
+    _envFocusNode.dispose();
     for (var c in _posControllers.values) {
       c.dispose();
     }
@@ -38,12 +56,54 @@ class _DirectorViewState extends State<DirectorView> {
       c.dispose();
     }
     for (var f in _posFocusNodes.values) {
+      f.removeListener(_onFocusChanged);
       f.dispose();
     }
     for (var f in _negFocusNodes.values) {
+      f.removeListener(_onFocusChanged);
       f.dispose();
     }
     super.dispose();
+  }
+
+  void _onFocusChanged() {
+    // Clear suggestions when all prompt fields lose focus
+    Future.microtask(() {
+      if (!mounted) return;
+      final anyFocused = _envFocusNode.hasFocus ||
+          _posFocusNodes.values.any((f) => f.hasFocus) ||
+          _negFocusNodes.values.any((f) => f.hasFocus);
+      if (!anyFocused && _suggestions.isNotEmpty) {
+        setState(() => _suggestions = []);
+      }
+    });
+  }
+
+  void _handleTagInput(TextEditingController controller, ValueChanged<String> onChanged, String value, TagService? tagService) {
+    onChanged(value);
+    _activeSuggestionController = controller;
+    _activeSuggestionOnChanged = onChanged;
+    _debounce?.cancel();
+    if (tagService == null) {
+      setState(() => _suggestions = []);
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 150), () {
+      if (!mounted) return;
+      final result = TagSuggestionHelper.getSuggestions(
+        text: controller.text,
+        selection: controller.selection,
+        tagService: tagService,
+      );
+      setState(() => _suggestions = result.suggestions);
+    });
+  }
+
+  void _onTagSelected(DanbooruTag tag) {
+    if (_activeSuggestionController == null) return;
+    TagSuggestionHelper.applyTag(_activeSuggestionController!, tag);
+    _activeSuggestionOnChanged?.call(_activeSuggestionController!.text);
+    setState(() => _suggestions = []);
   }
 
   void _syncControllers(CascadeBeat beat, int beatIndex, int charCount) {
@@ -52,8 +112,16 @@ class _DirectorViewState extends State<DirectorView> {
       for (int i = 0; i < charCount; i++) {
         final pos = _posControllers.putIfAbsent(i, () => TextEditingController());
         final neg = _negControllers.putIfAbsent(i, () => TextEditingController());
-        _posFocusNodes.putIfAbsent(i, () => FocusNode());
-        _negFocusNodes.putIfAbsent(i, () => FocusNode());
+        if (!_posFocusNodes.containsKey(i)) {
+          final fn = FocusNode();
+          fn.addListener(_onFocusChanged);
+          _posFocusNodes[i] = fn;
+        }
+        if (!_negFocusNodes.containsKey(i)) {
+          final fn = FocusNode();
+          fn.addListener(_onFocusChanged);
+          _negFocusNodes[i] = fn;
+        }
         pos.text = beat.characterSlots[i].positivePrompt;
         neg.text = beat.characterSlots[i].negativePrompt;
       }
@@ -80,8 +148,13 @@ class _DirectorViewState extends State<DirectorView> {
 
         _syncControllers(beat, beatIndex, charCount);
 
+        final tagService = context.read<GenerationNotifier>().tagService;
+        final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
         return SingleChildScrollView(
-          padding: EdgeInsets.all(isMobile(context) ? 16.0 : 24.0),
+          padding: EdgeInsets.all(isMobile(context) ? 16.0 : 24.0).copyWith(
+            bottom: (isMobile(context) ? 16.0 : 24.0) + keyboardHeight,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -89,7 +162,13 @@ class _DirectorViewState extends State<DirectorView> {
               const SizedBox(height: 12),
               TextField(
                 controller: _envController,
-                onChanged: (val) => notifier.updateActiveBeat(beat.copyWith(environmentTags: val)),
+                focusNode: _envFocusNode,
+                onChanged: (val) => _handleTagInput(
+                  _envController,
+                  (v) => notifier.updateActiveBeat(beat.copyWith(environmentTags: v)),
+                  val,
+                  tagService,
+                ),
                 style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(13), height: 1.4),
                 maxLines: 3,
                 decoration: InputDecoration(
@@ -111,6 +190,14 @@ class _DirectorViewState extends State<DirectorView> {
                   ),
                 ),
               ),
+              if (_activeSuggestionController == _envController && _suggestions.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: TagSuggestionOverlay(
+                    suggestions: _suggestions,
+                    onTagSelected: _onTagSelected,
+                  ),
+                ),
               const SizedBox(height: 32),
               _buildSectionHeader(l.cascadeCharacterSlots),
               const SizedBox(height: 16),
@@ -302,7 +389,7 @@ class _DirectorViewState extends State<DirectorView> {
                      InkWell(
                        onTap: () {
                          final updatedSlots = List<BeatCharacterSlot>.from(beat.characterSlots);
-                         updatedSlots[index] = slot.copyWith(actionTag: null);
+                         updatedSlots[index] = slot.copyWith(clearActionTag: true);
                          notifier.updateActiveBeat(beat.copyWith(characterSlots: updatedSlots));
                        },
                        child: Padding(
@@ -334,108 +421,33 @@ class _DirectorViewState extends State<DirectorView> {
       children: [
         Text(label, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), fontWeight: FontWeight.bold, letterSpacing: 1)),
         const SizedBox(height: 6),
-        RawAutocomplete<DanbooruTag>(
-          textEditingController: controller,
+        TextField(
+          controller: controller,
           focusNode: focusNode,
-          optionsBuilder: (TextEditingValue textEditingValue) {
-            if (tagService == null || textEditingValue.text.isEmpty) {
-              return const Iterable<DanbooruTag>.empty();
-            }
-            final lastPart = textEditingValue.text.split(',').last.trim();
-            if (lastPart.length < 2) return const Iterable<DanbooruTag>.empty();
-            return tagService.getSuggestions(lastPart);
-          },
-          displayStringForOption: (DanbooruTag option) => option.tag,
-          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-            final t = context.t;
-            return TextField(
-              controller: controller,
-              focusNode: focusNode,
-              onChanged: onChanged,
-              maxLines: 2,
-              style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(11), height: 1.4),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(9)),
-                filled: true,
-                fillColor: t.background.withValues(alpha: 0.2),
-                contentPadding: const EdgeInsets.all(10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderSubtle)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderSubtle)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.accentCascade.withValues(alpha: 0.2))),
-              ),
-            );
-          },
-          optionsViewBuilder: (context, onSelected, options) {
-            final t = context.t;
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  decoration: BoxDecoration(
-                    color: t.surfaceHigh,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: t.borderMedium),
-                    boxShadow: [BoxShadow(color: t.background.withValues(alpha: 0.5), blurRadius: 10)],
-                  ),
-                  height: 200,
-                  width: 300,
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: options.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final DanbooruTag option = options.elementAt(index);
-                      final color = _getTagColor(option.typeName);
-                      return InkWell(
-                        onTap: () {
-                          final currentText = controller.text;
-                          final lastComma = currentText.lastIndexOf(',');
-                          final newText = lastComma == -1
-                              ? option.tag
-                              : '${currentText.substring(0, lastComma + 1)} ${option.tag}';
-                          onChanged('$newText, ');
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: t.borderSubtle))),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  option.tag,
-                                  style: TextStyle(color: color, fontSize: t.fontSize(10), fontWeight: FontWeight.bold, fontFamily: 'JetBrains Mono'),
-                                ),
-                              ),
-                              Text(
-                                NumberFormat.compact().format(option.count),
-                                style: TextStyle(color: color.withValues(alpha: 0.4), fontSize: t.fontSize(8), fontFamily: 'JetBrains Mono'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            );
-          },
+          onChanged: (val) => _handleTagInput(controller, onChanged, val, tagService),
+          maxLines: 2,
+          style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(11), height: 1.4),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(9)),
+            filled: true,
+            fillColor: t.background.withValues(alpha: 0.2),
+            contentPadding: const EdgeInsets.all(10),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderSubtle)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderSubtle)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.accentCascade.withValues(alpha: 0.2))),
+          ),
         ),
+        if (_activeSuggestionController == controller && _suggestions.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: TagSuggestionOverlay(
+              suggestions: _suggestions,
+              onTagSelected: _onTagSelected,
+            ),
+          ),
       ],
     );
-  }
-
-  Color _getTagColor(String type) {
-    final t = context.t;
-    switch (type.toLowerCase()) {
-      case 'copyright': return const Color(0xFFD880FF);
-      case 'character': return const Color(0xFF00AD00);
-      case 'artist': return const Color(0xFFFF5858);
-      case 'meta': return const Color(0xFFFF9229);
-      default: return t.textPrimary;
-    }
   }
 
   Widget _buildActionLinker(BuildContext context, int index, CascadeBeat beat, CascadeNotifier notifier) {
@@ -456,6 +468,7 @@ class _DirectorViewState extends State<DirectorView> {
     final t = context.t;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: t.surfaceMid,
       builder: (context) => ActionInteractionSheet(
         index1: sourceIndex,
@@ -517,7 +530,7 @@ class _DirectorViewState extends State<DirectorView> {
               child: _buildCompactDropdown(
                 label: l.cascadeSampler,
                 value: beat.sampler,
-                items: ['k_euler_ancestral', 'k_euler', 'k_dpmpp_2s_ancestral'],
+                items: ['k_euler_ancestral', 'k_euler', 'k_dpmpp_2s_ancestral', 'k_dpmpp_2m', 'k_dpmpp_sde'],
                 onChanged: (val) => notifier.updateActiveBeat(beat.copyWith(sampler: val)),
               ),
             ),

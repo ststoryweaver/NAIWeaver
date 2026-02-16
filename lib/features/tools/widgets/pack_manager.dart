@@ -396,10 +396,13 @@ class _ExportDialogState extends State<_ExportDialog> {
       final savePath = await FilePicker.platform.saveFile(
         dialogTitle: saveDialogTitle,
         fileName: '${_nameController.text.trim()}.vpack',
+        bytes: packBytes,
       );
 
       if (savePath != null) {
-        await File(savePath).writeAsBytes(packBytes);
+        if (!Platform.isAndroid) {
+          await File(savePath).writeAsBytes(packBytes);
+        }
         if (mounted) {
           Navigator.pop(context);
           final t = context.tRead;
@@ -845,10 +848,13 @@ class _GalleryExportDialogState extends State<_GalleryExportDialog> {
       final savePath = await FilePicker.platform.saveFile(
         dialogTitle: exportDialogTitle,
         fileName: 'gallery_export.zip',
+        bytes: zipBytes,
       );
 
       if (savePath != null) {
-        await File(savePath).writeAsBytes(zipBytes);
+        if (!Platform.isAndroid) {
+          await File(savePath).writeAsBytes(zipBytes);
+        }
         if (mounted) {
           Navigator.pop(context);
           final t = context.tRead;

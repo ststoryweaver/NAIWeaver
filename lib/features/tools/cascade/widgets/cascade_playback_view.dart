@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/widgets/tag_suggestion_overlay.dart';
 import '../providers/cascade_notifier.dart';
 import '../services/cascade_stitching_service.dart';
 import '../../../generation/providers/generation_notifier.dart';
@@ -18,6 +20,7 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
   final Map<int, TextEditingController> _appearanceControllers = {};
   final Map<int, FocusNode> _appearanceFocusNodes = {};
   final TextEditingController _globalController = TextEditingController();
+  final FocusNode _globalFocusNode = FocusNode();
 
   @override
   void dispose() {
@@ -28,6 +31,7 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
       f.dispose();
     }
     _globalController.dispose();
+    _globalFocusNode.dispose();
     super.dispose();
   }
 
@@ -163,7 +167,6 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
   }
 
   Widget _buildCastingSheet(CascadeNotifier notifier, TagService tagService) {
-    final t = context.t;
     final l = context.l;
 
     return Column(
@@ -207,49 +210,14 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                     );
                   },
                   optionsViewBuilder: (context, onSelected, options) {
-                    final t = context.t;
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          decoration: BoxDecoration(
-                            color: t.surfaceHigh,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: t.borderMedium),
-                            boxShadow: [BoxShadow(color: t.background.withValues(alpha: 0.5), blurRadius: 10)],
-                          ),
-                          height: 150,
-                          width: 150,
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: options.length,
-                            itemBuilder: (BuildContext context, int optIndex) {
-                              final DanbooruTag option = options.elementAt(optIndex);
-                              return InkWell(
-                                onTap: () {
-                                  final currentText = _appearanceControllers[index]!.text;
-                                  final lastComma = currentText.lastIndexOf(',');
-                                  final newText = lastComma == -1
-                                      ? option.tag
-                                      : '${currentText.substring(0, lastComma + 1)} ${option.tag}';
-                                  notifier.updateAppearance(index, '$newText, ');
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: t.borderSubtle))),
-                                  child: Text(
-                                    option.tag,
-                                    style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(9), fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    );
+                    return _buildOptionsView(context, (option) {
+                      final currentText = _appearanceControllers[index]!.text;
+                      final lastComma = currentText.lastIndexOf(',');
+                      final newText = lastComma == -1
+                          ? option.tag
+                          : '${currentText.substring(0, lastComma + 1)} ${option.tag}';
+                      notifier.updateAppearance(index, '$newText, ');
+                    }, options);
                   },
                 ),
               );
@@ -257,20 +225,101 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: _globalController,
-          onChanged: (val) => notifier.updateGlobalInjection(val),
-          style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(10)),
-          decoration: InputDecoration(
-            hintText: l.cascadeGlobalStyle,
-            hintStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(8)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            filled: true,
-            fillColor: t.borderSubtle,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderSubtle)),
-          ),
+        RawAutocomplete<DanbooruTag>(
+          textEditingController: _globalController,
+          focusNode: _globalFocusNode,
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) return const Iterable<DanbooruTag>.empty();
+            final lastPart = textEditingValue.text.split(',').last.trim();
+            if (lastPart.length < 2) return const Iterable<DanbooruTag>.empty();
+            return tagService.getSuggestions(lastPart);
+          },
+          displayStringForOption: (DanbooruTag option) => option.tag,
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            final t = context.t;
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              onChanged: (val) => notifier.updateGlobalInjection(val),
+              style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(10)),
+              decoration: InputDecoration(
+                hintText: l.cascadeGlobalStyle,
+                hintStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(8)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                filled: true,
+                fillColor: t.borderSubtle,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderSubtle)),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return _buildOptionsView(context, (option) {
+              final currentText = _globalController.text;
+              final lastComma = currentText.lastIndexOf(',');
+              final newText = lastComma == -1
+                  ? option.tag
+                  : '${currentText.substring(0, lastComma + 1)} ${option.tag}';
+              notifier.updateGlobalInjection('$newText, ');
+            }, options);
+          },
         ),
       ],
+    );
+  }
+
+  Widget _buildOptionsView(BuildContext context, AutocompleteOnSelected<DanbooruTag> onSelected, Iterable<DanbooruTag> options) {
+    final t = context.t;
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.only(top: 4),
+          decoration: BoxDecoration(
+            color: t.surfaceHigh,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: t.borderMedium),
+            boxShadow: [BoxShadow(color: t.background.withValues(alpha: 0.5), blurRadius: 10)],
+          ),
+          constraints: const BoxConstraints(maxHeight: 150),
+          child: ListView.builder(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            itemCount: options.length,
+            itemBuilder: (context, index) {
+              final option = options.elementAt(index);
+              final color = TagSuggestionOverlay.tagColor(option);
+              return InkWell(
+                onTap: () => onSelected(option),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    border: Border(
+                      bottom: BorderSide(color: t.borderSubtle),
+                      left: BorderSide(color: color.withValues(alpha: 0.4), width: 2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(option.tag,
+                          style: TextStyle(color: color, fontSize: t.fontSize(9), fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(NumberFormat.compact().format(option.count),
+                        style: TextStyle(color: color.withValues(alpha: 0.4), fontSize: t.fontSize(7)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 

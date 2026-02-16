@@ -778,6 +778,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wildcardFileName => 'FILE NAME';
 
   @override
+  String get wildcardHelp => 'WILDCARD HELP';
+
+  @override
+  String get wildcardHelpTitle => 'WILDCARD HELP';
+
+  @override
+  String get wildcardHelpRandom =>
+      '__name__ picks a random line from that wildcard file';
+
+  @override
+  String get wildcardHelpBrowse =>
+      'Type __ to browse and insert a wildcard from autocomplete';
+
+  @override
+  String get wildcardHelpNesting => 'Nesting';
+
+  @override
+  String get wildcardHelpNestingDesc =>
+      'Wildcards can reference other wildcards (up to 5 levels deep)';
+
+  @override
+  String get wildcardHelpTip =>
+      'Drag to reorder files — the order is used in autocomplete';
+
+  @override
+  String get wildcardMode => 'MODE';
+
+  @override
+  String get wildcardModeRandom => 'RANDOM';
+
+  @override
+  String get wildcardModeRandomDesc => 'Picks a random line each time the wildcard is used';
+
+  @override
+  String get wildcardModeSequential => 'SEQUENTIAL';
+
+  @override
+  String get wildcardModeSequentialDesc => 'Cycles through lines in order, looping back to the start';
+
+  @override
+  String get wildcardModeShuffle => 'SHUFFLE';
+
+  @override
+  String get wildcardModeShuffleDesc => 'Shuffles all lines randomly, then cycles through without repeats';
+
+  @override
+  String get wildcardModeWeighted => 'WEIGHTED';
+
+  @override
+  String get wildcardModeWeightedDesc => 'Uses weight syntax (e.g. 10::option) to bias selection probability';
+
+  @override
+  String get wildcardHelpFavorites => 'Favorited wildcards appear with a gold outline in tag completion';
+
+  @override
   String get tagLibTitle => 'TAG LIBRARY';
 
   @override

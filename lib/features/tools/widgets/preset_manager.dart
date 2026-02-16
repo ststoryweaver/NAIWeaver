@@ -468,7 +468,7 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
               child: _buildDropdown(
                 label: l.presetSampler,
                 value: preset.sampler,
-                items: ["k_euler_ancestral", "k_euler", "k_lms", "pndm", "ddim", "k_dpmpp_2s_ancestral", "k_dpmpp_2m", "k_dpmpp_sde"],
+                items: ["k_euler_ancestral", "k_euler", "k_dpmpp_2s_ancestral", "k_dpmpp_2m", "k_dpmpp_sde"],
                 onChanged: (v) => notifier.updateCurrentPreset(sampler: v),
                 t: t,
               ),

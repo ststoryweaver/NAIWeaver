@@ -39,10 +39,10 @@ class AdvancedSettingsPanel extends StatelessWidget {
 
   static const List<String> samplers = [
     "k_euler_ancestral",
+    "k_euler",
     "k_dpmpp_2s_ancestral",
     "k_dpmpp_2m",
     "k_dpmpp_sde",
-    "ddim",
   ];
 
   /// Callback for navigating to the style manager.

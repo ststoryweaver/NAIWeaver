@@ -758,6 +758,57 @@ class AppLocalizationsJa extends AppLocalizations {
   String get wildcardFileName => 'ファイル名';
 
   @override
+  String get wildcardHelp => 'ワイルドカードヘルプ';
+
+  @override
+  String get wildcardHelpTitle => 'ワイルドカードヘルプ';
+
+  @override
+  String get wildcardHelpRandom => '__name__ はそのワイルドカードファイルからランダムに1行選択します';
+
+  @override
+  String get wildcardHelpBrowse => '__ と入力してオートコンプリートからワイルドカードを参照・挿入';
+
+  @override
+  String get wildcardHelpNesting => 'ネスト';
+
+  @override
+  String get wildcardHelpNestingDesc => 'ワイルドカードは他のワイルドカードを参照できます（最大5階層）';
+
+  @override
+  String get wildcardHelpTip => 'ドラッグでファイルを並び替え — この順序がオートコンプリートに反映されます';
+
+  @override
+  String get wildcardMode => 'モード';
+
+  @override
+  String get wildcardModeRandom => 'ランダム';
+
+  @override
+  String get wildcardModeRandomDesc => 'ワイルドカード使用時にランダムで1行選択します';
+
+  @override
+  String get wildcardModeSequential => 'シーケンシャル';
+
+  @override
+  String get wildcardModeSequentialDesc => '行を順番に巡回し、最後まで行くと最初に戻ります';
+
+  @override
+  String get wildcardModeShuffle => 'シャッフル';
+
+  @override
+  String get wildcardModeShuffleDesc => '全行をランダムに並び替え、重複なく順に巡回します';
+
+  @override
+  String get wildcardModeWeighted => 'ウェイト';
+
+  @override
+  String get wildcardModeWeightedDesc => 'ウェイト構文（例: 10::option）で選択確率を調整します';
+
+  @override
+  String get wildcardHelpFavorites => 'お気に入りのワイルドカードはタグ補完でゴールドの枠線で表示されます';
+
+  @override
   String get tagLibTitle => 'タグライブラリ';
 
   @override

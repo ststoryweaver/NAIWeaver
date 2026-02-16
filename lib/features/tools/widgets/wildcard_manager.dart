@@ -6,6 +6,7 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/tag_suggestion_overlay.dart';
+import '../../../wildcard_processor.dart';
 import '../providers/wildcard_notifier.dart';
 
 class WildcardManager extends StatefulWidget {
@@ -88,22 +89,36 @@ class _WildcardManagerState extends State<WildcardManager> {
       padding: const EdgeInsets.all(16),
       width: double.infinity,
       color: t.surfaceHigh,
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l.wildcardManager,
-            style: TextStyle(
-              color: t.textPrimary,
-              fontSize: t.fontSize(16),
-              letterSpacing: 4,
-              fontWeight: FontWeight.w900,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.wildcardManager,
+                  style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: t.fontSize(16),
+                    letterSpacing: 4,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l.wildcardManageDesc,
+                  style: TextStyle(color: t.hintText, fontSize: t.fontSize(9), letterSpacing: 2),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            l.wildcardManageDesc,
-            style: TextStyle(color: t.hintText, fontSize: t.fontSize(9), letterSpacing: 2),
+          IconButton(
+            icon: Icon(Icons.help_outline, size: 18, color: t.textDisabled),
+            onPressed: () => _showWildcardHelp(t),
+            tooltip: l.wildcardHelp,
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
           ),
         ],
       ),
@@ -138,8 +153,18 @@ class _WildcardManagerState extends State<WildcardManager> {
           ),
           Divider(height: 1, color: t.textMinimal),
           Expanded(
-            child: ListView.builder(
+            child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
               itemCount: state.files.length,
+              onReorder: notifier.reorderFiles,
+              proxyDecorator: (child, index, animation) {
+                return Material(
+                  color: t.surfaceHigh,
+                  borderRadius: BorderRadius.circular(4),
+                  elevation: 4,
+                  child: child,
+                );
+              },
               itemBuilder: (context, index) {
                 final file = state.files[index];
                 final isSelected = state.selectedFile?.path == file.path;
@@ -148,6 +173,7 @@ class _WildcardManagerState extends State<WildcardManager> {
                 final isFav = notifier.isFavorite(file);
 
                 return InkWell(
+                  key: ValueKey(file.path),
                   onTap: () {
                     notifier.selectFile(file);
                     if (isMobile(context)) setState(() => _showingEditor = true);
@@ -157,6 +183,11 @@ class _WildcardManagerState extends State<WildcardManager> {
                     color: isSelected ? t.borderSubtle : Colors.transparent,
                     child: Row(
                       children: [
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: Icon(Icons.drag_handle, size: 14, color: t.textDisabled),
+                        ),
+                        const SizedBox(width: 6),
                         Icon(
                           isFav ? Icons.star : Icons.description_outlined,
                           size: 12,
@@ -219,6 +250,8 @@ class _WildcardManagerState extends State<WildcardManager> {
 
     final hasResults = state.invalidTags.isNotEmpty || state.validCount > 0;
     final totalChecked = state.validCount + state.invalidTags.length;
+    final currentMode = notifier.getFileMode(state.selectedFile!);
+    final l = context.l;
 
     return Column(
       children: [
@@ -253,7 +286,9 @@ class _WildcardManagerState extends State<WildcardManager> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Spacer(),
+              ],
+              const Spacer(),
+              if (hasResults)
                 IconButton(
                   icon: Icon(Icons.close, size: 14, color: t.textDisabled),
                   onPressed: notifier.clearValidation,
@@ -261,12 +296,39 @@ class _WildcardManagerState extends State<WildcardManager> {
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(4),
                 ),
-              ],
+              const SizedBox(width: 4),
+              Text(
+                l.wildcardMode,
+                style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1),
+              ),
+              const SizedBox(width: 4),
+              SizedBox(
+                height: 24,
+                child: DropdownButton<WildcardMode>(
+                  value: currentMode,
+                  dropdownColor: t.surfaceHigh,
+                  underline: const SizedBox.shrink(),
+                  isDense: true,
+                  style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(9), letterSpacing: 1),
+                  items: WildcardMode.values.map((mode) {
+                    return DropdownMenuItem(
+                      value: mode,
+                      child: Text(_modeLabel(mode, l)),
+                    );
+                  }).toList(),
+                  onChanged: (mode) {
+                    if (mode != null) {
+                      notifier.setFileMode(state.selectedFile!, mode);
+                    }
+                  },
+                ),
+              ),
             ],
           ),
         ),
         Expanded(
           child: TextField(
+            textAlignVertical: TextAlignVertical.top,
             onTapOutside: (_) {
               Future.delayed(const Duration(milliseconds: 200), () {
                 notifier.clearTagSuggestions();
@@ -335,6 +397,159 @@ class _WildcardManagerState extends State<WildcardManager> {
             ),
           ),
       ],
+    );
+  }
+
+  String _modeLabel(WildcardMode mode, dynamic l) {
+    switch (mode) {
+      case WildcardMode.random:
+        return l.wildcardModeRandom;
+      case WildcardMode.sequential:
+        return l.wildcardModeSequential;
+      case WildcardMode.shuffle:
+        return l.wildcardModeShuffle;
+      case WildcardMode.weighted:
+        return l.wildcardModeWeighted;
+    }
+  }
+
+  void _showWildcardHelp(VisionTokens t) {
+    final l = context.l;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: t.surfaceHigh,
+          title: Text(
+            l.wildcardHelpTitle,
+            style: TextStyle(fontSize: t.fontSize(11), letterSpacing: 2, color: t.textSecondary, fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _helpRow(t, '__name__', l.wildcardHelpRandom),
+              const SizedBox(height: 12),
+              _helpRow(t, '__', l.wildcardHelpBrowse),
+              const SizedBox(height: 16),
+              Text(
+                l.wildcardHelpNesting,
+                style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l.wildcardHelpNestingDesc,
+                style: TextStyle(color: t.hintText, fontSize: t.fontSize(9), height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l.wildcardMode,
+                style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+              ),
+              const SizedBox(height: 4),
+              _modeHelpRow(t, l.wildcardModeRandom, l.wildcardModeRandomDesc),
+              const SizedBox(height: 2),
+              _modeHelpRow(t, l.wildcardModeSequential, l.wildcardModeSequentialDesc),
+              const SizedBox(height: 2),
+              _modeHelpRow(t, l.wildcardModeShuffle, l.wildcardModeShuffleDesc),
+              const SizedBox(height: 2),
+              _modeHelpRow(t, l.wildcardModeWeighted, l.wildcardModeWeightedDesc),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.star, size: 14, color: const Color(0xFFFFD740)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l.wildcardHelpFavorites,
+                      style: TextStyle(color: t.hintText, fontSize: t.fontSize(9), height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lightbulb_outline, size: 14, color: const Color(0xFFFFD740)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l.wildcardHelpTip,
+                      style: TextStyle(color: t.hintText, fontSize: t.fontSize(9), height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l.commonClose, style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(9))),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _helpRow(VisionTokens t, String code, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: t.borderSubtle,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            code,
+            style: TextStyle(
+              color: t.textPrimary,
+              fontSize: t.fontSize(10),
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            description,
+            style: TextStyle(color: t.hintText, fontSize: t.fontSize(9), height: 1.4),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _modeHelpRow(VisionTokens t, String label, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(9), fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              description,
+              style: TextStyle(color: t.hintText, fontSize: t.fontSize(9), height: 1.4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

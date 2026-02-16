@@ -794,7 +794,7 @@ class _TagPreviewSettingsPanelState extends State<_TagPreviewSettingsPanel> {
                     "k_euler",
                     "k_dpmpp_2s_ancestral",
                     "k_dpmpp_2m",
-                    "ddim"
+                    "k_dpmpp_sde"
                   ],
                   (val) => _update(_current.copyWith(sampler: val)),
                   t,

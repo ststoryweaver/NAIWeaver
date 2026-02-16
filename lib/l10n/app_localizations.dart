@@ -1502,6 +1502,108 @@ abstract class AppLocalizations {
   /// **'FILE NAME'**
   String get wildcardFileName;
 
+  /// No description provided for @wildcardHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'WILDCARD HELP'**
+  String get wildcardHelp;
+
+  /// No description provided for @wildcardHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WILDCARD HELP'**
+  String get wildcardHelpTitle;
+
+  /// No description provided for @wildcardHelpRandom.
+  ///
+  /// In en, this message translates to:
+  /// **'__name__ picks a random line from that wildcard file'**
+  String get wildcardHelpRandom;
+
+  /// No description provided for @wildcardHelpBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Type __ to browse and insert a wildcard from autocomplete'**
+  String get wildcardHelpBrowse;
+
+  /// No description provided for @wildcardHelpNesting.
+  ///
+  /// In en, this message translates to:
+  /// **'Nesting'**
+  String get wildcardHelpNesting;
+
+  /// No description provided for @wildcardHelpNestingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Wildcards can reference other wildcards (up to 5 levels deep)'**
+  String get wildcardHelpNestingDesc;
+
+  /// No description provided for @wildcardHelpTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder files — the order is used in autocomplete'**
+  String get wildcardHelpTip;
+
+  /// No description provided for @wildcardMode.
+  ///
+  /// In en, this message translates to:
+  /// **'MODE'**
+  String get wildcardMode;
+
+  /// No description provided for @wildcardModeRandom.
+  ///
+  /// In en, this message translates to:
+  /// **'RANDOM'**
+  String get wildcardModeRandom;
+
+  /// No description provided for @wildcardModeRandomDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Picks a random line each time the wildcard is used'**
+  String get wildcardModeRandomDesc;
+
+  /// No description provided for @wildcardModeSequential.
+  ///
+  /// In en, this message translates to:
+  /// **'SEQUENTIAL'**
+  String get wildcardModeSequential;
+
+  /// No description provided for @wildcardModeSequentialDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycles through lines in order, looping back to the start'**
+  String get wildcardModeSequentialDesc;
+
+  /// No description provided for @wildcardModeShuffle.
+  ///
+  /// In en, this message translates to:
+  /// **'SHUFFLE'**
+  String get wildcardModeShuffle;
+
+  /// No description provided for @wildcardModeShuffleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffles all lines randomly, then cycles through without repeats'**
+  String get wildcardModeShuffleDesc;
+
+  /// No description provided for @wildcardModeWeighted.
+  ///
+  /// In en, this message translates to:
+  /// **'WEIGHTED'**
+  String get wildcardModeWeighted;
+
+  /// No description provided for @wildcardModeWeightedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses weight syntax (e.g. 10::option) to bias selection probability'**
+  String get wildcardModeWeightedDesc;
+
+  /// No description provided for @wildcardHelpFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorited wildcards appear with a gold outline in tag completion'**
+  String get wildcardHelpFavorites;
+
   /// No description provided for @tagLibTitle.
   ///
   /// In en, this message translates to:

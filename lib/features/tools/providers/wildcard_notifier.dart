@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/services/wildcard_service.dart';
 import '../../../tag_service.dart';
+import '../../../wildcard_processor.dart';
 
 class WildcardState {
   final List<File> files;
@@ -76,24 +77,21 @@ class WildcardNotifier extends ChangeNotifier {
         await directory.create(recursive: true);
       }
 
-      final files = directory
-          .listSync()
-          .whereType<File>()
-          .where((f) => p.extension(f.path) == '.txt')
-          .toList();
+      final fileMap = <String, File>{};
+      for (final f in directory.listSync().whereType<File>()) {
+        if (p.extension(f.path) == '.txt') {
+          fileMap[p.basenameWithoutExtension(f.path)] = f;
+        }
+      }
 
-      // Sort: favorites first, then alphabetical
-      files.sort((a, b) {
-        final aName = p.basenameWithoutExtension(a.path);
-        final bName = p.basenameWithoutExtension(b.path);
-        final aFav = wildcardService.isFavorite(aName);
-        final bFav = wildcardService.isFavorite(bName);
-        if (aFav && !bFav) return -1;
-        if (!aFav && bFav) return 1;
-        return aName.compareTo(bName);
-      });
+      // Use wildcardService.wildcardNames order (respects custom order)
+      final orderedFiles = <File>[];
+      for (final name in wildcardService.wildcardNames) {
+        final file = fileMap[name];
+        if (file != null) orderedFiles.add(file);
+      }
 
-      _state = _state.copyWith(files: files, isLoading: false);
+      _state = _state.copyWith(files: orderedFiles, isLoading: false);
     } catch (e) {
       debugPrint('Error refreshing wildcards: $e');
       _state = _state.copyWith(isLoading: false);
@@ -109,6 +107,20 @@ class WildcardNotifier extends ChangeNotifier {
     final name = p.basenameWithoutExtension(file.path);
     await wildcardService.toggleFavorite(name);
     await refreshFiles();
+  }
+
+  Future<void> reorderFiles(int oldIndex, int newIndex) async {
+    await wildcardService.reorderWildcard(oldIndex, newIndex);
+    await refreshFiles();
+  }
+
+  WildcardMode getFileMode(File file) {
+    return wildcardService.getMode(p.basenameWithoutExtension(file.path));
+  }
+
+  Future<void> setFileMode(File file, WildcardMode mode) async {
+    await wildcardService.setMode(p.basenameWithoutExtension(file.path), mode);
+    notifyListeners();
   }
 
   Future<void> selectFile(File? file) async {
@@ -167,7 +179,7 @@ class WildcardNotifier extends ChangeNotifier {
 
   Future<void> createFile(String name) async {
     if (name.isEmpty) return;
-    
+
     final fileName = name.endsWith('.txt') ? name : '$name.txt';
     final filePath = p.join(wildcardDir, fileName);
     final file = File(filePath);
@@ -211,7 +223,7 @@ class WildcardNotifier extends ChangeNotifier {
 
     final cursorPosition = selection.baseOffset;
     final beforeCursor = text.substring(0, cursorPosition);
-    
+
     // Support both commas and line breaks as separators
     final lastDelimiter = beforeCursor.lastIndexOf(RegExp(r'[,|\n]'));
     final currentWord = beforeCursor.substring(lastDelimiter + 1).trimLeft();
@@ -243,7 +255,7 @@ class WildcardNotifier extends ChangeNotifier {
 
     final lastDelimiterIndex = beforeCursor.lastIndexOf(RegExp(r'[,|\n]'));
     final prefix = beforeCursor.substring(0, lastDelimiterIndex + 1);
-    
+
     // Determine if we should add a comma or just the tag (if it's a new line)
     String separator = '';
     if (lastDelimiterIndex != -1) {
@@ -256,7 +268,7 @@ class WildcardNotifier extends ChangeNotifier {
       text: newBeforeCursor + afterCursor,
       selection: TextSelection.collapsed(offset: newBeforeCursor.length),
     );
-    
+
     _state = _state.copyWith(tagSuggestions: [], currentTagQuery: "");
     saveCurrentFile();
     notifyListeners();

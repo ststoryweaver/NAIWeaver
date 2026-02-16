@@ -469,7 +469,11 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: mobile ? 44 : 34,
+                  bottom: mobile
+                      ? (MediaQuery.of(context).viewInsets.bottom > 0
+                          ? MediaQuery.of(context).viewInsets.bottom
+                          : 44.0)
+                      : 34.0,
                   child: const CascadePlaybackView(),
                 ),
 
