@@ -88,6 +88,15 @@ jobs:
 
   build-web:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - locale: en
+            suffix: ""
+            base_href: "/NAIWeaver/"
+          - locale: ja
+            suffix: "-ja"
+            base_href: "/NAIWeaver/ja/"
     steps:
       - uses: actions/checkout@v4
 
@@ -97,12 +106,12 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build web --release --base-href "/NAIWeaver/"
+      - run: flutter build web --release --base-href "${{ matrix.base_href }}" --dart-define=DEFAULT_LOCALE=${{ matrix.locale }}
 
       - name: Archive Web build
         uses: actions/upload-artifact@v4
         with:
-          name: web-build
+          name: web-build${{ matrix.suffix }}
           path: build/web/
 
   deploy-web:
@@ -116,6 +125,11 @@ jobs:
         with:
           name: web-build
           path: web-build/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build-ja
+          path: web-build/ja/
 
       - uses: actions/configure-pages@v4
 
