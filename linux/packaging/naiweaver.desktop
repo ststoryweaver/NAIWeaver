@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=NAIWeaver
+Comment=Cross-platform frontend for NovelAI image generation
+Exec=naiweaver
+Icon=naiweaver
+Categories=Graphics;
+Terminal=false
