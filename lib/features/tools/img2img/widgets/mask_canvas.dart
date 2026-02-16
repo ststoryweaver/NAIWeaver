@@ -138,33 +138,47 @@ class _MaskOverlayPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (imageRect.isEmpty) return;
 
-    // Paint committed strokes
-    for (final stroke in strokes) {
-      _paintStroke(canvas, stroke);
+    // Collect all strokes (committed + active) by type
+    final allStrokes = [...strokes, if (activeStroke != null) activeStroke!];
+
+    // One saveLayer for all paint strokes — uniform alpha regardless of overlap
+    final paintStrokes = allStrokes.where((s) => !s.isErase).toList();
+    if (paintStrokes.isNotEmpty) {
+      canvas.saveLayer(
+        null,
+        Paint()..color = const Color.fromARGB(48, 0, 0, 0),
+      );
+      final brush = Paint()
+        ..color = const Color(0xFFFF0066)
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = false;
+      for (final stroke in paintStrokes) {
+        _drawStrokeGeometry(canvas, stroke, brush);
+      }
+      canvas.restore();
     }
 
-    // Paint active (in-progress) stroke
-    if (activeStroke != null) {
-      _paintStroke(canvas, activeStroke!);
+    // One saveLayer for all erase strokes — uniform alpha regardless of overlap
+    final eraseStrokes = allStrokes.where((s) => s.isErase).toList();
+    if (eraseStrokes.isNotEmpty) {
+      canvas.saveLayer(
+        null,
+        Paint()..color = const Color.fromARGB(32, 0, 0, 0),
+      );
+      final brush = Paint()
+        ..color = const Color(0xFF000000)
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = false;
+      for (final stroke in eraseStrokes) {
+        _drawStrokeGeometry(canvas, stroke, brush);
+      }
+      canvas.restore();
     }
   }
 
-  void _paintStroke(Canvas canvas, MaskStroke stroke) {
-    final layerAlpha = stroke.isErase ? 32 : 48;
-    final layerColor = stroke.isErase
-        ? const Color(0xFF000000)
-        : const Color(0xFFFF0066);
-
-    canvas.saveLayer(
-      null,
-      Paint()..color = Color.fromARGB(layerAlpha, 0, 0, 0),
-    );
-
-    final paint = Paint()
-      ..color = layerColor
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = false;
-
+  /// Draw the grid-snapped rectangles for a single stroke without any
+  /// saveLayer or alpha — the caller is responsible for compositing.
+  void _drawStrokeGeometry(Canvas canvas, MaskStroke stroke, Paint paint) {
     // Grid step in screen coordinates (8 source pixels)
     const grid = 8;
     final gridW = grid / sourceWidth * imageRect.width;
@@ -207,8 +221,6 @@ class _MaskOverlayPainter extends CustomPainter {
         canvas.drawRect(Rect.fromLTWH(ix - r, iy - r, r * 2, r * 2), paint);
       }
     }
-
-    canvas.restore();
   }
 
   @override
