@@ -7,6 +7,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/theme_notifier.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../styles.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../providers/generation_notifier.dart';
 
@@ -161,6 +162,7 @@ class _ExpandedSettingsContent extends StatefulWidget {
 class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
   final _negativePromptKey = GlobalKey();
   final _negativePromptFocus = FocusNode();
+  bool _stylesExpanded = false;
 
   @override
   void initState() {
@@ -411,6 +413,59 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
     );
   }
 
+  Widget _buildStyleChip(PromptStyle style, bool isSelected, GenerationNotifier notifier, VisionTokens t) {
+    return FilterChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(style.name.toUpperCase(),
+              style: TextStyle(fontSize: t.fontSize(8), fontWeight: FontWeight.bold, letterSpacing: 1)),
+          if (style.negativeContent.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected ? t.background.withValues(alpha: 0.2) : t.borderMedium,
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Text("NEG",
+                  style: TextStyle(
+                      fontSize: t.fontSize(6),
+                      fontWeight: FontWeight.w900,
+                      color: isSelected ? t.background : t.textTertiary)),
+            ),
+          ],
+          if (style.prefix.isNotEmpty || style.suffix.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected ? t.background.withValues(alpha: 0.2) : t.borderMedium,
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Text("POS",
+                  style: TextStyle(
+                      fontSize: t.fontSize(6),
+                      fontWeight: FontWeight.w900,
+                      color: isSelected ? t.background : t.textTertiary)),
+            ),
+          ],
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (_) => notifier.toggleStyle(style.name),
+      backgroundColor: t.borderSubtle,
+      selectedColor: t.accent,
+      checkmarkColor: t.background,
+      showCheckmark: false,
+      labelStyle: TextStyle(color: isSelected ? t.background : t.textTertiary),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+      side: BorderSide(color: isSelected ? t.accent : t.textMinimal, width: 0.5),
+    );
+  }
+
   Widget _buildStyles(GenerationNotifier notifier, GenerationState state, VisionTokens t) {
     final mobile = isMobile(context);
     final labelStyle = TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(mobile ? 12 : 9), letterSpacing: 2, color: t.secondaryText);
@@ -424,6 +479,13 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
             Text(context.l.panelStyles.toUpperCase(), style: labelStyle),
             Row(
               children: [
+                if (state.styles.isNotEmpty)
+                  IconButton(
+                    icon: Icon(_stylesExpanded ? Icons.unfold_less : Icons.unfold_more, size: 14, color: t.textDisabled),
+                    onPressed: () => setState(() => _stylesExpanded = !_stylesExpanded),
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.only(right: 12),
+                  ),
                 IconButton(
                   icon: Icon(Icons.settings_outlined, size: 14, color: t.textDisabled),
                   onPressed: widget.onManageStyles,
@@ -439,6 +501,15 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
         const SizedBox(height: 12),
         if (state.styles.isEmpty)
           Text(context.l.panelNoStylesDefined.toUpperCase(), style: TextStyle(fontSize: t.fontSize(8), color: t.textMinimal, letterSpacing: 1))
+        else if (_stylesExpanded)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: state.styles.map((style) {
+              final isSelected = state.activeStyleNames.contains(style.name);
+              return _buildStyleChip(style, isSelected, notifier, t);
+            }).toList(),
+          )
         else
           SizedBox(
             height: 32,
@@ -450,56 +521,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
                 final isSelected = state.activeStyleNames.contains(style.name);
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(style.name.toUpperCase(),
-                            style: TextStyle(fontSize: t.fontSize(8), fontWeight: FontWeight.bold, letterSpacing: 1)),
-                        if (style.negativeContent.isNotEmpty) ...[
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: isSelected ? t.background.withValues(alpha: 0.2) : t.borderMedium,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: Text("NEG",
-                                style: TextStyle(
-                                    fontSize: t.fontSize(6),
-                                    fontWeight: FontWeight.w900,
-                                    color: isSelected ? t.background : t.textTertiary)),
-                          ),
-                        ],
-                        if (style.prefix.isNotEmpty || style.suffix.isNotEmpty) ...[
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: isSelected ? t.background.withValues(alpha: 0.2) : t.borderMedium,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: Text("POS",
-                                style: TextStyle(
-                                    fontSize: t.fontSize(6),
-                                    fontWeight: FontWeight.w900,
-                                    color: isSelected ? t.background : t.textTertiary)),
-                          ),
-                        ],
-                      ],
-                    ),
-                    selected: isSelected,
-                    onSelected: (_) => notifier.toggleStyle(style.name),
-                    backgroundColor: t.borderSubtle,
-                    selectedColor: t.accent,
-                    checkmarkColor: t.background,
-                    showCheckmark: false,
-                    labelStyle: TextStyle(color: isSelected ? t.background : t.textTertiary),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                    side: BorderSide(color: isSelected ? t.accent : t.textMinimal, width: 0.5),
-                  ),
+                  child: _buildStyleChip(style, isSelected, notifier, t),
                 );
               },
             ),

@@ -185,13 +185,24 @@ class _StyleEditorContentState extends State<_StyleEditorContent> {
           ),
           Divider(height: 1, color: t.textMinimal),
           Expanded(
-            child: ListView.builder(
+            child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
               itemCount: state.styles.length,
+              onReorder: notifier.reorderStyles,
+              proxyDecorator: (child, index, animation) {
+                return Material(
+                  color: t.surfaceHigh,
+                  borderRadius: BorderRadius.circular(4),
+                  elevation: 4,
+                  child: child,
+                );
+              },
               itemBuilder: (context, index) {
                 final style = state.styles[index];
                 final isSelected = state.selectedStyle?.name == style.name;
 
                 return InkWell(
+                  key: ValueKey(style.name),
                   onTap: () {
                     notifier.selectStyle(style);
                     if (isMobile(context)) setState(() => _showingEditor = true);
@@ -201,6 +212,11 @@ class _StyleEditorContentState extends State<_StyleEditorContent> {
                     color: isSelected ? t.borderSubtle : Colors.transparent,
                     child: Row(
                       children: [
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: Icon(Icons.drag_handle, size: 14, color: t.textDisabled),
+                        ),
+                        const SizedBox(width: 8),
                         Icon(
                           Icons.auto_awesome,
                           size: 12,

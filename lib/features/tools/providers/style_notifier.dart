@@ -181,10 +181,21 @@ class StyleNotifier extends ChangeNotifier {
       negativeContent: style.negativeContent,
       isDefault: style.isDefault,
     );
-    
+
     final updatedStyles = List<PromptStyle>.from(_state.styles)..add(newStyle);
     _state = _state.copyWith(styles: updatedStyles);
     StyleStorage.saveStyles(_stylesFilePath, updatedStyles).then((_) => onStylesChanged());
+    notifyListeners();
+  }
+
+  Future<void> reorderStyles(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) newIndex--;
+    final updatedStyles = List<PromptStyle>.from(_state.styles);
+    final item = updatedStyles.removeAt(oldIndex);
+    updatedStyles.insert(newIndex, item);
+    _state = _state.copyWith(styles: updatedStyles);
+    await StyleStorage.saveStyles(_stylesFilePath, updatedStyles);
+    onStylesChanged();
     notifyListeners();
   }
 
