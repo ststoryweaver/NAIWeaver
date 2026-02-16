@@ -161,6 +161,18 @@
   "gallerySampler": "Sampler",
   "gallerySeed": "Seed",
 
+  "galleryImport": "Import Images",
+  "galleryImporting": "Importing...",
+  "galleryImportProgress": "Importing {current}/{total}...",
+  "@galleryImportProgress": { "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } } },
+  "galleryImportPreparing": "Preparing...",
+  "galleryImportSuccess": "Imported {count} images ({metadata} with NovelAI metadata)",
+  "@galleryImportSuccess": { "placeholders": { "count": { "type": "int" }, "metadata": { "type": "int" } } },
+  "galleryImportConverted": "Imported {count} images ({converted} converted to PNG)",
+  "@galleryImportConverted": { "placeholders": { "count": { "type": "int" }, "converted": { "type": "int" } } },
+  "galleryImportFailed": "Import failed: {error}",
+  "@galleryImportFailed": { "placeholders": { "error": { "type": "String" } } },
+
   "panelAdvancedSettings": "Advanced Settings",
   "panelDimensions": "Dimensions",
   "panelSeed": "Seed",
@@ -646,5 +658,13 @@
   "cascadeBeatN": "BEAT {n}",
   "@cascadeBeatN": { "placeholders": { "n": { "type": "int" } } },
   "cascadeCloneBeat": "Clone Beat",
-  "cascadeRemoveBeat": "Remove Beat"
+  "cascadeRemoveBeat": "Remove Beat",
+
+  "settingsCheckForUpdates": "Check for Updates",
+  "settingsUpdateAvailable": "Update Available",
+  "settingsUpdateAvailableDesc": "A new version ({version}) is available.",
+  "@settingsUpdateAvailableDesc": { "placeholders": { "version": { "type": "String" } } },
+  "settingsUpdateDownload": "Download",
+  "settingsUpToDate": "You're up to date!",
+  "settingsUpdateCheckFailed": "Update check failed"
 }

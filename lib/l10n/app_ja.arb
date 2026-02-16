@@ -145,6 +145,14 @@
   "gallerySampler": "サンプラー",
   "gallerySeed": "シード",
 
+  "galleryImport": "画像をインポート",
+  "galleryImporting": "インポート中...",
+  "galleryImportProgress": "インポート中 {current}/{total}...",
+  "galleryImportPreparing": "準備中...",
+  "galleryImportSuccess": "{count}枚の画像をインポートしました（{metadata}枚にNovelAIメタデータあり）",
+  "galleryImportConverted": "{count}枚の画像をインポートしました（{converted}枚をPNGに変換）",
+  "galleryImportFailed": "インポートに失敗しました: {error}",
+
   "panelAdvancedSettings": "詳細設定",
   "panelDimensions": "解像度",
   "panelSeed": "シード",
@@ -583,5 +591,13 @@
   "cascadeBeatsCount": "{count}ビート",
   "cascadeBeatN": "ビート {n}",
   "cascadeCloneBeat": "ビートを複製",
-  "cascadeRemoveBeat": "ビートを削除"
+  "cascadeRemoveBeat": "ビートを削除",
+
+  "settingsCheckForUpdates": "アップデートを確認",
+  "settingsUpdateAvailable": "アップデートあり",
+  "settingsUpdateAvailableDesc": "新しいバージョン（{version}）が利用可能です。",
+  "@settingsUpdateAvailableDesc": { "placeholders": { "version": { "type": "String" } } },
+  "settingsUpdateDownload": "ダウンロード",
+  "settingsUpToDate": "最新バージョンです！",
+  "settingsUpdateCheckFailed": "アップデートの確認に失敗しました"
 }

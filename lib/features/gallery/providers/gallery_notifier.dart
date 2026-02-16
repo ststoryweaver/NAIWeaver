@@ -1,10 +1,27 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/services/preferences_service.dart';
 import '../../../core/utils/image_utils.dart';
 import '../models/gallery_album.dart';
+
+class ImportResult {
+  final int total;
+  final int succeeded;
+  final int withMetadata;
+  final int converted;
+  final List<String> errors;
+
+  ImportResult({
+    required this.total,
+    required this.succeeded,
+    required this.withMetadata,
+    required this.converted,
+    required this.errors,
+  });
+}
 
 enum GallerySortMode { dateDesc, dateAsc, nameAsc, nameDesc, sizeDesc, sizeAsc }
 
@@ -234,6 +251,64 @@ class GalleryNotifier extends ChangeNotifier {
 
     // Trigger metadata indexing for this new item
     _indexMetadataForItem(newItem);
+  }
+
+  Future<ImportResult> importFiles(
+    List<String> filePaths, {
+    void Function(int current, int total)? onProgress,
+  }) async {
+    final fmt = DateFormat('yyyyMMdd_HHmmssSSS');
+    int succeeded = 0;
+    int withMetadata = 0;
+    int converted = 0;
+    final errors = <String>[];
+
+    for (int i = 0; i < filePaths.length; i++) {
+      onProgress?.call(i + 1, filePaths.length);
+      try {
+        final srcFile = File(filePaths[i]);
+        final bytes = await srcFile.readAsBytes();
+        Uint8List pngBytes;
+
+        if (isPng(bytes)) {
+          pngBytes = bytes;
+        } else {
+          final result = await compute(convertToPng, bytes);
+          if (result == null) {
+            errors.add(p.basename(filePaths[i]));
+            continue;
+          }
+          pngBytes = result;
+          converted++;
+        }
+
+        final now = DateTime.now();
+        final destName = 'Imp_${fmt.format(now)}.png';
+        final destPath = p.join(outputDir, destName);
+        final destFile = File(destPath);
+        await destFile.writeAsBytes(pngBytes);
+
+        addFile(destFile, now);
+
+        // Check for NovelAI metadata
+        final metadata = await compute(extractMetadata, pngBytes);
+        if (metadata != null && metadata.containsKey('Comment')) {
+          withMetadata++;
+        }
+
+        succeeded++;
+      } catch (e) {
+        errors.add(p.basename(filePaths[i]));
+      }
+    }
+
+    return ImportResult(
+      total: filePaths.length,
+      succeeded: succeeded,
+      withMetadata: withMetadata,
+      converted: converted,
+      errors: errors,
+    );
   }
 
   Future<void> _indexMetadataForItem(GalleryItem item) async {

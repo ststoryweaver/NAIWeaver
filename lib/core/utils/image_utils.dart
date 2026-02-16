@@ -46,6 +46,28 @@ Uint8List stripMetadata(Uint8List bytes) {
   return Uint8List.fromList(encoder.encode(image));
 }
 
+/// Checks if bytes represent a PNG file by inspecting the 8-byte magic header.
+bool isPng(Uint8List bytes) {
+  if (bytes.length < 8) return false;
+  return bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4E &&
+      bytes[3] == 0x47 &&
+      bytes[4] == 0x0D &&
+      bytes[5] == 0x0A &&
+      bytes[6] == 0x1A &&
+      bytes[7] == 0x0A;
+}
+
+/// Converts non-PNG image bytes to PNG format.
+/// Returns null if the image format is unsupported.
+/// Intended for use via compute() in an isolate.
+Uint8List? convertToPng(Uint8List bytes) {
+  final image = img.decodeImage(bytes);
+  if (image == null) return null;
+  return Uint8List.fromList(img.encodePng(image));
+}
+
 /// Parses the JSON from a PNG Comment chunk.
 /// Tries direct decode first, falls back to trimming trailing garbage.
 Map<String, dynamic>? parseCommentJson(String comment) {

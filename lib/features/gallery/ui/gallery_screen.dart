@@ -280,6 +280,115 @@ class _GalleryScreenState extends State<GalleryScreen> {
     _exitSelectionMode();
   }
 
+  Future<void> _importImages() async {
+    final t = context.tRead;
+    final gallery = context.read<GalleryNotifier>();
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final filePaths = result.files
+        .where((f) => f.path != null)
+        .map((f) => f.path!)
+        .toList();
+    if (filePaths.isEmpty) return;
+
+    final showProgress = filePaths.length >= 3;
+    int currentProgress = 0;
+    int totalProgress = filePaths.length;
+    StateSetter? dialogSetState;
+
+    if (showProgress && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setState) {
+            dialogSetState = setState;
+            final t = ctx.tRead;
+            return AlertDialog(
+              backgroundColor: t.surfaceHigh,
+              title: Text(
+                context.l.galleryImporting.toUpperCase(),
+                style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(
+                    value: totalProgress > 0 ? currentProgress / totalProgress : 0,
+                    backgroundColor: t.borderSubtle,
+                    color: t.accent,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    currentProgress > 0
+                        ? context.l.galleryImportProgress(currentProgress, totalProgress)
+                        : context.l.galleryImportPreparing,
+                    style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10)),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    try {
+      final importResult = await gallery.importFiles(
+        filePaths,
+        onProgress: (current, total) {
+          currentProgress = current;
+          totalProgress = total;
+          dialogSetState?.call(() {});
+        },
+      );
+
+      if (showProgress && mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (!mounted) return;
+
+      String message;
+      if (importResult.converted > 0) {
+        message = context.l.galleryImportConverted(importResult.succeeded, importResult.converted);
+      } else {
+        message = context.l.galleryImportSuccess(importResult.succeeded, importResult.withMetadata);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(message,
+            style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
+        backgroundColor: const Color(0xFF0A1A0A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
+        ),
+      ));
+    } catch (e) {
+      if (showProgress && mounted) {
+        Navigator.of(context).pop();
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.l.galleryImportFailed(e.toString()),
+            style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
+        backgroundColor: const Color(0xFF1A0A0A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
+        ),
+      ));
+    }
+  }
+
   String _sortModeLabel(BuildContext context, GallerySortMode mode) {
     switch (mode) {
       case GallerySortMode.dateDesc: return context.l.gallerySortDateNewest.toUpperCase();
@@ -741,6 +850,11 @@ class _GalleryScreenState extends State<GalleryScreen> {
         },
       ),
       actions: [
+        IconButton(
+          icon: Icon(Icons.add_photo_alternate, size: mobile ? 22 : 16, color: t.textDisabled),
+          tooltip: context.l.galleryImport,
+          onPressed: _importImages,
+        ),
         IconButton(
           icon: Icon(
             gallery.showFavoritesOnly ? Icons.star : Icons.star_outline,

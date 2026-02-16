@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/l10n/locale_notifier.dart';
 import '../../../core/services/preferences_service.dart';
+import '../../../core/services/update_service.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/widgets/pin_lock_gate.dart';
 import '../../gallery/providers/gallery_notifier.dart';
@@ -21,6 +25,7 @@ class AppSettings extends StatefulWidget {
 class _AppSettingsState extends State<AppSettings> {
   late TextEditingController _apiKeyController;
   bool _isObscured = true;
+  bool _isCheckingUpdate = false;
 
   @override
   void initState() {
@@ -114,6 +119,10 @@ class _AppSettingsState extends State<AppSettings> {
           _buildHeader(l.settingsLinks.toUpperCase(), t),
           const SizedBox(height: 16),
           _buildGithubButton(t),
+          if (!kIsWeb) ...[
+            const SizedBox(height: 12),
+            _buildUpdateCheckButton(t),
+          ],
         ],
       ),
     );
@@ -759,9 +768,7 @@ class _AppSettingsState extends State<AppSettings> {
     final l = context.l;
     return InkWell(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l.settingsGithubPlaceholder)),
-        );
+        launchUrl(Uri.parse('https://github.com/ststoryweaver/NAIWeaver'));
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -786,6 +793,132 @@ class _AppSettingsState extends State<AppSettings> {
             ),
           ],
         ),
+      ),
+    );
+  }
+  Widget _buildUpdateCheckButton(dynamic t) {
+    final l = context.l;
+    return InkWell(
+      onTap: _isCheckingUpdate
+          ? null
+          : () async {
+              setState(() => _isCheckingUpdate = true);
+              try {
+                final packageInfo = await PackageInfo.fromPlatform();
+                final result =
+                    await UpdateService.checkForUpdate(packageInfo.version);
+
+                if (!mounted) return;
+
+                if (result.error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        l.settingsUpdateCheckFailed,
+                        style: TextStyle(
+                            color: t.textPrimary, fontSize: t.fontSize(11)),
+                      ),
+                      backgroundColor: t.surfaceHigh,
+                    ),
+                  );
+                } else if (result.updateAvailable) {
+                  _showUpdateDialog(
+                      t, result.latestVersion!, result.releaseUrl!);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        l.settingsUpToDate,
+                        style: TextStyle(
+                            color: t.textPrimary, fontSize: t.fontSize(11)),
+                      ),
+                      backgroundColor: t.surfaceHigh,
+                    ),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() => _isCheckingUpdate = false);
+              }
+            },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: t.borderMedium),
+          borderRadius: BorderRadius.circular(4),
+          color: t.borderSubtle,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isCheckingUpdate)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: t.secondaryText,
+                ),
+              )
+            else
+              Icon(Icons.system_update, color: t.secondaryText, size: 16),
+            const SizedBox(width: 12),
+            Text(
+              l.settingsCheckForUpdates.toUpperCase(),
+              style: TextStyle(
+                color: t.secondaryText,
+                fontSize: t.fontSize(10),
+                letterSpacing: 1,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUpdateDialog(dynamic t, String version, String releaseUrl) {
+    final l = context.l;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: t.surfaceHigh,
+        title: Text(
+          l.settingsUpdateAvailable.toUpperCase(),
+          style: TextStyle(
+            fontSize: t.fontSize(10),
+            letterSpacing: 2,
+            color: t.textSecondary,
+          ),
+        ),
+        content: Text(
+          l.settingsUpdateAvailableDesc(version),
+          style: TextStyle(
+            color: t.textPrimary,
+            fontSize: t.fontSize(11),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              l.commonClose.toUpperCase(),
+              style: TextStyle(
+                  color: t.textDisabled, fontSize: t.fontSize(9)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              launchUrl(Uri.parse(releaseUrl));
+            },
+            child: Text(
+              l.settingsUpdateDownload.toUpperCase(),
+              style:
+                  TextStyle(color: t.accent, fontSize: t.fontSize(9)),
+            ),
+          ),
+        ],
       ),
     );
   }

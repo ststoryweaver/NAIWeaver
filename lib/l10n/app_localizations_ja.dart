@@ -462,6 +462,35 @@ class AppLocalizationsJa extends AppLocalizations {
   String get gallerySeed => 'シード';
 
   @override
+  String get galleryImport => '画像をインポート';
+
+  @override
+  String get galleryImporting => 'インポート中...';
+
+  @override
+  String galleryImportProgress(int current, int total) {
+    return 'インポート中 $current/$total...';
+  }
+
+  @override
+  String get galleryImportPreparing => '準備中...';
+
+  @override
+  String galleryImportSuccess(int count, int metadata) {
+    return '$count枚の画像をインポートしました（$metadata枚にNovelAIメタデータあり）';
+  }
+
+  @override
+  String galleryImportConverted(int count, int converted) {
+    return '$count枚の画像をインポートしました（$converted枚をPNGに変換）';
+  }
+
+  @override
+  String galleryImportFailed(String error) {
+    return 'インポートに失敗しました: $error';
+  }
+
+  @override
   String get panelAdvancedSettings => '詳細設定';
 
   @override
@@ -1831,4 +1860,24 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cascadeRemoveBeat => 'ビートを削除';
+
+  @override
+  String get settingsCheckForUpdates => 'アップデートを確認';
+
+  @override
+  String get settingsUpdateAvailable => 'アップデートあり';
+
+  @override
+  String settingsUpdateAvailableDesc(String version) {
+    return '新しいバージョン（$version）が利用可能です。';
+  }
+
+  @override
+  String get settingsUpdateDownload => 'ダウンロード';
+
+  @override
+  String get settingsUpToDate => '最新バージョンです！';
+
+  @override
+  String get settingsUpdateCheckFailed => 'アップデートの確認に失敗しました';
 }

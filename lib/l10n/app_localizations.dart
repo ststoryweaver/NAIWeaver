@@ -938,6 +938,48 @@ abstract class AppLocalizations {
   /// **'Seed'**
   String get gallerySeed;
 
+  /// No description provided for @galleryImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Images'**
+  String get galleryImport;
+
+  /// No description provided for @galleryImporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing...'**
+  String get galleryImporting;
+
+  /// No description provided for @galleryImportProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing {current}/{total}...'**
+  String galleryImportProgress(int current, int total);
+
+  /// No description provided for @galleryImportPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing...'**
+  String get galleryImportPreparing;
+
+  /// No description provided for @galleryImportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} images ({metadata} with NovelAI metadata)'**
+  String galleryImportSuccess(int count, int metadata);
+
+  /// No description provided for @galleryImportConverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} images ({converted} converted to PNG)'**
+  String galleryImportConverted(int count, int converted);
+
+  /// No description provided for @galleryImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: {error}'**
+  String galleryImportFailed(String error);
+
   /// No description provided for @panelAdvancedSettings.
   ///
   /// In en, this message translates to:
@@ -3487,6 +3529,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove Beat'**
   String get cascadeRemoveBeat;
+
+  /// No description provided for @settingsCheckForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get settingsCheckForUpdates;
+
+  /// No description provided for @settingsUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Available'**
+  String get settingsUpdateAvailable;
+
+  /// No description provided for @settingsUpdateAvailableDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version ({version}) is available.'**
+  String settingsUpdateAvailableDesc(String version);
+
+  /// No description provided for @settingsUpdateDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get settingsUpdateDownload;
+
+  /// No description provided for @settingsUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re up to date!'**
+  String get settingsUpToDate;
+
+  /// No description provided for @settingsUpdateCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Update check failed'**
+  String get settingsUpdateCheckFailed;
 }
 
 class _AppLocalizationsDelegate

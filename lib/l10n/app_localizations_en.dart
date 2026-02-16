@@ -474,6 +474,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gallerySeed => 'Seed';
 
   @override
+  String get galleryImport => 'Import Images';
+
+  @override
+  String get galleryImporting => 'Importing...';
+
+  @override
+  String galleryImportProgress(int current, int total) {
+    return 'Importing $current/$total...';
+  }
+
+  @override
+  String get galleryImportPreparing => 'Preparing...';
+
+  @override
+  String galleryImportSuccess(int count, int metadata) {
+    return 'Imported $count images ($metadata with NovelAI metadata)';
+  }
+
+  @override
+  String galleryImportConverted(int count, int converted) {
+    return 'Imported $count images ($converted converted to PNG)';
+  }
+
+  @override
+  String galleryImportFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
   String get panelAdvancedSettings => 'Advanced Settings';
 
   @override
@@ -1858,4 +1887,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cascadeRemoveBeat => 'Remove Beat';
+
+  @override
+  String get settingsCheckForUpdates => 'Check for Updates';
+
+  @override
+  String get settingsUpdateAvailable => 'Update Available';
+
+  @override
+  String settingsUpdateAvailableDesc(String version) {
+    return 'A new version ($version) is available.';
+  }
+
+  @override
+  String get settingsUpdateDownload => 'Download';
+
+  @override
+  String get settingsUpToDate => 'You\'re up to date!';
+
+  @override
+  String get settingsUpdateCheckFailed => 'Update check failed';
 }
