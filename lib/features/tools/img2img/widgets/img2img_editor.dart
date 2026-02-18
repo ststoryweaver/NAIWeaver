@@ -430,7 +430,10 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
         sampler: genState.sampler,
       );
 
-      final resultBytes = await genNotifier.generateImg2Img(request);
+      final resultBytes = await genNotifier.generateImg2Img(
+        request,
+        sourceImageBytes: session.sourceImageBytes,
+      );
 
       // Show result in the editor if generation succeeded
       if (resultBytes != null) {

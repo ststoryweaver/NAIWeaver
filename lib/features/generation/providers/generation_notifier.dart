@@ -633,15 +633,15 @@ class GenerationNotifier extends ChangeNotifier {
     }
   }
 
-  Future<File?> _saveToDisk(Uint8List bytes, Map<String, dynamic> metadata) async {
+  Future<File?> _saveToDisk(Uint8List bytes, Map<String, dynamic> metadata, {String prefix = 'Gen', String? timestamp}) async {
     try {
       final directory = Directory(_outputDir);
       if (!await directory.exists()) {
         await directory.create(recursive: true);
       }
 
-      final timestamp = DateFormat('yyyyMMdd_HHmmssSSS').format(DateTime.now());
-      final filePath = p.join(directory.path, 'Gen_$timestamp.png');
+      final ts = timestamp ?? DateFormat('yyyyMMdd_HHmmssSSS').format(DateTime.now());
+      final filePath = p.join(directory.path, '${prefix}_$ts.png');
 
       final bytesWithMetadata = await compute(injectMetadata, {
         'bytes': bytes,
@@ -995,7 +995,7 @@ class GenerationNotifier extends ChangeNotifier {
     }
   }
 
-  Future<Uint8List?> generateImg2Img(Img2ImgRequest request) async {
+  Future<Uint8List?> generateImg2Img(Img2ImgRequest request, {Uint8List? sourceImageBytes}) async {
     _state = _state.copyWith(isLoading: true, hasAuthError: false);
     notifyListeners();
 
@@ -1030,7 +1030,20 @@ class GenerationNotifier extends ChangeNotifier {
       _state = _state.copyWith(generatedImage: finalBytes);
 
       if (_state.autoSaveImages) {
-        final savedFile = await _saveToDisk(finalBytes, result.metadata);
+        final timestamp = DateFormat('yyyyMMdd_HHmmssSSS').format(DateTime.now());
+        if (sourceImageBytes != null) {
+          try {
+            final directory = Directory(_outputDir);
+            if (!await directory.exists()) {
+              await directory.create(recursive: true);
+            }
+            final srcPath = p.join(directory.path, 'Src_$timestamp.png');
+            await File(srcPath).writeAsBytes(sourceImageBytes);
+          } catch (e) {
+            debugPrint("Source image save error: $e");
+          }
+        }
+        final savedFile = await _saveToDisk(finalBytes, result.metadata, timestamp: timestamp);
         if (savedFile != null) {
           _galleryNotifier?.addFile(savedFile, DateTime.now());
           _imageSaved = true;
