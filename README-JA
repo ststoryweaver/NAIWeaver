@@ -1,0 +1,154 @@
+NAIWeaver
+
+NovelAIの画像生成API (Diffusion V4.5) 用の非公式クロスプラットフォーム・フロントエンドです。Flutterで構築されており、Windows、Android、Webに対応しています。
+
+こちらのGitHubページでテスト可能です: https://ststoryweaver.github.io/NAIWeaver/
+機能 (Features)
+画像生成 (Image Generation)
+
+    NovelAI V4.5 API統合: txt2img、img2img、インペインティング、Director Reference (Precise reference)、Vibe Transfer、複数キャラクター生成に対応。
+
+    複数キャラクター生成: ピクセルレベルでの位置指定や相互作用（インタラクション）が可能。
+
+    PNGメタデータの双方向利用: 設定は画像に埋め込まれ、ドラッグ＆ドロップで設定を再インポート可能。
+
+    シード制御: 再現可能な生成のための固定シードや、ランダム化トグル機能を搭載。
+
+Director Reference
+
+参照画像をアップロードして、キャラクターの外見や画風をガイドします。3つの参照タイプ（キャラクター、スタイル、キャラクター＆スタイル）に対応しており、それぞれの強度（Strength）と忠実度（Fidelity）をスライダーで調整可能です。
+Vibe Transfer
+
+参照画像の「雰囲気（Vibe）」を生成画像に適用します。各Vibeには独立した強度設定と情報抽出（Information Extraction）の制御があり、キャラクターの一致を強制することなく、スタイルの影響のみを微調整できます。
+Cascade System (カスケードシステム)
+
+※開発中 (WIP): 連続したシーン生成機能です。各シーンの設定、配置、アクション、感情、状態を定義します。ストーリーを作成したら、メインエディターに戻り、キャラクターを追加して、シーンが展開される様子を確認できます。
+ギャラリー (Gallery)
+
+    お気に入り、検索、ドラッグによる複数選択機能。
+
+    仮想アルバム: ファイルを移動せずにフォルダのような整理が可能。
+
+    日付、名前、ファイルサイズでの並べ替え。
+
+    マウスホバー時の画像情報オーバーレイ表示。
+
+    プライバシー保護のためのPINロックおよび生体認証解除付きのデモモード。
+
+ツールハブ (11種類のツール)
+ツール	説明
+Wildcard Manager	ワイルドカードファイル（__pattern__ 置換）の閲覧、作成、編集、削除（お気に入り機能付き）。
+Tag Library	視覚的な例とインラインプレビュー生成を備えたDanbooruタグのオートコンプリート機能。
+Preset Manager	キャラクター、インタラクション、参照画像管理を含む完全なプリセットエディタ。
+Style Editor	プレフィックス（前置詞）、サフィックス（後置詞）、ネガティブプロンプトを含むプロンプトスタイルのテンプレート管理。
+Reference Manager	タイプ、強度、忠実度の制御を含むDirector Referenceの管理。
+Cascade Editor	キャラクタースロットとプロンプトの結合機能を備えた、マルチビート・シーケンシャル・シーン生成（連続シーン作成）。
+Img2Img Editor	ソース画像の読み込み、ブラシによるマスクペイント、インペインティング機能。
+Slideshow	ギャラリーやアルバムのソースから、トランジションやケン・バーンズ効果（パン＆ズーム）の設定が可能なスライドショー再生。
+Packs	プリセット、スタイル、ワイルドカード、Director Referenceを .vpack ファイルとしてエクスポート/インポート。
+Theme Builder	8つの内蔵テーマに加え、15の構成色をフルカスタマイズできるテーマエディタ。
+Settings	APIキー、自動保存、シェルフの表示設定、ロケール（言語）設定。
+多言語対応 (Localization)
+
+英語と日本語に標準対応しています。.arb ファイルによる拡張も可能です（新しい言語の追加については「Contributing」を参照してください）。
+テーマシステム (Theme System)
+
+トークンベースのテーマ設定に対応。8つの内蔵テーマ（OLED Dark, Soft Dark, Midnight, Pastel Purple, Rose Quartz, Emerald, Amber Terminal, Cyberpunk）に加え、無制限のカスタムテーマを作成可能。すべての色とフォントはセマンティック・デザイン・トークンを通じて適用されます。
+必要要件 (Requirements)
+
+    NovelAI APIキー (サブスクリプションが必要です)
+
+    Flutter SDK ^3.10.7 (stable channel)
+
+クイックスタート (Quick Start)
+クローン (Clone)
+code Bash
+
+git clone https://github.com/YOUR_USERNAME/naiweaver.git  # リポジトリURLに置き換えてください
+cd naiweaver
+
+依存関係のインストール (Install dependencies)
+code Bash
+
+flutter pub get
+
+実行 (Run)
+code Bash
+
+flutter run -d windows    # Windows
+flutter run -d chrome     # Web
+flutter run               # Android (デバイス接続時)
+
+ビルド (Build)
+code Bash
+
+flutter build windows     # Windows リリースビルド
+flutter build apk         # Android APK
+flutter build web         # Web ビルド
+
+設定 (Configuration)
+
+    アプリを起動します。
+
+    TOOLS > SETTINGS に移動します。
+
+    NovelAI APIキーを入力します。
+
+    生成を開始します。
+
+プロジェクト構造 (Project Structure)
+code Text
+
+lib/
+  main.dart                    # エントリーポイント、プロバイダー設定
+  novel_ai_service.dart        # NovelAI API クライアント
+  core/
+    theme/                     # トークンベースのテーマシステム
+    l10n/                      # ロケール状態管理
+    services/                  # 設定(Preferences)、パス、Packサービス
+    utils/                     # 画像ユーティリティ、レスポンシブヘルパー
+  l10n/                        # ARB 翻訳ファイル (en, ja)
+  features/
+    generation/                # メイン生成UIおよびロジック
+    gallery/                   # アルバム機能付き画像ギャラリー
+    director_ref/              # Director Reference システム
+    vibe_transfer/             # Vibe Transfer システム
+    tools/                     # ツールハブ (11ツール)
+      cascade/                 # マルチビート・シーケンシャル生成
+      img2img/                 # インペインティング付き Img2Img
+      slideshow/               # 設定可能なスライドショープレイヤー
+
+詳細な構成については ARCHITECTURE.md を参照してください。
+NAIWeaver Packs
+
+.vpack ファイルを使用して、プリセット、スタイル、ワイルドカード、Director Referenceを他のユーザーと共有できます。
+
+    エクスポート: TOOLS > PACKS > Export Pack — アイテムを選択し、パックに名前を付け、.vpack として保存します。
+
+    インポート: TOOLS > PACKS > Import Pack — .vpack を開き、内容をプレビューして、選択したアイテムをインポートします。
+
+    パックは、JSON形式のプリセット/スタイルとワイルドカードテキストファイルを含むZIPアーカイブです。
+
+    Director Reference画像は自動的に抽出・再埋め込みされます。
+
+ロードマップ (Roadmap)
+
+開発方針、完了したマイルストーン、Director Toolsの統合やNAI v4 Vibe Bundleのサポートを含む計画中の機能については、ROADMAP.md を参照してください。
+貢献 (Contributing)
+
+貢献は大歓迎です！開発環境のセットアップ、コードスタイルガイドライン、PR（プルリクエスト）の手順については CONTRIBUTING.md を参照してください。
+
+機能のリクエストやバグ報告も推奨しています。GitHub Issueを開いてお知らせください。
+関連プロジェクト (Related Projects)
+
+以下のプロジェクトは素晴らしいリソースであり、インスピレーションの源となりました：
+
+    novelai-python (@LlmKira) — NovelAI API Python SDK
+
+    NAI_UI_2 (@EctoplasmicNeko) — 追加機能を備えたNovelAIデスクトップアプリ
+
+    ComfyUI_NAIDGenerator (@bedovyy) — ComfyUI用 NovelAI Diffusion ジェネレーター
+
+ライセンス (License)
+
+MIT
