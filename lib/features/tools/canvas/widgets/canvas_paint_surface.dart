@@ -151,7 +151,7 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
   }
 
   void _showTextDialog(Offset position, CanvasNotifier notifier) {
-    final t = context.t;
+    final t = context.tRead;
     final l = context.l;
     final textController = TextEditingController();
     double fontSize = 0.05;

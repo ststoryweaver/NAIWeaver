@@ -18,7 +18,7 @@ class Img2ImgNotifier extends ChangeNotifier {
   bool get hasMask => _session?.hasMask ?? false;
 
   /// Load a source image from raw bytes. Decodes to get dimensions.
-  Future<void> loadSourceImage(Uint8List bytes, {String? prompt, String? negativePrompt}) async {
+  Future<void> loadSourceImage(Uint8List bytes, {String? prompt, String? negativePrompt, String? filePath}) async {
     final decoded = await compute(_decodeImageDimensions, bytes);
     if (decoded == null) return;
 
@@ -28,6 +28,7 @@ class Img2ImgNotifier extends ChangeNotifier {
       sourceHeight: decoded.$2,
       prompt: prompt ?? '',
       negativePrompt: negativePrompt ?? '',
+      sourceFilePath: filePath,
     );
     notifyListeners();
   }
@@ -177,7 +178,7 @@ class Img2ImgNotifier extends ChangeNotifier {
 
   /// Replace the source image with new bytes (e.g. from canvas editor).
   /// Decodes dimensions, replaces source, clears mask strokes and result.
-  Future<void> replaceSourceImage(Uint8List bytes) async {
+  Future<void> replaceSourceImage(Uint8List bytes, {String? filePath}) async {
     final decoded = await compute(_decodeImageDimensions, bytes);
     if (decoded == null) return;
 
@@ -188,6 +189,7 @@ class Img2ImgNotifier extends ChangeNotifier {
       settings: _session?.settings ?? const Img2ImgSettings(),
       prompt: _session?.prompt ?? '',
       negativePrompt: _session?.negativePrompt ?? '',
+      sourceFilePath: filePath,
     );
     notifyListeners();
   }

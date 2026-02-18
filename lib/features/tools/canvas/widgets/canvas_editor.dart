@@ -7,11 +7,13 @@ import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../gallery/providers/gallery_notifier.dart';
 import '../../img2img/providers/img2img_notifier.dart';
 import '../models/canvas_layer.dart';
 import '../models/paint_stroke.dart';
 import '../providers/canvas_notifier.dart';
 import '../services/canvas_flatten_service.dart';
+import '../services/canvas_gallery_service.dart';
 import 'canvas_paint_surface.dart';
 import 'canvas_toolbar.dart';
 import 'layer_panel.dart';
@@ -307,6 +309,7 @@ class _CanvasEditorState extends State<CanvasEditor> {
   Future<void> _flatten() async {
     final notifier = context.read<CanvasNotifier>();
     final img2imgNotifier = context.read<Img2ImgNotifier>();
+    final galleryNotifier = context.read<GalleryNotifier>();
     final session = notifier.session;
     if (session == null || !session.hasStrokes) return;
 
@@ -327,7 +330,18 @@ class _CanvasEditorState extends State<CanvasEditor> {
         textOverlays: textOverlays,
       );
 
-      await img2imgNotifier.replaceSourceImage(flattenedBytes);
+      // Save to gallery with sidecar files for later restoration
+      final savedFile = await CanvasGalleryService.saveToGallery(
+        session,
+        flattenedBytes,
+        galleryNotifier.outputDir,
+      );
+      galleryNotifier.addFile(savedFile, DateTime.now());
+
+      await img2imgNotifier.replaceSourceImage(
+        flattenedBytes,
+        filePath: savedFile.path,
+      );
       notifier.clearSession();
 
       if (mounted) {

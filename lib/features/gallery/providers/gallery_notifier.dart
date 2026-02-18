@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/services/preferences_service.dart';
 import '../../../core/utils/image_utils.dart';
+import '../../tools/canvas/services/canvas_gallery_service.dart';
 import '../models/gallery_album.dart';
 
 class ImportResult {
@@ -32,6 +33,7 @@ class GalleryItem {
   String? prompt;
   bool isFavorite;
   bool isDemoSafe;
+  bool hasCanvasState;
 
   GalleryItem({
     required this.file,
@@ -40,6 +42,7 @@ class GalleryItem {
     this.prompt,
     this.isFavorite = false,
     this.isDemoSafe = false,
+    this.hasCanvasState = false,
   });
 
   String get basename => p.basename(file.path);
@@ -179,6 +182,7 @@ class GalleryNotifier extends ChangeNotifier {
         _items = newItems;
         _applyFavorites();
         _applyDemoSafe();
+        _applyCanvasState();
 
         // Start indexing metadata in background
         _indexMetadata();
@@ -226,6 +230,7 @@ class GalleryNotifier extends ChangeNotifier {
     try {
       if (await item.file.exists()) {
         await item.file.delete();
+        await CanvasGalleryService.deleteSidecars(item.file.path);
         _items.remove(item);
         notifyListeners();
       }
@@ -361,6 +366,12 @@ class GalleryNotifier extends ChangeNotifier {
     }
   }
 
+  void _applyCanvasState() {
+    for (final item in _items) {
+      item.hasCanvasState = CanvasGalleryService.hasCanvasState(item.file.path);
+    }
+  }
+
   void toggleDemoSafe(GalleryItem item) {
     item.isDemoSafe = !item.isDemoSafe;
     if (item.isDemoSafe) {
@@ -433,6 +444,7 @@ class GalleryNotifier extends ChangeNotifier {
         if (await item.file.exists()) {
           await item.file.delete();
         }
+        await CanvasGalleryService.deleteSidecars(item.file.path);
       } catch (e) {
         debugPrint("Error deleting file: $e");
       }

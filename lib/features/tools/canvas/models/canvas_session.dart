@@ -60,4 +60,36 @@ class CanvasSession {
       sessionId: sessionId ?? this.sessionId,
     );
   }
+
+  /// Serialize session state (excluding sourceImageBytes, which is saved as a
+  /// separate binary sidecar file).
+  Map<String, dynamic> toJson() => {
+        'sessionId': sessionId,
+        'sourceWidth': sourceWidth,
+        'sourceHeight': sourceHeight,
+        'activeLayerId': activeLayerId,
+        'layers': layers.map((l) => l.toJson()).toList(),
+        'history': history.map((a) => a.toJson()).toList(),
+        'historyIndex': historyIndex,
+      };
+
+  /// Deserialize session state. [sourceImageBytes] must be provided separately
+  /// (read from the binary sidecar file).
+  static CanvasSession fromJson(
+      Map<String, dynamic> json, Uint8List sourceImageBytes) {
+    return CanvasSession(
+      sourceImageBytes: sourceImageBytes,
+      sessionId: json['sessionId'] as String,
+      sourceWidth: json['sourceWidth'] as int,
+      sourceHeight: json['sourceHeight'] as int,
+      activeLayerId: json['activeLayerId'] as String,
+      layers: (json['layers'] as List)
+          .map((j) => CanvasLayer.fromJson(j as Map<String, dynamic>))
+          .toList(),
+      history: (json['history'] as List)
+          .map((j) => CanvasAction.fromJson(j as Map<String, dynamic>))
+          .toList(),
+      historyIndex: json['historyIndex'] as int,
+    );
+  }
 }

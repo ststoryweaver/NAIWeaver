@@ -10,7 +10,7 @@ import '../providers/canvas_notifier.dart';
 import 'canvas_color_picker.dart';
 
 /// Bottom toolbar for the canvas editor.
-/// Desktop: single row with all controls.
+/// Desktop: two-row layout (tools + actions, then brush settings).
 /// Mobile: compact layout with sliders below.
 class CanvasToolbar extends StatefulWidget {
   final VoidCallback onFlatten;
@@ -98,248 +98,104 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Row 1: tools + color swatch + undo/redo + layer indicator + flatten
           Row(
             children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      // Paint tool
-                      _ToolButton(
-                        icon: Icons.brush,
-                        label: l.canvasPaint,
-                        isActive: notifier.tool == CanvasTool.paint,
-                        onTap: () => notifier.setTool(CanvasTool.paint),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Erase tool
-                      _ToolButton(
-                        icon: Icons.auto_fix_high,
-                        label: l.canvasErase,
-                        isActive: notifier.tool == CanvasTool.erase,
-                        onTap: () => notifier.setTool(CanvasTool.erase),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Line tool
-                      _ToolButton(
-                        icon: Icons.horizontal_rule,
-                        label: l.canvasLine,
-                        isActive: notifier.tool == CanvasTool.line,
-                        onTap: () => notifier.setTool(CanvasTool.line),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Rectangle tool
-                      _ToolButton(
-                        icon: Icons.crop_square,
-                        label: l.canvasRectangle,
-                        isActive: notifier.tool == CanvasTool.rectangle,
-                        onTap: () => notifier.setTool(CanvasTool.rectangle),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Circle tool
-                      _ToolButton(
-                        icon: Icons.circle_outlined,
-                        label: l.canvasCircle,
-                        isActive: notifier.tool == CanvasTool.circle,
-                        onTap: () => notifier.setTool(CanvasTool.circle),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Fill tool
-                      _ToolButton(
-                        icon: Icons.format_color_fill,
-                        label: l.canvasFill,
-                        isActive: notifier.tool == CanvasTool.fill,
-                        onTap: () => notifier.setTool(CanvasTool.fill),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Text tool
-                      _ToolButton(
-                        icon: Icons.text_fields,
-                        label: l.canvasText,
-                        isActive: notifier.tool == CanvasTool.text,
-                        onTap: () => notifier.setTool(CanvasTool.text),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Eyedropper tool
-                      _ToolButton(
-                        icon: Icons.colorize,
-                        label: l.canvasEyedropper,
-                        isActive: notifier.tool == CanvasTool.eyedropper,
-                        onTap: () => notifier.setTool(CanvasTool.eyedropper),
-                        t: t,
-                      ),
-                      const SizedBox(width: 4),
-                      // Smooth toggle
-                      _ToolButton(
-                        icon: Icons.gesture,
-                        label: l.canvasSmooth,
-                        isActive: notifier.smoothStrokes,
-                        onTap: notifier.toggleSmoothStrokes,
-                        t: t,
-                      ),
+              // Paint tool
+              _ToolButton(
+                icon: Icons.brush,
+                label: l.canvasPaint,
+                isActive: notifier.tool == CanvasTool.paint,
+                onTap: () => notifier.setTool(CanvasTool.paint),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Erase tool
+              _ToolButton(
+                icon: Icons.auto_fix_high,
+                label: l.canvasErase,
+                isActive: notifier.tool == CanvasTool.erase,
+                onTap: () => notifier.setTool(CanvasTool.erase),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Line tool
+              _ToolButton(
+                icon: Icons.horizontal_rule,
+                label: l.canvasLine,
+                isActive: notifier.tool == CanvasTool.line,
+                onTap: () => notifier.setTool(CanvasTool.line),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Rectangle tool
+              _ToolButton(
+                icon: Icons.crop_square,
+                label: l.canvasRectangle,
+                isActive: notifier.tool == CanvasTool.rectangle,
+                onTap: () => notifier.setTool(CanvasTool.rectangle),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Circle tool
+              _ToolButton(
+                icon: Icons.circle_outlined,
+                label: l.canvasCircle,
+                isActive: notifier.tool == CanvasTool.circle,
+                onTap: () => notifier.setTool(CanvasTool.circle),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Fill tool
+              _ToolButton(
+                icon: Icons.format_color_fill,
+                label: l.canvasFill,
+                isActive: notifier.tool == CanvasTool.fill,
+                onTap: () => notifier.setTool(CanvasTool.fill),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Text tool
+              _ToolButton(
+                icon: Icons.text_fields,
+                label: l.canvasText,
+                isActive: notifier.tool == CanvasTool.text,
+                onTap: () => notifier.setTool(CanvasTool.text),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Eyedropper tool
+              _ToolButton(
+                icon: Icons.colorize,
+                label: l.canvasEyedropper,
+                isActive: notifier.tool == CanvasTool.eyedropper,
+                onTap: () => notifier.setTool(CanvasTool.eyedropper),
+                t: t,
+              ),
+              const SizedBox(width: 4),
+              // Smooth toggle
+              _ToolButton(
+                icon: Icons.gesture,
+                label: l.canvasSmooth,
+                isActive: notifier.smoothStrokes,
+                onTap: notifier.toggleSmoothStrokes,
+                t: t,
+              ),
 
-                      const SizedBox(width: 12),
-                      Container(width: 1, height: 24, color: t.borderSubtle),
-                      const SizedBox(width: 12),
+              const SizedBox(width: 12),
+              Container(width: 1, height: 24, color: t.borderSubtle),
+              const SizedBox(width: 12),
 
-                      // Color picker
-                      if (_showColorPicker)
-                        CanvasColorPicker(
-                          currentColor: notifier.brushColorAsColor,
-                          opacity: notifier.brushOpacity,
-                          onColorChanged: (c) => notifier.setBrushColor(c.toARGB32()),
-                          onOpacityChanged: notifier.setBrushOpacity,
-                        )
-                      else ...[
-                        // Color swatch (tap to toggle picker)
-                        GestureDetector(
-                          onTap: () => setState(() => _showColorPicker = !_showColorPicker),
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: notifier.brushColorAsColor,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: t.borderMedium, width: 1.5),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 16),
-
-                        // Size slider + numeric input
-                        Text(
-                          l.canvasSize,
-                          style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 120,
-                          child: SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              activeTrackColor: t.textDisabled,
-                              inactiveTrackColor: t.textMinimal,
-                              thumbColor: t.textPrimary,
-                              trackHeight: 2,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                            ),
-                            child: Slider(
-                              value: _radiusToSlider(notifier.brushRadius),
-                              min: 0.0,
-                              max: 1.0,
-                              onChanged: (t) => notifier.setBrushRadius(_sliderToRadius(t)),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 48,
-                          height: 24,
-                          child: TextField(
-                            controller: _sizeController,
-                            focusNode: _sizeFocus,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(8)),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                              suffixText: '%',
-                              suffixStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(7)),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                borderSide: BorderSide(color: t.borderSubtle),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                borderSide: BorderSide(color: t.borderSubtle),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                borderSide: BorderSide(color: t.accentEdit),
-                              ),
-                            ),
-                            keyboardType: TextInputType.number,
-                            onSubmitted: (val) {
-                              final parsed = double.tryParse(val);
-                              if (parsed != null) {
-                                notifier.setBrushRadius(parsed / 100);
-                              }
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(width: 16),
-
-                        // Opacity slider + numeric input
-                        Text(
-                          l.canvasOpacity,
-                          style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 100,
-                          child: SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              activeTrackColor: t.textDisabled,
-                              inactiveTrackColor: t.textMinimal,
-                              thumbColor: t.textPrimary,
-                              trackHeight: 2,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                            ),
-                            child: Slider(
-                              value: notifier.brushOpacity,
-                              min: 0.05,
-                              max: 1.0,
-                              onChanged: notifier.setBrushOpacity,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 48,
-                          height: 24,
-                          child: TextField(
-                            controller: _opacityController,
-                            focusNode: _opacityFocus,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(8)),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                              suffixText: '%',
-                              suffixStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(7)),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                borderSide: BorderSide(color: t.borderSubtle),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                borderSide: BorderSide(color: t.borderSubtle),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(3),
-                                borderSide: BorderSide(color: t.accentEdit),
-                              ),
-                            ),
-                            keyboardType: TextInputType.number,
-                            onSubmitted: (val) {
-                              final parsed = double.tryParse(val);
-                              if (parsed != null) {
-                                notifier.setBrushOpacity(parsed / 100);
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
+              // Color swatch (tap to toggle picker)
+              GestureDetector(
+                onTap: () => setState(() => _showColorPicker = !_showColorPicker),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: notifier.brushColorAsColor,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: t.borderMedium, width: 1.5),
                   ),
                 ),
               ),
@@ -390,6 +246,8 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
                   ),
                 ),
 
+              const Spacer(),
+
               // Flatten & Send
               SizedBox(
                 height: 32,
@@ -415,7 +273,134 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
               ),
             ],
           ),
-          // Expanded color picker below toolbar row
+          const SizedBox(height: 4),
+          // Row 2: size slider + opacity slider
+          Row(
+            children: [
+              // Size slider + numeric input
+              Text(
+                l.canvasSize,
+                style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: t.textDisabled,
+                    inactiveTrackColor: t.textMinimal,
+                    thumbColor: t.textPrimary,
+                    trackHeight: 2,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                  ),
+                  child: Slider(
+                    value: _radiusToSlider(notifier.brushRadius),
+                    min: 0.0,
+                    max: 1.0,
+                    onChanged: (t) => notifier.setBrushRadius(_sliderToRadius(t)),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 48,
+                height: 24,
+                child: TextField(
+                  controller: _sizeController,
+                  focusNode: _sizeFocus,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(8)),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    suffixText: '%',
+                    suffixStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(7)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(3),
+                      borderSide: BorderSide(color: t.borderSubtle),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(3),
+                      borderSide: BorderSide(color: t.borderSubtle),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(3),
+                      borderSide: BorderSide(color: t.accentEdit),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onSubmitted: (val) {
+                    final parsed = double.tryParse(val);
+                    if (parsed != null) {
+                      notifier.setBrushRadius(parsed / 100);
+                    }
+                  },
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // Opacity slider + numeric input
+              Text(
+                l.canvasOpacity,
+                style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: t.textDisabled,
+                    inactiveTrackColor: t.textMinimal,
+                    thumbColor: t.textPrimary,
+                    trackHeight: 2,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                  ),
+                  child: Slider(
+                    value: notifier.brushOpacity,
+                    min: 0.05,
+                    max: 1.0,
+                    onChanged: notifier.setBrushOpacity,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 48,
+                height: 24,
+                child: TextField(
+                  controller: _opacityController,
+                  focusNode: _opacityFocus,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(8)),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    suffixText: '%',
+                    suffixStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(7)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(3),
+                      borderSide: BorderSide(color: t.borderSubtle),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(3),
+                      borderSide: BorderSide(color: t.borderSubtle),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(3),
+                      borderSide: BorderSide(color: t.accentEdit),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onSubmitted: (val) {
+                    final parsed = double.tryParse(val);
+                    if (parsed != null) {
+                      notifier.setBrushOpacity(parsed / 100);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          // Expanded color picker below toolbar rows
           if (_showColorPicker) ...[
             const SizedBox(height: 8),
             CanvasColorPicker(

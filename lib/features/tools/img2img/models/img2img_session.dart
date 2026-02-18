@@ -58,6 +58,7 @@ class Img2ImgSession {
   final String prompt;
   final String negativePrompt;
   final Uint8List? resultImageBytes;
+  final String? sourceFilePath;
 
   const Img2ImgSession({
     required this.sourceImageBytes,
@@ -68,6 +69,7 @@ class Img2ImgSession {
     this.prompt = '',
     this.negativePrompt = '',
     this.resultImageBytes,
+    this.sourceFilePath,
   });
 
   Img2ImgSession copyWith({
@@ -80,6 +82,8 @@ class Img2ImgSession {
     String? negativePrompt,
     Uint8List? resultImageBytes,
     bool clearResult = false,
+    String? sourceFilePath,
+    bool clearSourceFilePath = false,
   }) {
     return Img2ImgSession(
       sourceImageBytes: sourceImageBytes ?? this.sourceImageBytes,
@@ -90,6 +94,7 @@ class Img2ImgSession {
       prompt: prompt ?? this.prompt,
       negativePrompt: negativePrompt ?? this.negativePrompt,
       resultImageBytes: clearResult ? null : (resultImageBytes ?? this.resultImageBytes),
+      sourceFilePath: clearSourceFilePath ? null : (sourceFilePath ?? this.sourceFilePath),
     );
   }
 

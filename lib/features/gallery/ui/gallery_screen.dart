@@ -1083,6 +1083,20 @@ class _GalleryScreenState extends State<GalleryScreen> {
               left: 4,
               child: Icon(Icons.star, size: mobile ? 18 : 14, color: Colors.amber),
             ),
+          // Canvas layers badge (bottom-left)
+          if (item.hasCanvasState)
+            Positioned(
+              bottom: 4,
+              left: 4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Icon(Icons.layers, size: mobile ? 14 : 11, color: Colors.white70),
+              ),
+            ),
           // Selection checkmark (top-right)
           if (_isSelectionMode)
             Positioned(
@@ -2031,7 +2045,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
                                       }
                                     }
                                     if (!context.mounted) return;
-                                    context.read<Img2ImgNotifier>().loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt);
+                                    context.read<Img2ImgNotifier>().loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt, filePath: item.file.path);
                                     Navigator.pop(context);
                                     Navigator.pop(context);
                                     Navigator.push(

@@ -161,7 +161,7 @@ class SourceImagePicker extends StatelessWidget {
                             }
                           }
                         }
-                        img2imgNotifier.loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt);
+                        img2imgNotifier.loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt, filePath: item.file.path);
                       },
                     );
                   },

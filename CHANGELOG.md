@@ -1,19 +1,16 @@
 # Changelog
 
-## Unreleased
-
-### Img2Img
-- Save original source image (`Src_*.png`) alongside img2img generation result (`Gen_*.png`) with matching timestamps
-
----
-
 ## v0.3.0 — Canvas Editor, Anlas Tracker & Furry Mode
 
 ### Canvas Editor
 - Multi-layer canvas editor with paint, erase, shapes (rect, circle, line), fill, text, and eyedropper tools
-- Layer management: add, delete, reorder, visibility toggle, opacity control
+- Layer management: add, delete, reorder, visibility toggle, opacity control, blend modes
 - Flatten-to-PNG for seamless img2img pipeline integration
 - Blank canvas option in img2img source picker
+- **Canvas state persistence** — flatten & send saves sidecar files (`.canvas.json` + `.canvas.src`) alongside gallery PNGs; re-opening the image in canvas restores all layers, strokes, and undo history
+- Gallery layers badge overlay on images with saved canvas state
+- Automatic sidecar cleanup when deleting gallery images
+- Redesigned two-row canvas toolbar layout for desktop
 
 ### Generation
 - Anlas balance tracker in app bar with auto-refresh after generation
@@ -23,6 +20,7 @@
 ### Img2Img
 - Prompt auto-import from PNG metadata (tEXt + iTXt chunks) when loading source image
 - V4 character restoration from imported generation parameters
+- Save original source image (`Src_*.png`) alongside img2img generation result (`Gen_*.png`) with matching timestamps
 
 ### Prompt Engineering
 - Artist: category prefix for tag autocomplete filtering
@@ -31,6 +29,7 @@
 ### Fixes
 - PNG metadata extraction for iTXt chunks with zlib compression
 - Gallery image detail view layout
+- Canvas text dialog theme context fix
 
 ---
 

@@ -6,6 +6,7 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../generation/providers/generation_notifier.dart';
 import '../../canvas/providers/canvas_notifier.dart';
+import '../../canvas/services/canvas_gallery_service.dart';
 import '../../canvas/widgets/canvas_editor.dart';
 import '../providers/img2img_notifier.dart';
 import '../services/img2img_request_builder.dart';
@@ -385,17 +386,35 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
     );
   }
 
-  void _openCanvasEditor(BuildContext context, Img2ImgNotifier img2imgNotifier) {
+  void _openCanvasEditor(BuildContext context, Img2ImgNotifier img2imgNotifier) async {
     final session = img2imgNotifier.session;
     if (session == null) return;
 
     final canvasNotifier = context.read<CanvasNotifier>();
+
+    // Check for sidecar canvas state from a previous flatten
+    if (session.sourceFilePath != null) {
+      final restored =
+          await CanvasGalleryService.loadSession(session.sourceFilePath!);
+      if (restored != null) {
+        canvasNotifier.restoreSession(restored);
+        if (!context.mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CanvasEditor()),
+        );
+        return;
+      }
+    }
+
+    // No sidecar — fresh session
     canvasNotifier.startSession(
       session.sourceImageBytes,
       session.sourceWidth,
       session.sourceHeight,
     );
 
+    if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CanvasEditor()),

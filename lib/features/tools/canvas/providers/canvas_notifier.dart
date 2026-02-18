@@ -60,9 +60,9 @@ class CanvasNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Restore a session (e.g. from persistence). History starts fresh.
+  /// Restore a session (e.g. from persistence), preserving history.
   void restoreSession(CanvasSession session) {
-    _session = session.copyWith(history: [], historyIndex: 0);
+    _session = session;
     // Determine next layer number from existing names
     _nextLayerNumber = 1;
     for (final layer in session.layers) {
