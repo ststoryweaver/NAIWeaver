@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:archive/archive.dart' show ZLibDecoder;
 import 'package:image/image.dart' as img;
 
 /// Helper to inject metadata into PNG bytes.
@@ -28,11 +29,97 @@ Uint8List injectMetadata(Map<String, dynamic> data) {
 }
 
 /// Helper to extract metadata from PNG bytes.
+/// Custom chunk parser that reads both tEXt and iTXt chunks, since the
+/// `image` package's decodePng only reads tEXt.
 /// This runs in a separate isolate via compute.
 Map<String, String>? extractMetadata(Uint8List bytes) {
-  final image = img.decodePng(bytes);
-  if (image == null) return null;
-  return image.textData;
+  return _extractPngTextChunks(bytes);
+}
+
+/// Parses PNG tEXt and iTXt chunks directly from raw bytes.
+/// Returns null if the bytes are not a valid PNG or contain no text chunks.
+Map<String, String>? _extractPngTextChunks(Uint8List bytes) {
+  if (!isPng(bytes)) return null;
+
+  final result = <String, String>{};
+  var offset = 8; // Skip PNG signature
+
+  while (offset + 12 <= bytes.length) {
+    // Read chunk length (big-endian uint32)
+    final length = (bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3];
+    offset += 4;
+
+    // Read chunk type
+    if (offset + 4 > bytes.length) break;
+    final type = String.fromCharCodes(bytes, offset, offset + 4);
+    offset += 4;
+
+    // Validate remaining data
+    if (offset + length + 4 > bytes.length) break;
+
+    final chunkData =
+        Uint8List.sublistView(bytes, offset, offset + length);
+
+    if (type == 'tEXt') {
+      _parseTEXtChunk(chunkData, result);
+    } else if (type == 'iTXt') {
+      _parseITXtChunk(chunkData, result);
+    } else if (type == 'IEND') {
+      break;
+    }
+
+    offset += length + 4; // Skip data + CRC
+  }
+
+  return result.isEmpty ? null : result;
+}
+
+/// Parses a tEXt chunk: keyword \0 text (Latin-1 encoded).
+void _parseTEXtChunk(Uint8List data, Map<String, String> result) {
+  final nullIndex = data.indexOf(0);
+  if (nullIndex < 0) return;
+  final keyword = latin1.decode(data.sublist(0, nullIndex));
+  final text = latin1.decode(data.sublist(nullIndex + 1));
+  result[keyword] = text;
+}
+
+/// Parses an iTXt chunk:
+///   keyword \0 compressionFlag(1) compressionMethod(1)
+///   languageTag \0 translatedKeyword \0 text
+void _parseITXtChunk(Uint8List data, Map<String, String> result) {
+  final nullIndex = data.indexOf(0);
+  if (nullIndex < 0 || nullIndex + 2 >= data.length) return;
+
+  final keyword = utf8.decode(data.sublist(0, nullIndex));
+  final compressionFlag = data[nullIndex + 1];
+  // compressionMethod at data[nullIndex + 2] (0 = zlib)
+
+  // Find end of language tag
+  final langEnd = data.indexOf(0, nullIndex + 3);
+  if (langEnd < 0) return;
+
+  // Find end of translated keyword
+  final transEnd = data.indexOf(0, langEnd + 1);
+  if (transEnd < 0) return;
+
+  final textBytes = data.sublist(transEnd + 1);
+
+  String text;
+  if (compressionFlag == 1) {
+    try {
+      final decompressed = const ZLibDecoder().decodeBytes(textBytes);
+      text = utf8.decode(Uint8List.fromList(decompressed));
+    } catch (_) {
+      return; // Skip chunk if decompression fails
+    }
+  } else {
+    text = utf8.decode(textBytes, allowMalformed: true);
+  }
+
+  result[keyword] = text;
 }
 
 /// Strips all text metadata (Title, Description, Comment, etc.) from PNG bytes.
@@ -76,9 +163,8 @@ Uint8List? convertToPngPreservingMetadata(Map<String, dynamic> data) {
   final bytes = data['bytes'] as Uint8List;
   final originalBytes = data['originalBytes'] as Uint8List;
 
-  // Try to extract metadata from the original source
-  final origImage = img.decodePng(originalBytes);
-  final textData = origImage?.textData;
+  // Try to extract metadata from the original source (supports both tEXt and iTXt)
+  final textData = _extractPngTextChunks(originalBytes);
 
   // Decode the (possibly-transcoded) bytes
   final image = img.decodeImage(bytes);

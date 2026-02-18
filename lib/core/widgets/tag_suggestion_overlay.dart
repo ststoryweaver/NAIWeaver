@@ -37,6 +37,8 @@ class TagSuggestionOverlay extends StatelessWidget {
         return const Color(0xFF00BCD4);
       case 'wildcard_favorite':
         return const Color(0xFFFFD740);
+      case 'category_shortcut':
+        return const Color(0xFFFF5858);
       default:
         return Colors.white;
     }
@@ -109,14 +111,16 @@ class TagSuggestionOverlay extends StatelessWidget {
                                 shadows: const [Shadow(color: Colors.black54, blurRadius: 1)],
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              NumberFormat.compact().format(tag.count),
-                              style: TextStyle(
-                                color: color.withValues(alpha: 0.4),
-                                fontSize: t.fontSize(8),
+                            if (tag.typeName != 'category_shortcut') ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                NumberFormat.compact().format(tag.count),
+                                style: TextStyle(
+                                  color: color.withValues(alpha: 0.4),
+                                  fontSize: t.fontSize(8),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),

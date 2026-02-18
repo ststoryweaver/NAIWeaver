@@ -134,6 +134,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Auto-save your prompt, settings, and references for crash recovery';
 
   @override
+  String get settingsImg2ImgImportPrompt => 'Img2Img Import Prompt';
+
+  @override
+  String get settingsImg2ImgImportPromptDesc =>
+      'Auto-fill img2img prompt when selecting a source image with metadata';
+
+  @override
   String get settingsSaveToAlbum => 'Save to Album';
 
   @override
@@ -655,6 +662,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpShortcutFavCategories => 'Favorites by category';
 
   @override
+  String get helpShortcutArtistPrefix => 'Filter tag suggestions to artists';
+
+  @override
   String get helpShortcutSourceAction => 'Character performing action';
 
   @override
@@ -788,6 +798,9 @@ class AppLocalizationsEn extends AppLocalizations {
       '__name__ picks a random line from that wildcard file';
 
   @override
+  String get wildcardHelpDotSyntax => 'Use dots for multi-word names';
+
+  @override
   String get wildcardHelpBrowse =>
       'Type __ to browse and insert a wildcard from autocomplete';
 
@@ -809,28 +822,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wildcardModeRandom => 'RANDOM';
 
   @override
-  String get wildcardModeRandomDesc => 'Picks a random line each time the wildcard is used';
+  String get wildcardModeRandomDesc =>
+      'Picks a random line each time the wildcard is used';
 
   @override
   String get wildcardModeSequential => 'SEQUENTIAL';
 
   @override
-  String get wildcardModeSequentialDesc => 'Cycles through lines in order, looping back to the start';
+  String get wildcardModeSequentialDesc =>
+      'Cycles through lines in order, looping back to the start';
 
   @override
   String get wildcardModeShuffle => 'SHUFFLE';
 
   @override
-  String get wildcardModeShuffleDesc => 'Shuffles all lines randomly, then cycles through without repeats';
+  String get wildcardModeShuffleDesc =>
+      'Shuffles all lines randomly, then cycles through without repeats';
 
   @override
   String get wildcardModeWeighted => 'WEIGHTED';
 
   @override
-  String get wildcardModeWeightedDesc => 'Uses weight syntax (e.g. 10::option) to bias selection probability';
+  String get wildcardModeWeightedDesc =>
+      'Uses weight syntax (e.g. 10::option) to bias selection probability';
 
   @override
-  String get wildcardHelpFavorites => 'Favorited wildcards appear with a gold outline in tag completion';
+  String get wildcardHelpFavorites =>
+      'Favorited wildcards appear with a gold outline in tag completion';
 
   @override
   String get tagLibTitle => 'TAG LIBRARY';
@@ -1749,11 +1767,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get img2imgNoMask => 'NO MASK (full img2img)';
 
   @override
+  String get img2imgImportPrompt => 'Import Prompt';
+
+  @override
+  String get img2imgImportPromptDesc =>
+      'Auto-fill prompt from source image metadata';
+
+  @override
   String get img2imgUploadFromDevice => 'UPLOAD FROM DEVICE';
 
   @override
   String get img2imgUploadFromDeviceDesc =>
       'Pick an image from your photo library or files';
+
+  @override
+  String get img2imgBlankCanvas => 'BLANK CANVAS';
+
+  @override
+  String get img2imgBlankCanvasDesc => 'Create a blank image to draw on';
+
+  @override
+  String get img2imgBlankCanvasSize => 'CANVAS SIZE';
 
   @override
   String get slideshowTitle => 'SLIDESHOW';
@@ -1962,4 +1996,185 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsUpdateCheckFailed => 'Update check failed';
+
+  @override
+  String get mainAnlas => 'Anlas';
+
+  @override
+  String get settingsAnlasTracker => 'Anlas Tracker';
+
+  @override
+  String get settingsAnlasTrackerDesc =>
+      'Show your Anlas balance in the top bar';
+
+  @override
+  String get canvasEditorTitle => 'CANVAS EDITOR';
+
+  @override
+  String get canvasEditInCanvas => 'CANVAS';
+
+  @override
+  String get canvasPaint => 'PAINT';
+
+  @override
+  String get canvasErase => 'ERASE';
+
+  @override
+  String get canvasSize => 'SIZE';
+
+  @override
+  String get canvasOpacity => 'OPACITY';
+
+  @override
+  String get canvasUndo => 'Undo';
+
+  @override
+  String get canvasRedo => 'Redo';
+
+  @override
+  String get canvasClear => 'Clear all strokes';
+
+  @override
+  String get canvasFlatten => 'FLATTEN';
+
+  @override
+  String get canvasFlattenSend => 'FLATTEN & SEND';
+
+  @override
+  String get canvasBack => 'Back to img2img';
+
+  @override
+  String get canvasDiscardTitle => 'DISCARD CHANGES?';
+
+  @override
+  String get canvasDiscardMessage =>
+      'You have unsaved paint strokes. Discard them?';
+
+  @override
+  String get canvasDiscard => 'DISCARD';
+
+  @override
+  String canvasFlattenFailed(String error) {
+    return 'Flatten failed: $error';
+  }
+
+  @override
+  String get canvasFlattening => 'FLATTENING...';
+
+  @override
+  String get canvasRestoreSession =>
+      'A previous canvas session was found. Restore it?';
+
+  @override
+  String get canvasRestore => 'RESTORE';
+
+  @override
+  String get canvasAutoSave => 'Canvas Auto-Save';
+
+  @override
+  String get canvasAutoSaveDesc =>
+      'Auto-save canvas editing sessions for crash recovery';
+
+  @override
+  String get canvasColor => 'COLOR';
+
+  @override
+  String get canvasLayers => 'LAYERS';
+
+  @override
+  String get canvasLayerAdd => 'Add Layer';
+
+  @override
+  String get canvasLayerDelete => 'Delete Layer';
+
+  @override
+  String get canvasLayerDuplicate => 'Duplicate Layer';
+
+  @override
+  String get canvasLayerRename => 'Rename';
+
+  @override
+  String get canvasLayerVisible => 'Visible';
+
+  @override
+  String get canvasLayerHidden => 'Hidden';
+
+  @override
+  String get canvasLayerOpacity => 'Opacity';
+
+  @override
+  String get canvasLayerBlendMode => 'Blend';
+
+  @override
+  String get canvasLayerDeleteConfirm =>
+      'Delete this layer? Strokes will be lost.';
+
+  @override
+  String canvasLayerDefault(int number) {
+    return 'Layer $number';
+  }
+
+  @override
+  String get canvasLayerClear => 'Clear Layer';
+
+  @override
+  String get canvasLayerClearConfirm => 'Clear all strokes on this layer?';
+
+  @override
+  String get canvasLine => 'LINE';
+
+  @override
+  String get canvasRectangle => 'RECT';
+
+  @override
+  String get canvasCircle => 'CIRCLE';
+
+  @override
+  String get canvasEyedropper => 'PICK';
+
+  @override
+  String get canvasSmooth => 'SMOOTH';
+
+  @override
+  String get canvasFill => 'FILL';
+
+  @override
+  String get canvasText => 'TEXT';
+
+  @override
+  String get canvasTextHint => 'Enter text...';
+
+  @override
+  String get canvasTextSize => 'SIZE';
+
+  @override
+  String get canvasTextPlace => 'PLACE';
+
+  @override
+  String get canvasBlendNormal => 'Normal';
+
+  @override
+  String get canvasBlendMultiply => 'Multiply';
+
+  @override
+  String get canvasBlendScreen => 'Screen';
+
+  @override
+  String get canvasBlendOverlay => 'Overlay';
+
+  @override
+  String get settingsOutputFolder => 'Output Folder';
+
+  @override
+  String get settingsOutputFolderDesc =>
+      'Choose where generated images are saved';
+
+  @override
+  String get settingsOutputFolderDefault => 'Default (App Storage)';
+
+  @override
+  String get settingsOutputFolderBrowse => 'Browse';
+
+  @override
+  String get settingsOutputFolderClear => 'Clear';
 }

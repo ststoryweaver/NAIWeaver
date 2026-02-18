@@ -13,6 +13,8 @@ class TagSuggestionResult {
 
 /// Shared logic for tag auto-suggestion across prompt text fields.
 class TagSuggestionHelper {
+  static const _categoryPrefixes = {'artist:': 'artist'};
+
   /// Extracts the current word at the cursor and returns matching tag suggestions.
   ///
   /// When [supportFavorites] is true, `/f` shortcuts are recognized
@@ -66,6 +68,40 @@ class TagSuggestionHelper {
       );
     }
 
+    // Category prefix detection (e.g. "artist:moj" or "artist:")
+    final lowerWord = currentWord.toLowerCase();
+    for (final entry in _categoryPrefixes.entries) {
+      final prefix = entry.key;   // e.g. "artist:"
+      final category = entry.value; // e.g. "artist"
+
+      // Case 1: Full prefix typed (e.g. "artist:", "artist:moj")
+      if (lowerWord.startsWith(prefix)) {
+        final suffix = currentWord.substring(prefix.length);
+        return TagSuggestionResult(
+          suggestions: tagService.getTagsByCategory(suffix, category),
+          query: currentWord,
+        );
+      }
+
+      // Case 2: Partial prefix typed (e.g. "ar", "art", "artist")
+      if (currentWord.length >= 2 && prefix.startsWith(lowerWord)) {
+        final shortcut = DanbooruTag(
+          tag: prefix,
+          count: 0,
+          typeName: 'category_shortcut',
+        );
+        final List<DanbooruTag> results = [shortcut];
+        // Also include normal suggestions if >= 3 chars
+        if (currentWord.length >= 3) {
+          results.addAll(tagService.getSuggestions(currentWord));
+        }
+        return TagSuggestionResult(
+          suggestions: results,
+          query: currentWord,
+        );
+      }
+    }
+
     if (currentWord.length >= 3) {
       return TagSuggestionResult(
         suggestions: tagService.getSuggestions(currentWord),
@@ -92,7 +128,28 @@ class TagSuggestionHelper {
     final currentSection = beforeCursor.substring(lastDelimiter + 1);
     final spacer = currentSection.startsWith(' ') ? ' ' : '';
 
-    final newBeforeCursor = "$prefix$spacer${tag.tag}, ";
+    // Shortcut insertion (e.g. "artist:") — insert without trailing comma
+    if (tag.typeName == 'category_shortcut') {
+      final newBeforeCursor = "$prefix$spacer${tag.tag}";
+      controller.value = TextEditingValue(
+        text: newBeforeCursor + afterCursor,
+        selection: TextSelection.collapsed(offset: newBeforeCursor.length),
+      );
+      return;
+    }
+
+    // Category-prefix preservation: if the current word starts with a known
+    // prefix (e.g. "artist:"), prepend it to the inserted tag text.
+    final currentWord = currentSection.trimLeft().toLowerCase();
+    String categoryPrefix = '';
+    for (final entry in _categoryPrefixes.entries) {
+      if (currentWord.startsWith(entry.key)) {
+        categoryPrefix = entry.key;
+        break;
+      }
+    }
+
+    final newBeforeCursor = "$prefix$spacer$categoryPrefix${tag.tag}, ";
     controller.value = TextEditingValue(
       text: newBeforeCursor + afterCursor,
       selection: TextSelection.collapsed(offset: newBeforeCursor.length),

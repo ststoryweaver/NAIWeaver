@@ -177,6 +177,7 @@ List<_Shortcut> _getShortcuts(dynamic l) => [
   _Shortcut('__', l.helpShortcutWildcardBrowse),
   _Shortcut('/f', l.helpShortcutFavorites),
   _Shortcut('/fa /fc /fg /fr /fm', l.helpShortcutFavCategories),
+  _Shortcut('artist:', l.helpShortcutArtistPrefix),
   _Shortcut('Hold tap', l.helpShortcutHoldDismiss),
   _Shortcut('Enter', l.helpShortcutEnter),
   _Shortcut('Drag & drop PNG', l.helpShortcutDragDrop),

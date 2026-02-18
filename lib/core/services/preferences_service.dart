@@ -33,6 +33,11 @@ class PreferencesService {
   static const String _keySlideshowConfigs = 'slideshow_configs';
   static const String _keyDefaultSlideshowId = 'default_slideshow_id';
   static const String _keyLocale = 'app_locale';
+  static const String _keyFurryMode = 'furry_mode';
+  static const String _keyImg2ImgImportPrompt = 'img2img_import_prompt';
+  static const String _keyShowAnlasTracker = 'show_anlas_tracker';
+  static const String _keyCanvasAutoSave = 'canvas_auto_save';
+  static const String _keyCustomOutputDir = 'custom_output_dir';
 
   static const String _secureKeyApiKey = 'nai_api_key_secure';
 
@@ -267,6 +272,50 @@ class PreferencesService {
 
   Future<void> setLocale(String value) async {
     await _prefs.setString(_keyLocale, value);
+  }
+
+  // — Furry Mode —
+
+  bool get furryMode => _prefs.getBool(_keyFurryMode) ?? false;
+
+  Future<void> setFurryMode(bool value) async {
+    await _prefs.setBool(_keyFurryMode, value);
+  }
+
+  // — Img2Img Import Prompt —
+
+  bool get img2imgImportPrompt => _prefs.getBool(_keyImg2ImgImportPrompt) ?? true;
+
+  Future<void> setImg2ImgImportPrompt(bool value) async {
+    await _prefs.setBool(_keyImg2ImgImportPrompt, value);
+  }
+
+  // — Anlas Tracker —
+
+  bool get showAnlasTracker => _prefs.getBool(_keyShowAnlasTracker) ?? true;
+
+  Future<void> setShowAnlasTracker(bool value) async {
+    await _prefs.setBool(_keyShowAnlasTracker, value);
+  }
+
+  // — Canvas Auto-Save —
+
+  bool get canvasAutoSave => _prefs.getBool(_keyCanvasAutoSave) ?? true;
+
+  Future<void> setCanvasAutoSave(bool value) async {
+    await _prefs.setBool(_keyCanvasAutoSave, value);
+  }
+
+  // — Custom Output Directory —
+
+  String get customOutputDir => _prefs.getString(_keyCustomOutputDir) ?? '';
+
+  Future<void> setCustomOutputDir(String value) async {
+    if (value.isEmpty) {
+      await _prefs.remove(_keyCustomOutputDir);
+    } else {
+      await _prefs.setString(_keyCustomOutputDir, value);
+    }
   }
 
   // — Default Save Album —

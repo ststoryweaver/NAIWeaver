@@ -10,16 +10,18 @@ import 'package:path_provider/path_provider.dart';
 /// In release mode, uses the platform's application support directory.
 class PathService {
   final String baseDir;
+  String? outputDirOverride;
 
   PathService(this.baseDir);
 
-  String get outputDir => p.join(baseDir, 'output');
+  String get outputDir => outputDirOverride ?? p.join(baseDir, 'output');
   String get wildcardDir => p.join(baseDir, 'wildcards');
   String get tagFilePath => p.join(baseDir, 'Tags', 'high-frequency-tags-list.json');
   String get presetsFilePath => p.join(baseDir, 'presets.json');
   String get stylesFilePath => p.join(baseDir, 'prompt_styles.json');
   String get examplesDir => p.join(baseDir, 'Tags', 'Examples');
   String get referenceLibraryFilePath => p.join(baseDir, 'reference_library.json');
+  String get canvasSessionDir => p.join(baseDir, 'canvas_sessions');
 
   static Future<PathService> initialize() async {
     if (kIsWeb) return PathService('');
@@ -42,6 +44,7 @@ class PathService {
     await Directory(outputDir).create(recursive: true);
     await Directory(wildcardDir).create(recursive: true);
     await Directory(p.dirname(tagFilePath)).create(recursive: true);
+    await Directory(canvasSessionDir).create(recursive: true);
   }
 
   /// Copies bundled assets to app support directory if they don't already exist.

@@ -28,6 +28,7 @@ import 'features/gallery/providers/gallery_notifier.dart';
 import 'features/gallery/ui/gallery_screen.dart';
 import 'features/generation/widgets/character_shelf.dart';
 import 'features/tools/cascade/providers/cascade_notifier.dart';
+import 'features/tools/canvas/providers/canvas_notifier.dart';
 import 'features/tools/img2img/providers/img2img_notifier.dart';
 import 'features/tools/cascade/widgets/cascade_playback_view.dart';
 import 'features/director_ref/providers/director_ref_notifier.dart';
@@ -47,6 +48,9 @@ void main() {
   const secureStorage = FlutterSecureStorage();
   final preferencesService = PreferencesService(prefs, secureStorage);
   await preferencesService.migrateApiKey();
+
+  final customOut = preferencesService.customOutputDir;
+  if (customOut.isNotEmpty) paths.outputDirOverride = customOut;
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
@@ -117,6 +121,9 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => Img2ImgNotifier(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CanvasNotifier(),
         ),
         ChangeNotifierProvider(
           create: (_) {
@@ -325,6 +332,38 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
             elevation: 0,
             toolbarHeight: mobile ? 48 : 32,
             actions: [
+              if (state.anlas != null && context.read<PreferencesService>().showAnlasTracker)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: InkWell(
+                    onTap: () => notifier.fetchAnlas(),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: mobile ? 10 : 8, vertical: mobile ? 4 : 2),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: t.borderMedium),
+                        color: t.borderSubtle,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.toll, size: mobile ? 14 : 11, color: t.headerText),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${state.anlas}',
+                            style: TextStyle(
+                              color: t.headerText,
+                              fontSize: t.fontSize(mobile ? 10 : 8),
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               IconButton(
                 onPressed: () => showHelpDialog(context),
                 icon: Icon(Icons.help_outline, color: t.headerText, size: mobile ? 20 : 16),

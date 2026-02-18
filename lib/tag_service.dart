@@ -143,6 +143,45 @@ class TagService {
     return [...prefixMatches, ...wordMatches].take(limit).toList();
   }
 
+  List<DanbooruTag> getTagsByCategory(String query, String category, {int limit = 20}) {
+    if (!_isLoaded) return [];
+
+    final lowerCategory = category.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+
+    // Empty query → return all favorites in this category, sorted by count
+    if (lowerQuery.isEmpty) {
+      return _tags
+          .where((tag) => tag.isFavorite && tag.typeName.toLowerCase() == lowerCategory)
+          .toList();
+    }
+
+    // Non-empty query → prefix/contains matching within category, favorites first
+    final List<DanbooruTag> prefixMatches = [];
+    final List<DanbooruTag> wordMatches = [];
+
+    for (final tag in _tags) {
+      if (tag.typeName.toLowerCase() != lowerCategory) continue;
+      final lowerTag = tag.tag.toLowerCase();
+      if (lowerTag.startsWith(lowerQuery)) {
+        prefixMatches.add(tag);
+      } else if (lowerTag.contains(lowerQuery)) {
+        wordMatches.add(tag);
+      }
+    }
+
+    int compareTag(DanbooruTag a, DanbooruTag b) {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return b.count.compareTo(a.count);
+    }
+
+    prefixMatches.sort(compareTag);
+    wordMatches.sort(compareTag);
+
+    return [...prefixMatches, ...wordMatches].take(limit).toList();
+  }
+
   List<DanbooruTag> getFavorites({String? category}) {
     if (!_isLoaded) return [];
     

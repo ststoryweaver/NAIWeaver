@@ -58,7 +58,9 @@ class GenerationState {
   final bool brightTheme;
   final bool autoPositioning;
   final bool showEditButton;
+  final bool furryMode;
   final String? errorMessage;
+  final int? anlas;
 
   GenerationState({
     this.generatedImage,
@@ -90,7 +92,9 @@ class GenerationState {
     this.brightTheme = true,
     this.autoPositioning = false,
     this.showEditButton = true,
+    this.furryMode = false,
     this.errorMessage,
+    this.anlas,
   });
 
   GenerationState copyWith({
@@ -123,8 +127,11 @@ class GenerationState {
     bool? brightTheme,
     bool? autoPositioning,
     bool? showEditButton,
+    bool? furryMode,
     String? errorMessage,
     bool clearErrorMessage = false,
+    int? anlas,
+    bool clearAnlas = false,
   }) {
     return GenerationState(
       generatedImage: generatedImage ?? this.generatedImage,
@@ -156,7 +163,9 @@ class GenerationState {
       brightTheme: brightTheme ?? this.brightTheme,
       autoPositioning: autoPositioning ?? this.autoPositioning,
       showEditButton: showEditButton ?? this.showEditButton,
+      furryMode: furryMode ?? this.furryMode,
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
+      anlas: clearAnlas ? null : (anlas ?? this.anlas),
     );
   }
 }
@@ -170,7 +179,7 @@ class GenerationNotifier extends ChangeNotifier {
   late final TagService _tagService;
   late final WildcardService _wildcardService;
   final PreferencesService _prefs;
-  final String _outputDir;
+  String _outputDir;
   final String _presetsFilePath;
   final String _stylesFilePath;
   GalleryNotifier? _galleryNotifier;
@@ -234,6 +243,10 @@ class GenerationNotifier extends ChangeNotifier {
     notifier.updateService(_service);
   }
 
+  void setOutputDir(String dir) {
+    _outputDir = dir;
+  }
+
   Future<void> _loadInitialData() async {
     await _tagService.loadTags();
     await _wildcardService.refresh();
@@ -265,11 +278,20 @@ class GenerationNotifier extends ChangeNotifier {
       showVibeTransferShelf: _prefs.showVibeTransferShelf,
       brightTheme: _prefs.brightTheme,
       showEditButton: _prefs.showEditButton,
+      furryMode: _prefs.furryMode,
     );
     notifyListeners();
 
     await _restoreSessionSnapshot();
     _sessionReady = true;
+
+    fetchAnlas();
+  }
+
+  Future<void> fetchAnlas() async {
+    final balance = await _service.getAnlasBalance();
+    _state = _state.copyWith(anlas: balance, clearAnlas: balance == null);
+    notifyListeners();
   }
 
   Future<void> reloadPresetsAndStyles() async {
@@ -321,6 +343,11 @@ class GenerationNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setLoading(bool value) {
+    _state = _state.copyWith(isLoading: value);
+    notifyListeners();
+  }
+
   void setAutoPositioning(bool value) {
     _state = _state.copyWith(autoPositioning: value);
     notifyListeners();
@@ -359,7 +386,9 @@ class GenerationNotifier extends ChangeNotifier {
     List<String>? activeStyleNames,
     bool? isStyleEnabled,
     List<NaiCharacter>? characters,
+    bool? furryMode,
   }) {
+    if (furryMode != null) _prefs.setFurryMode(furryMode);
     _state = _state.copyWith(
       width: width,
       height: height,
@@ -373,6 +402,7 @@ class GenerationNotifier extends ChangeNotifier {
       activeStyleNames: activeStyleNames,
       isStyleEnabled: isStyleEnabled,
       characters: characters,
+      furryMode: furryMode,
     );
     notifyListeners();
   }
@@ -530,6 +560,10 @@ class GenerationNotifier extends ChangeNotifier {
         if (negatives.isNotEmpty) styleNegativeContent = negatives.join("");
       }
 
+      if (_state.furryMode) {
+        combinedPrefix = "fur dataset, ${combinedPrefix ?? ''}";
+      }
+
       String baseNegative = negativePromptController.text;
       if (_galleryNotifier?.demoMode == true) {
         final demoNeg = _prefs.demoNegativePrefix;
@@ -595,6 +629,7 @@ class GenerationNotifier extends ChangeNotifier {
     } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
+      fetchAnlas();
     }
   }
 
@@ -748,6 +783,48 @@ class GenerationNotifier extends ChangeNotifier {
               isStyleEnabled: false,
             );
           }
+
+          // Restore characters from V4 prompt metadata
+          final v4Prompt = settings['v4_prompt'];
+          final v4Negative = settings['v4_negative_prompt'];
+          if (v4Prompt is Map) {
+            final charCaptions = v4Prompt['caption']?['char_captions'];
+            if (charCaptions is List && charCaptions.isNotEmpty) {
+              final negCaption = (v4Negative is Map) ? v4Negative['caption'] : null;
+              final negCharCaptions = (negCaption is Map)
+                  ? negCaption['char_captions'] as List?
+                  : null;
+
+              final characters = <NaiCharacter>[];
+              for (int i = 0; i < charCaptions.length; i++) {
+                final cc = charCaptions[i] as Map<String, dynamic>;
+                final centers = cc['centers'] as List?;
+                final center = (centers != null && centers.isNotEmpty)
+                    ? NaiCoordinate.fromJson(
+                        Map<String, dynamic>.from(centers.first as Map))
+                    : NaiCoordinate(x: 0.5, y: 0.5);
+
+                String uc = '';
+                if (negCharCaptions != null && i < negCharCaptions.length) {
+                  uc = (negCharCaptions[i]
+                          as Map<String, dynamic>)['char_caption'] ??
+                      '';
+                }
+
+                characters.add(NaiCharacter(
+                  prompt: cc['char_caption'] ?? '',
+                  uc: uc,
+                  center: center,
+                ));
+              }
+
+              final useCoords = v4Prompt['use_coords'] as bool? ?? false;
+              _state = _state.copyWith(
+                characters: characters,
+                autoPositioning: !useCoords,
+              );
+            }
+          }
         }
       }
     } catch (e) {
@@ -874,8 +951,12 @@ class GenerationNotifier extends ChangeNotifier {
       final combinedNegative = [defaultNegativePrompt, request.negativePrompt]
           .where((s) => s.isNotEmpty).join(', ');
 
+      final cascadePrompt = _state.furryMode
+          ? "fur dataset, ${request.baseCaption}"
+          : request.baseCaption;
+
       final result = await _service.generateImage(
-        prompt: request.baseCaption,
+        prompt: cascadePrompt,
         negativePrompt: combinedNegative,
         width: request.width,
         height: request.height,
@@ -910,6 +991,7 @@ class GenerationNotifier extends ChangeNotifier {
     } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
+      fetchAnlas();
     }
   }
 
@@ -966,6 +1048,7 @@ class GenerationNotifier extends ChangeNotifier {
     } finally {
       _state = _state.copyWith(isLoading: false);
       notifyListeners();
+      fetchAnlas();
     }
   }
 
@@ -1019,6 +1102,7 @@ class GenerationNotifier extends ChangeNotifier {
         'auto_positioning': _state.autoPositioning,
         'active_style_names': _state.activeStyleNames,
         'is_style_enabled': _state.isStyleEnabled,
+        'furry_mode': _state.furryMode,
         'characters': _state.characters.map((c) => c.toJson()).toList(),
         'interactions': _state.interactions.map((i) => i.toJson()).toList(),
         'director_references': _directorRefNotifier?.references
@@ -1065,6 +1149,7 @@ class GenerationNotifier extends ChangeNotifier {
         activeStyleNames: (json['active_style_names'] as List<dynamic>?)
             ?.cast<String>().toList(),
         isStyleEnabled: json['is_style_enabled'] as bool?,
+        furryMode: json['furry_mode'] as bool?,
         characters: characters,
         interactions: interactions,
       );

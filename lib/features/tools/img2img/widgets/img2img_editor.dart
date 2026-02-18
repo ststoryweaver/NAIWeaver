@@ -5,6 +5,8 @@ import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../generation/providers/generation_notifier.dart';
+import '../../canvas/providers/canvas_notifier.dart';
+import '../../canvas/widgets/canvas_editor.dart';
 import '../providers/img2img_notifier.dart';
 import '../services/img2img_request_builder.dart';
 import 'mask_canvas.dart';
@@ -29,6 +31,7 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
   );
 
   bool _showResult = false;
+  bool _hadSession = false;
 
   @override
   void dispose() {
@@ -41,6 +44,19 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
   Widget build(BuildContext context) {
     final img2imgNotifier = context.watch<Img2ImgNotifier>();
     final genNotifier = context.watch<GenerationNotifier>();
+
+    // Sync controllers when a new session loads with pre-filled prompts
+    final hasSession = img2imgNotifier.hasSession;
+    if (hasSession && !_hadSession) {
+      final session = img2imgNotifier.session!;
+      if (session.prompt.isNotEmpty) {
+        _promptController.text = session.prompt;
+      }
+      if (session.negativePrompt.isNotEmpty) {
+        _negativePromptController.text = session.negativePrompt;
+      }
+    }
+    _hadSession = hasSession;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
@@ -289,24 +305,37 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
           ),
           const Spacer(),
 
-          // Result / Canvas toggle (only when result exists)
-          if (hasResult) ...[
+          // Edit in Canvas button (only when session exists)
+          if (session != null) ...[
             SizedBox(
               height: 36,
               child: TextButton.icon(
-                onPressed: () => setState(() => _showResult = !_showResult),
-                icon: Icon(
-                  _showResult ? Icons.brush : Icons.image,
-                  size: 14,
-                ),
-                label: Text(_showResult ? l.img2imgCanvas : l.img2imgResult),
+                onPressed: () => _openCanvasEditor(context, img2imgNotifier),
+                icon: Icon(Icons.palette, size: 14),
+                label: Text(l.canvasEditInCanvas),
                 style: TextButton.styleFrom(
-                  foregroundColor: t.textTertiary,
+                  foregroundColor: t.accentEdit,
                   textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
                 ),
               ),
             ),
             const SizedBox(width: 8),
+          ],
+
+          // Result / Canvas toggle (only when result exists)
+          if (hasResult) ...[
+            SizedBox(
+              height: 36,
+              child: IconButton(
+                onPressed: () => setState(() => _showResult = !_showResult),
+                icon: Icon(Icons.swap_horiz, size: 18),
+                tooltip: _showResult ? l.img2imgCanvas : l.img2imgResult,
+                style: IconButton.styleFrom(
+                  foregroundColor: t.textTertiary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
           ],
 
           // Generate button — icon-only on mobile when result toggle is visible
@@ -356,12 +385,31 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
     );
   }
 
+  void _openCanvasEditor(BuildContext context, Img2ImgNotifier img2imgNotifier) {
+    final session = img2imgNotifier.session;
+    if (session == null) return;
+
+    final canvasNotifier = context.read<CanvasNotifier>();
+    canvasNotifier.startSession(
+      session.sourceImageBytes,
+      session.sourceWidth,
+      session.sourceHeight,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CanvasEditor()),
+    );
+  }
+
   Future<void> _generate(
     Img2ImgNotifier img2imgNotifier,
     GenerationNotifier genNotifier,
   ) async {
     final session = img2imgNotifier.session;
     if (session == null) return;
+
+    genNotifier.setLoading(true);
 
     // Sync prompt text to session
     img2imgNotifier.setPrompt(_promptController.text);
@@ -390,6 +438,7 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
         setState(() => _showResult = true);
       }
     } catch (e) {
+      genNotifier.setLoading(false);
       debugPrint('Img2Img generate error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

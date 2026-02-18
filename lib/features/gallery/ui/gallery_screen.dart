@@ -1799,10 +1799,9 @@ class _ImageDetailViewState extends State<ImageDetailView>
                   duration: const Duration(milliseconds: 300),
                   child: IgnorePointer(
                     ignoring: !_showControls,
-                    child: Positioned.fill(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: Container(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
                           width: double.infinity,
                           padding: EdgeInsets.only(
                             top: topPadding + 8,
@@ -1919,7 +1918,6 @@ class _ImageDetailViewState extends State<ImageDetailView>
                               ),
                             ],
                           ),
-                        ),
                       ),
                     ),
                   ),
@@ -2019,7 +2017,21 @@ class _ImageDetailViewState extends State<ImageDetailView>
                                   onTap: () async {
                                     final bytes = await item.file.readAsBytes();
                                     if (!context.mounted) return;
-                                    context.read<Img2ImgNotifier>().loadSourceImage(bytes);
+                                    String? prompt;
+                                    String? negativePrompt;
+                                    final prefs = context.read<PreferencesService>();
+                                    if (prefs.img2imgImportPrompt) {
+                                      final metadata = extractMetadata(bytes);
+                                      if (metadata != null && metadata.containsKey('Comment')) {
+                                        final json = parseCommentJson(metadata['Comment']!);
+                                        if (json != null) {
+                                          prompt = json['prompt'] as String?;
+                                          negativePrompt = json['uc'] as String?;
+                                        }
+                                      }
+                                    }
+                                    if (!context.mounted) return;
+                                    context.read<Img2ImgNotifier>().loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt);
                                     Navigator.pop(context);
                                     Navigator.pop(context);
                                     Navigator.push(

@@ -46,7 +46,7 @@ class GalleryItem {
 }
 
 class GalleryNotifier extends ChangeNotifier {
-  final String outputDir;
+  String outputDir;
   final PreferencesService _prefs;
   List<GalleryItem> _items = [];
   bool _isLoading = false;
@@ -141,6 +141,11 @@ class GalleryNotifier extends ChangeNotifier {
     _demoSafe = _prefs.demoSafe;
     _demoMode = _prefs.demoMode;
     _loadAlbums();
+    refresh();
+  }
+
+  void setOutputDir(String dir) {
+    outputDir = dir;
     refresh();
   }
 

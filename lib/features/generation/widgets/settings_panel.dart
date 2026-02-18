@@ -388,6 +388,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
             _buildChipToggle("SMEA", state.smea, (v) => notifier.updateSettings(smea: v), t),
             _buildChipToggle("DYN", state.smeaDyn, (v) => notifier.updateSettings(smeaDyn: v), t),
             _buildChipToggle("CRISP", state.decrisper, (v) => notifier.updateSettings(decrisper: v), t),
+            _buildChipToggle("FURRY", state.furryMode, (v) => notifier.updateSettings(furryMode: v), t),
           ],
         ),
       ],

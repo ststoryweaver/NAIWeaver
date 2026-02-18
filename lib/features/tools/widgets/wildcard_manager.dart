@@ -431,6 +431,8 @@ class _WildcardManagerState extends State<WildcardManager> {
             children: [
               _helpRow(t, '__name__', l.wildcardHelpRandom),
               const SizedBox(height: 12),
+              _helpRow(t, '__summer.clothes__', l.wildcardHelpDotSyntax),
+              const SizedBox(height: 12),
               _helpRow(t, '__', l.wildcardHelpBrowse),
               const SizedBox(height: 16),
               Text(
@@ -579,8 +581,9 @@ class _WildcardManagerState extends State<WildcardManager> {
             ),
             TextButton(
               onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  notifier.createFile(nameController.text);
+                final sanitized = nameController.text.trim().replaceAll(' ', '.');
+                if (sanitized.isNotEmpty) {
+                  notifier.createFile(sanitized);
                   Navigator.pop(context);
                 }
               },

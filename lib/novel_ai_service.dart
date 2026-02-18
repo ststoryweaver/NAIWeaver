@@ -75,6 +75,31 @@ class NovelAIService {
     }
   }
 
+  /// Fetches the user's Anlas balance from the NovelAI user data API.
+  /// Returns null on failure (no API key, network error).
+  Future<int?> getAnlasBalance() async {
+    if (_apiKey.isEmpty) return null;
+    try {
+      final response = await _dio.get(
+        'https://api.novelai.net/user/subscription',
+        options: Options(headers: {'Authorization': 'Bearer $_apiKey'}),
+      );
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final steps = data['trainingStepsLeft'];
+        if (steps is int) return steps;
+        if (steps is Map<String, dynamic>) {
+          final fixed = steps['fixedTrainingStepsLeft'] as int? ?? 0;
+          final purchased = steps['purchasedTrainingSteps'] as int? ?? 0;
+          return fixed + purchased;
+        }
+      }
+    } catch (e) {
+      debugPrint('NovelAIService: Anlas fetch error: $e');
+    }
+    return null;
+  }
+
   /// Generates an image using the NAI Diffusion V4.5 model.
   ///
   /// For img2img: set [action] to `"img2img"`, provide [sourceImageBase64],

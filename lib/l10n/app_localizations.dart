@@ -338,6 +338,18 @@ abstract class AppLocalizations {
   /// **'Auto-save your prompt, settings, and references for crash recovery'**
   String get settingsRememberSessionDesc;
 
+  /// No description provided for @settingsImg2ImgImportPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Img2Img Import Prompt'**
+  String get settingsImg2ImgImportPrompt;
+
+  /// No description provided for @settingsImg2ImgImportPromptDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-fill img2img prompt when selecting a source image with metadata'**
+  String get settingsImg2ImgImportPromptDesc;
+
   /// No description provided for @settingsSaveToAlbum.
   ///
   /// In en, this message translates to:
@@ -1280,6 +1292,12 @@ abstract class AppLocalizations {
   /// **'Favorites by category'**
   String get helpShortcutFavCategories;
 
+  /// No description provided for @helpShortcutArtistPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter tag suggestions to artists'**
+  String get helpShortcutArtistPrefix;
+
   /// No description provided for @helpShortcutSourceAction.
   ///
   /// In en, this message translates to:
@@ -1519,6 +1537,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'__name__ picks a random line from that wildcard file'**
   String get wildcardHelpRandom;
+
+  /// No description provided for @wildcardHelpDotSyntax.
+  ///
+  /// In en, this message translates to:
+  /// **'Use dots for multi-word names'**
+  String get wildcardHelpDotSyntax;
 
   /// No description provided for @wildcardHelpBrowse.
   ///
@@ -3278,6 +3302,18 @@ abstract class AppLocalizations {
   /// **'NO MASK (full img2img)'**
   String get img2imgNoMask;
 
+  /// No description provided for @img2imgImportPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Prompt'**
+  String get img2imgImportPrompt;
+
+  /// No description provided for @img2imgImportPromptDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-fill prompt from source image metadata'**
+  String get img2imgImportPromptDesc;
+
   /// No description provided for @img2imgUploadFromDevice.
   ///
   /// In en, this message translates to:
@@ -3289,6 +3325,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick an image from your photo library or files'**
   String get img2imgUploadFromDeviceDesc;
+
+  /// No description provided for @img2imgBlankCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'BLANK CANVAS'**
+  String get img2imgBlankCanvas;
+
+  /// No description provided for @img2imgBlankCanvasDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a blank image to draw on'**
+  String get img2imgBlankCanvasDesc;
+
+  /// No description provided for @img2imgBlankCanvasSize.
+  ///
+  /// In en, this message translates to:
+  /// **'CANVAS SIZE'**
+  String get img2imgBlankCanvasSize;
 
   /// No description provided for @slideshowTitle.
   ///
@@ -3667,6 +3721,348 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update check failed'**
   String get settingsUpdateCheckFailed;
+
+  /// No description provided for @mainAnlas.
+  ///
+  /// In en, this message translates to:
+  /// **'Anlas'**
+  String get mainAnlas;
+
+  /// No description provided for @settingsAnlasTracker.
+  ///
+  /// In en, this message translates to:
+  /// **'Anlas Tracker'**
+  String get settingsAnlasTracker;
+
+  /// No description provided for @settingsAnlasTrackerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show your Anlas balance in the top bar'**
+  String get settingsAnlasTrackerDesc;
+
+  /// No description provided for @canvasEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'CANVAS EDITOR'**
+  String get canvasEditorTitle;
+
+  /// No description provided for @canvasEditInCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'CANVAS'**
+  String get canvasEditInCanvas;
+
+  /// No description provided for @canvasPaint.
+  ///
+  /// In en, this message translates to:
+  /// **'PAINT'**
+  String get canvasPaint;
+
+  /// No description provided for @canvasErase.
+  ///
+  /// In en, this message translates to:
+  /// **'ERASE'**
+  String get canvasErase;
+
+  /// No description provided for @canvasSize.
+  ///
+  /// In en, this message translates to:
+  /// **'SIZE'**
+  String get canvasSize;
+
+  /// No description provided for @canvasOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'OPACITY'**
+  String get canvasOpacity;
+
+  /// No description provided for @canvasUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get canvasUndo;
+
+  /// No description provided for @canvasRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get canvasRedo;
+
+  /// No description provided for @canvasClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all strokes'**
+  String get canvasClear;
+
+  /// No description provided for @canvasFlatten.
+  ///
+  /// In en, this message translates to:
+  /// **'FLATTEN'**
+  String get canvasFlatten;
+
+  /// No description provided for @canvasFlattenSend.
+  ///
+  /// In en, this message translates to:
+  /// **'FLATTEN & SEND'**
+  String get canvasFlattenSend;
+
+  /// No description provided for @canvasBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to img2img'**
+  String get canvasBack;
+
+  /// No description provided for @canvasDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'DISCARD CHANGES?'**
+  String get canvasDiscardTitle;
+
+  /// No description provided for @canvasDiscardMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved paint strokes. Discard them?'**
+  String get canvasDiscardMessage;
+
+  /// No description provided for @canvasDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'DISCARD'**
+  String get canvasDiscard;
+
+  /// No description provided for @canvasFlattenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flatten failed: {error}'**
+  String canvasFlattenFailed(String error);
+
+  /// No description provided for @canvasFlattening.
+  ///
+  /// In en, this message translates to:
+  /// **'FLATTENING...'**
+  String get canvasFlattening;
+
+  /// No description provided for @canvasRestoreSession.
+  ///
+  /// In en, this message translates to:
+  /// **'A previous canvas session was found. Restore it?'**
+  String get canvasRestoreSession;
+
+  /// No description provided for @canvasRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'RESTORE'**
+  String get canvasRestore;
+
+  /// No description provided for @canvasAutoSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Canvas Auto-Save'**
+  String get canvasAutoSave;
+
+  /// No description provided for @canvasAutoSaveDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-save canvas editing sessions for crash recovery'**
+  String get canvasAutoSaveDesc;
+
+  /// No description provided for @canvasColor.
+  ///
+  /// In en, this message translates to:
+  /// **'COLOR'**
+  String get canvasColor;
+
+  /// No description provided for @canvasLayers.
+  ///
+  /// In en, this message translates to:
+  /// **'LAYERS'**
+  String get canvasLayers;
+
+  /// No description provided for @canvasLayerAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Layer'**
+  String get canvasLayerAdd;
+
+  /// No description provided for @canvasLayerDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Layer'**
+  String get canvasLayerDelete;
+
+  /// No description provided for @canvasLayerDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Layer'**
+  String get canvasLayerDuplicate;
+
+  /// No description provided for @canvasLayerRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get canvasLayerRename;
+
+  /// No description provided for @canvasLayerVisible.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible'**
+  String get canvasLayerVisible;
+
+  /// No description provided for @canvasLayerHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get canvasLayerHidden;
+
+  /// No description provided for @canvasLayerOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Opacity'**
+  String get canvasLayerOpacity;
+
+  /// No description provided for @canvasLayerBlendMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Blend'**
+  String get canvasLayerBlendMode;
+
+  /// No description provided for @canvasLayerDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this layer? Strokes will be lost.'**
+  String get canvasLayerDeleteConfirm;
+
+  /// No description provided for @canvasLayerDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Layer {number}'**
+  String canvasLayerDefault(int number);
+
+  /// No description provided for @canvasLayerClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Layer'**
+  String get canvasLayerClear;
+
+  /// No description provided for @canvasLayerClearConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all strokes on this layer?'**
+  String get canvasLayerClearConfirm;
+
+  /// No description provided for @canvasLine.
+  ///
+  /// In en, this message translates to:
+  /// **'LINE'**
+  String get canvasLine;
+
+  /// No description provided for @canvasRectangle.
+  ///
+  /// In en, this message translates to:
+  /// **'RECT'**
+  String get canvasRectangle;
+
+  /// No description provided for @canvasCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'CIRCLE'**
+  String get canvasCircle;
+
+  /// No description provided for @canvasEyedropper.
+  ///
+  /// In en, this message translates to:
+  /// **'PICK'**
+  String get canvasEyedropper;
+
+  /// No description provided for @canvasSmooth.
+  ///
+  /// In en, this message translates to:
+  /// **'SMOOTH'**
+  String get canvasSmooth;
+
+  /// No description provided for @canvasFill.
+  ///
+  /// In en, this message translates to:
+  /// **'FILL'**
+  String get canvasFill;
+
+  /// No description provided for @canvasText.
+  ///
+  /// In en, this message translates to:
+  /// **'TEXT'**
+  String get canvasText;
+
+  /// No description provided for @canvasTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter text...'**
+  String get canvasTextHint;
+
+  /// No description provided for @canvasTextSize.
+  ///
+  /// In en, this message translates to:
+  /// **'SIZE'**
+  String get canvasTextSize;
+
+  /// No description provided for @canvasTextPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'PLACE'**
+  String get canvasTextPlace;
+
+  /// No description provided for @canvasBlendNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get canvasBlendNormal;
+
+  /// No description provided for @canvasBlendMultiply.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiply'**
+  String get canvasBlendMultiply;
+
+  /// No description provided for @canvasBlendScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen'**
+  String get canvasBlendScreen;
+
+  /// No description provided for @canvasBlendOverlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay'**
+  String get canvasBlendOverlay;
+
+  /// No description provided for @settingsOutputFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Output Folder'**
+  String get settingsOutputFolder;
+
+  /// No description provided for @settingsOutputFolderDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where generated images are saved'**
+  String get settingsOutputFolderDesc;
+
+  /// No description provided for @settingsOutputFolderDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default (App Storage)'**
+  String get settingsOutputFolderDefault;
+
+  /// No description provided for @settingsOutputFolderBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get settingsOutputFolderBrowse;
+
+  /// No description provided for @settingsOutputFolderClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get settingsOutputFolderClear;
 }
 
 class _AppLocalizationsDelegate

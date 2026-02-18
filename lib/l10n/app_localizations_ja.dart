@@ -132,6 +132,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsRememberSessionDesc => 'クラッシュ復旧のためにプロンプト、設定、参照を自動保存します';
 
   @override
+  String get settingsImg2ImgImportPrompt => 'Img2Imgプロンプトインポート';
+
+  @override
+  String get settingsImg2ImgImportPromptDesc =>
+      'メタデータ付きソース画像選択時にimg2imgプロンプトを自動入力';
+
+  @override
   String get settingsSaveToAlbum => 'アルバムに保存';
 
   @override
@@ -643,6 +650,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get helpShortcutFavCategories => 'カテゴリ別お気に入り';
 
   @override
+  String get helpShortcutArtistPrefix => 'タグ候補をアーティストに絞り込む';
+
+  @override
   String get helpShortcutSourceAction => 'アクションを実行するキャラクター';
 
   @override
@@ -765,6 +775,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get wildcardHelpRandom => '__name__ はそのワイルドカードファイルからランダムに1行選択します';
+
+  @override
+  String get wildcardHelpDotSyntax => 'ドットで複数単語の名前を作成';
 
   @override
   String get wildcardHelpBrowse => '__ と入力してオートコンプリートからワイルドカードを参照・挿入';
@@ -1720,10 +1733,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get img2imgNoMask => 'マスクなし（全体IMG2IMG）';
 
   @override
+  String get img2imgImportPrompt => 'プロンプトをインポート';
+
+  @override
+  String get img2imgImportPromptDesc => 'ソース画像のメタデータからプロンプトを自動入力';
+
+  @override
   String get img2imgUploadFromDevice => 'デバイスからアップロード';
 
   @override
   String get img2imgUploadFromDeviceDesc => 'フォトライブラリまたはファイルから画像を選択';
+
+  @override
+  String get img2imgBlankCanvas => '白紙キャンバス';
+
+  @override
+  String get img2imgBlankCanvasDesc => '描画用の白紙画像を作成';
+
+  @override
+  String get img2imgBlankCanvasSize => 'キャンバスサイズ';
 
   @override
   String get slideshowTitle => 'スライドショー';
@@ -1931,4 +1959,179 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsUpdateCheckFailed => 'アップデートの確認に失敗しました';
+
+  @override
+  String get mainAnlas => 'Anlas';
+
+  @override
+  String get settingsAnlasTracker => 'Anlasトラッカー';
+
+  @override
+  String get settingsAnlasTrackerDesc => 'トップバーにAnlas残高を表示します';
+
+  @override
+  String get canvasEditorTitle => 'キャンバスエディタ';
+
+  @override
+  String get canvasEditInCanvas => 'キャンバス';
+
+  @override
+  String get canvasPaint => 'ペイント';
+
+  @override
+  String get canvasErase => '消しゴム';
+
+  @override
+  String get canvasSize => 'サイズ';
+
+  @override
+  String get canvasOpacity => '不透明度';
+
+  @override
+  String get canvasUndo => '元に戻す';
+
+  @override
+  String get canvasRedo => 'やり直し';
+
+  @override
+  String get canvasClear => 'すべてのストロークをクリア';
+
+  @override
+  String get canvasFlatten => '統合';
+
+  @override
+  String get canvasFlattenSend => '統合して送信';
+
+  @override
+  String get canvasBack => 'IMG2IMGに戻る';
+
+  @override
+  String get canvasDiscardTitle => '変更を破棄しますか？';
+
+  @override
+  String get canvasDiscardMessage => '保存されていないペイントストロークがあります。破棄しますか？';
+
+  @override
+  String get canvasDiscard => '破棄';
+
+  @override
+  String canvasFlattenFailed(String error) {
+    return '統合に失敗しました: $error';
+  }
+
+  @override
+  String get canvasFlattening => '統合中...';
+
+  @override
+  String get canvasRestoreSession => '前回のキャンバスセッションが見つかりました。復元しますか？';
+
+  @override
+  String get canvasRestore => '復元';
+
+  @override
+  String get canvasAutoSave => 'キャンバス自動保存';
+
+  @override
+  String get canvasAutoSaveDesc => 'クラッシュ復旧のためにキャンバス編集セッションを自動保存します';
+
+  @override
+  String get canvasColor => 'カラー';
+
+  @override
+  String get canvasLayers => 'レイヤー';
+
+  @override
+  String get canvasLayerAdd => 'レイヤー追加';
+
+  @override
+  String get canvasLayerDelete => 'レイヤー削除';
+
+  @override
+  String get canvasLayerDuplicate => 'レイヤー複製';
+
+  @override
+  String get canvasLayerRename => '名前変更';
+
+  @override
+  String get canvasLayerVisible => '表示';
+
+  @override
+  String get canvasLayerHidden => '非表示';
+
+  @override
+  String get canvasLayerOpacity => '不透明度';
+
+  @override
+  String get canvasLayerBlendMode => 'ブレンド';
+
+  @override
+  String get canvasLayerDeleteConfirm => 'このレイヤーを削除しますか？ストロークは失われます。';
+
+  @override
+  String canvasLayerDefault(int number) {
+    return 'レイヤー $number';
+  }
+
+  @override
+  String get canvasLayerClear => 'レイヤークリア';
+
+  @override
+  String get canvasLayerClearConfirm => 'このレイヤーのストロークをすべてクリアしますか？';
+
+  @override
+  String get canvasLine => 'ライン';
+
+  @override
+  String get canvasRectangle => '四角';
+
+  @override
+  String get canvasCircle => '円';
+
+  @override
+  String get canvasEyedropper => 'スポイト';
+
+  @override
+  String get canvasSmooth => 'スムーズ';
+
+  @override
+  String get canvasFill => '塗りつぶし';
+
+  @override
+  String get canvasText => 'テキスト';
+
+  @override
+  String get canvasTextHint => 'テキストを入力...';
+
+  @override
+  String get canvasTextSize => 'サイズ';
+
+  @override
+  String get canvasTextPlace => '配置';
+
+  @override
+  String get canvasBlendNormal => '通常';
+
+  @override
+  String get canvasBlendMultiply => '乗算';
+
+  @override
+  String get canvasBlendScreen => 'スクリーン';
+
+  @override
+  String get canvasBlendOverlay => 'オーバーレイ';
+
+  @override
+  String get settingsOutputFolder => '出力フォルダ';
+
+  @override
+  String get settingsOutputFolderDesc => '生成した画像の保存先を選択します';
+
+  @override
+  String get settingsOutputFolderDefault => 'デフォルト（アプリストレージ）';
+
+  @override
+  String get settingsOutputFolderBrowse => '参照';
+
+  @override
+  String get settingsOutputFolderClear => 'クリア';
 }

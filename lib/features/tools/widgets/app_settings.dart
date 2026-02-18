@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -6,9 +7,11 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/l10n/locale_notifier.dart';
+import '../../../core/services/path_service.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/update_service.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/pin_lock_gate.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../../generation/providers/generation_notifier.dart';
@@ -67,10 +70,16 @@ class _AppSettingsState extends State<AppSettings> {
           _buildHeader(l.settingsGeneralSettings.toUpperCase(), t),
           const SizedBox(height: 16),
           _buildAutoSaveToggle(notifier, state.autoSaveImages, t),
+          if (isDesktopPlatform()) ...[
+            const SizedBox(height: 12),
+            _buildOutputFolderRow(t),
+          ],
           const SizedBox(height: 12),
           _buildSmartStyleImportToggle(t),
           const SizedBox(height: 12),
           _buildRememberSessionToggle(t),
+          const SizedBox(height: 12),
+          _buildImg2ImgImportPromptToggle(t),
           const SizedBox(height: 12),
           _buildDefaultSaveAlbumDropdown(t),
           const SizedBox(height: 12),
@@ -78,6 +87,8 @@ class _AppSettingsState extends State<AppSettings> {
           const SizedBox(height: 32),
           _buildHeader(l.settingsUiSettings.toUpperCase(), t),
           const SizedBox(height: 16),
+          _buildAnlasTrackerToggle(t),
+          const SizedBox(height: 12),
           _buildShelfToggle(
             label: l.settingsEditButton.toUpperCase(),
             description: l.settingsEditButtonDesc,
@@ -214,6 +225,112 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
+  Widget _buildOutputFolderRow(dynamic t) {
+    final prefs = context.read<PreferencesService>();
+    final l = context.l;
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        final customDir = prefs.customOutputDir;
+        final hasCustom = customDir.isNotEmpty;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l.settingsOutputFolder.toUpperCase(),
+              style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l.settingsOutputFolderDesc,
+              style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: t.borderMedium),
+                      borderRadius: BorderRadius.circular(4),
+                      color: t.borderSubtle,
+                    ),
+                    child: Text(
+                      hasCustom ? customDir : l.settingsOutputFolderDefault,
+                      style: TextStyle(
+                        color: hasCustom ? t.headerText : t.textDisabled,
+                        fontSize: t.fontSize(10),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () async {
+                    final dir = await FilePicker.platform.getDirectoryPath();
+                    if (dir != null && context.mounted) {
+                      await prefs.setCustomOutputDir(dir);
+                      if (!context.mounted) return;
+                      final paths = context.read<PathService>();
+                      paths.outputDirOverride = dir;
+                      await paths.ensureDirectories();
+                      if (!context.mounted) return;
+                      context.read<GalleryNotifier>().setOutputDir(dir);
+                      context.read<GenerationNotifier>().setOutputDir(dir);
+                      setLocalState(() {});
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: t.borderMedium),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      l.settingsOutputFolderBrowse.toUpperCase(),
+                      style: TextStyle(
+                        color: t.secondaryText,
+                        fontSize: t.fontSize(9),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                if (hasCustom) ...[
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: () async {
+                      await prefs.setCustomOutputDir('');
+                      if (!context.mounted) return;
+                      final paths = context.read<PathService>();
+                      paths.outputDirOverride = null;
+                      final defaultDir = paths.outputDir;
+                      context.read<GalleryNotifier>().setOutputDir(defaultDir);
+                      context.read<GenerationNotifier>().setOutputDir(defaultDir);
+                      setLocalState(() {});
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: t.borderMedium),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Icon(Icons.close, size: 14, color: t.textDisabled),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildStripMetadataToggle(dynamic t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
@@ -291,6 +408,46 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
+  Widget _buildAnlasTrackerToggle(dynamic t) {
+    final prefs = context.read<PreferencesService>();
+    final l = context.l;
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.settingsAnlasTracker.toUpperCase(),
+                    style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l.settingsAnlasTrackerDesc,
+                    style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: prefs.showAnlasTracker,
+              onChanged: (val) async {
+                await prefs.setShowAnlasTracker(val);
+                setLocalState(() {});
+              },
+              activeThumbColor: t.accent,
+              activeTrackColor: t.borderStrong,
+              inactiveThumbColor: t.textDisabled,
+              inactiveTrackColor: t.borderSubtle,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildSmartStyleImportToggle(dynamic t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
@@ -362,6 +519,46 @@ class _AppSettingsState extends State<AppSettings> {
                 if (!val) {
                   gen.deleteSessionSnapshot();
                 }
+                setLocalState(() {});
+              },
+              activeThumbColor: t.accent,
+              activeTrackColor: t.borderStrong,
+              inactiveThumbColor: t.textDisabled,
+              inactiveTrackColor: t.borderSubtle,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildImg2ImgImportPromptToggle(dynamic t) {
+    final prefs = context.read<PreferencesService>();
+    final l = context.l;
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.settingsImg2ImgImportPrompt.toUpperCase(),
+                    style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l.settingsImg2ImgImportPromptDesc,
+                    style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: prefs.img2imgImportPrompt,
+              onChanged: (val) async {
+                await prefs.setImg2ImgImportPrompt(val);
                 setLocalState(() {});
               },
               activeThumbColor: t.accent,

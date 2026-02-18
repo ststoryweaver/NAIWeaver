@@ -23,7 +23,7 @@ class WildcardProcessor {
 
     while (hasChanged && depth < maxDepth) {
       hasChanged = false;
-      final matches = RegExp(r'__([a-zA-Z0-9_-]+)__').allMatches(processedPrompt).toList();
+      final matches = RegExp(r'__([a-zA-Z0-9_.\-]+)__').allMatches(processedPrompt).toList();
 
       if (matches.isEmpty) break;
 

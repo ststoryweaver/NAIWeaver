@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
+import '../../../../core/services/preferences_service.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/theme/vision_tokens.dart';
 import '../providers/img2img_notifier.dart';
@@ -124,6 +125,42 @@ class _Img2ImgSettingsPanelState extends State<Img2ImgSettingsPanel> {
                   inactiveTrackColor: t.textMinimal,
                 ),
               ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Import prompt toggle
+            StatefulBuilder(
+              builder: (context, setLocalState) {
+                final prefs = context.read<PreferencesService>();
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(l.img2imgImportPrompt.toUpperCase(), style: _labelStyle(t)),
+                          Text(
+                            l.img2imgImportPromptDesc,
+                            style: TextStyle(color: t.textMinimal, fontSize: t.fontSize(8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: prefs.img2imgImportPrompt,
+                      onChanged: (val) async {
+                        await prefs.setImg2ImgImportPrompt(val);
+                        setLocalState(() {});
+                      },
+                      activeThumbColor: t.textPrimary,
+                      activeTrackColor: t.textDisabled,
+                      inactiveThumbColor: t.textDisabled,
+                      inactiveTrackColor: t.textMinimal,
+                    ),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 16),
