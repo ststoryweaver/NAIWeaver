@@ -1,5 +1,67 @@
 # Changelog
 
+## Unreleased
+
+### Img2Img
+- Save original source image (`Src_*.png`) alongside img2img generation result (`Gen_*.png`) with matching timestamps
+
+---
+
+## v0.3.0 — Canvas Editor, Anlas Tracker & Furry Mode
+
+### Canvas Editor
+- Multi-layer canvas editor with paint, erase, shapes (rect, circle, line), fill, text, and eyedropper tools
+- Layer management: add, delete, reorder, visibility toggle, opacity control
+- Flatten-to-PNG for seamless img2img pipeline integration
+- Blank canvas option in img2img source picker
+
+### Generation
+- Anlas balance tracker in app bar with auto-refresh after generation
+- Furry mode toggle (fur dataset prefix) for txt2img and Cascade generation
+- Custom output folder setting for desktop platforms
+
+### Img2Img
+- Prompt auto-import from PNG metadata (tEXt + iTXt chunks) when loading source image
+- V4 character restoration from imported generation parameters
+
+### Prompt Engineering
+- Artist: category prefix for tag autocomplete filtering
+- Support dot syntax in wildcard filenames
+
+### Fixes
+- PNG metadata extraction for iTXt chunks with zlib compression
+- Gallery image detail view layout
+
+---
+
+## v0.2.0 — Wildcard Modes, Update Checker & Platform Expansion
+
+### Generation
+- Replaced ddim sampler with k_euler
+
+### Prompt Engineering
+- Cascade tag autocompletion in Director View and Playback View
+- Style reordering and expandable style chips layout
+
+### Wildcard Manager
+- Per-file randomization modes: random, sequential, shuffle, weighted
+- Drag-to-reorder with persistent custom ordering
+- Help dialog
+
+### Infrastructure
+- Release signing for APK (`key.properties` with debug fallback)
+- In-app update checker via GitHub releases API
+- Linux AppImage build and CI job
+- Japanese web build with separate `/ja/` deployment
+
+### Fixes
+- Blank white screen on web (kIsWeb guards)
+- Overlapping brush stroke opacity in inpainting mask
+- Android gallery import stripping PNG metadata
+- Linux AppImage missing libsecret-1-dev dependency
+
+---
+
 ## v0.1.0 — Initial Open-Source Release
 
 First public release of NAIWeaver, a cross-platform frontend for NovelAI's image generation API. Previously developed as an internal tool (nai_terminal_v2), this release marks the transition to an open-source project with a clean repository history.

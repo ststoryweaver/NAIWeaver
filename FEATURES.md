@@ -2,8 +2,10 @@
 
 ## Core Generation
 - **Text-to-Image**: Full NovelAI Diffusion V4.5 generation with prompt/negative prompt, configurable dimensions, steps, scale, sampler selection
-- **Img2Img / Inpainting**: Source image transformation with strength/noise controls, client-side mask compositing for selective inpainting
+- **Img2Img / Inpainting**: Source image transformation with strength/noise controls, client-side mask compositing for selective inpainting, canvas editor integration
 - **Img2Img Iterative Workflow**: "Use Result as Source" button to feed the current generation back as the img2img source for iterative refinement
+- **Img2Img Prompt Auto-Import**: Automatically extract and apply prompt from PNG metadata (tEXt + iTXt chunks) when loading a source image
+- **Custom Output Folder**: Configurable output directory for desktop platforms (Windows, Linux)
 - **Multi-Character Generation**: Up to 6 characters with independent prompts, negative prompts, and pixel-coordinate positioning via `char_captions` and `use_coords`
 - **Character Interactions**: Typed interaction tags (`source#action`, `target#action`, `mutual#action`) automatically injected into character captions
 - **Seed Control**: Manual seed input with randomization toggle for reproducible or varied generations
@@ -16,23 +18,27 @@
 - **Danbooru Tag Library**: 300+ post-count tag database with intelligent auto-suggest and auto-completion as you type
 - **Tag Library Visual Examples**: Generate and save example images per tag with thumbnail previews for quick visual reference
 - **Tag Library Preview Settings**: Customizable generation parameters for tag test generations
-- **Wildcard System**: `__pattern__` syntax replaced with random lines from corresponding wildcard files, supports recursive expansion up to 5 levels
+- **Wildcard System**: `__pattern__` syntax replaced with random lines from corresponding wildcard files, supports recursive expansion up to 5 levels and dot syntax in filenames
 - **Wildcard Favorites**: Star system for marking frequently-used wildcards for quick access
+- **Wildcard Randomization Modes**: Per-file randomization modes — random, sequential, shuffle, and weighted — for fine-grained control over wildcard expansion
+- **Wildcard Drag-to-Reorder**: Persistent custom ordering for the wildcard file list via drag-to-reorder
 - **Prompt Styles**: Reusable prefix/suffix/negative templates that wrap around your prompt. Multiple styles can be active simultaneously.
 - **Style Defaults**: Mark styles as auto-selected on application launch
+- **Style Reordering**: Drag-to-reorder active styles with expandable style chips layout
+- **Artist Tag Category**: `artist:` prefix filtering in tag autocomplete for targeted artist searches
 
 ## Tools Hub (11 Tools)
-- **Wildcard Manager**: Browse, create, edit, and delete wildcard files with live preview and favorites
+- **Wildcard Manager**: Browse, create, edit, and delete wildcard files with live preview, favorites, per-file randomization modes, and drag-to-reorder
 - **Tag Library Manager**: Search, browse, favorite, and preview tags with inline image generation and visual examples
 - **Preset Manager**: Full preset editor with inline sliders, character/interaction editing, and reference management
 - **Style Editor**: Create and edit prompt style templates with prefix, suffix, and negative content
 - **Reference Manager**: Add, configure, and manage Director Reference images with type/strength/fidelity controls
 - **Cascade Editor**: Multi-beat sequential scene generation with character slots, environment tags, and prompt stitching
-- **Img2Img Editor**: Source image loading, brush-based mask painting, strength/noise controls, client-side inpainting
+- **Img2Img Editor**: Source image loading, multi-layer canvas editor integration, blank canvas option, brush-based mask painting, strength/noise controls, client-side inpainting
 - **Slideshow**: Configurable image slideshow player with transition timing, Ken Burns (pan/zoom) effect, and source selection from gallery or specific albums
 - **Packs**: Export and import NAIWeaver Packs (`.vpack` files) containing presets, styles, wildcards, and director reference images as portable ZIP archives
 - **Theme Builder**: Full theme customization with 8 built-in themes, custom user themes, color picker, font selector, text scale slider, bright mode toggle, and live preview
-- **Settings**: API key management, auto-save toggle, shelf visibility toggle (Director Reference, Vibe Transfer), locale selection
+- **Settings**: API key management, auto-save toggle, shelf visibility toggle (Director Reference, Vibe Transfer), custom output folder (desktop), locale selection
 
 ## Cascade System
 - **Multi-Beat Scenes**: Define sequential beats with character slots, environment tags, and per-beat prompts
@@ -40,6 +46,24 @@
 - **Character Appearance Casting**: Define a character's look once and reuse across multiple beats
 - **Cascade Library**: Save and load cascade configurations via SharedPreferences
 - **Cascade Playback View**: Inline beat-by-beat playback overlay for cascade mode
+
+## Canvas Editor
+- **Multi-Layer Canvas**: Full canvas editor with layer management — add, delete, reorder layers, per-layer visibility toggle and opacity control
+- **Drawing Tools**: Paint brush, eraser, shapes (rectangle, circle, line), fill bucket, and text tool
+- **Eyedropper**: Pick colors from the canvas for precise color matching
+- **Flatten-to-PNG**: Merge all visible layers into a single PNG for seamless img2img pipeline integration
+- **Blank Canvas Option**: Start from a blank canvas in the img2img source picker instead of loading an existing image
+- **Img2Img Source Image Save**: Automatically save the source drawing (`Src_*.png`) alongside the generated result (`Gen_*.png`) with matching timestamps
+
+## Anlas Balance Tracker
+- **Real-Time Anlas Display**: Current Anlas balance shown in the app bar
+- **Auto-Refresh**: Balance automatically updates after each generation
+
+## Furry Mode
+- **Fur Dataset Prefix Toggle**: Enable fur dataset prefix for txt2img and Cascade generation to target the furry model
+
+## In-App Update Checker
+- **GitHub Releases Integration**: Check for new NAIWeaver versions via the GitHub releases API with in-app notification
 
 ## Slideshow
 - **Configurable Slideshow Player**: Full-screen image slideshow with customizable transition duration
@@ -76,6 +100,10 @@
 - **Extensible via ARB Files**: Add new languages by creating a new `.arb` file in `lib/l10n/` and running the Flutter localization generator
 - **Locale Persistence**: Selected language saved across sessions via SharedPreferences
 - **Full UI Coverage**: All tool names, labels, buttons, and messages are localized
+
+## Linux Support
+- **AppImage Build**: Linux desktop support via AppImage distribution
+- **CI/CD Integration**: Automated Linux AppImage builds via GitHub Actions
 
 ## Android / Mobile Support
 - **Responsive Layouts**: Adaptive UI that switches between desktop (sidebar, row layouts) and mobile (drawers, column stacking) based on platform

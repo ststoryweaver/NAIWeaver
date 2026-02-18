@@ -45,7 +45,7 @@ lib/
     │   ├── models/
     │   │   └── nai_character.dart          # NaiCharacter, NaiInteraction, NaiCoordinate models
     │   ├── providers/
-    │   │   └── generation_notifier.dart    # Central business logic (~850 lines)
+    │   │   └── generation_notifier.dart    # Central business logic (~1200 lines)
     │   └── widgets/
     │       ├── settings_panel.dart         # Collapsible advanced settings panel
     │       ├── image_viewer.dart           # Interactive image display with zoom
@@ -106,6 +106,23 @@ lib/
         │       ├── cascade_editor.dart     # Timeline editor UI
         │       ├── cascade_playback_view.dart  # Main-screen playback overlay
         │       └── ...                     # Director, beat editor, etc.
+        ├── canvas/                        # Multi-layer canvas editor
+        │   ├── models/
+        │   │   ├── canvas_action.dart      # Undo/redo action models
+        │   │   ├── canvas_layer.dart       # Layer model (visibility, opacity)
+        │   │   ├── canvas_session.dart     # Canvas session state
+        │   │   └── paint_stroke.dart       # Paint stroke data model
+        │   ├── providers/
+        │   │   └── canvas_notifier.dart    # Canvas state management (layers, tools, colors)
+        │   ├── services/
+        │   │   ├── canvas_flatten_service.dart      # Flatten visible layers to PNG
+        │   │   └── canvas_persistence_service.dart  # Canvas session persistence
+        │   └── widgets/
+        │       ├── canvas_color_picker.dart  # Canvas-specific color picker
+        │       ├── canvas_editor.dart       # Main canvas editor UI
+        │       ├── canvas_paint_surface.dart # Drawing surface with gesture handling
+        │       ├── canvas_toolbar.dart      # Tool selection toolbar
+        │       └── layer_panel.dart         # Layer management panel
         ├── img2img/                       # Img2Img editor
         │   ├── providers/
         │   │   └── img2img_notifier.dart   # Source/mask state management
@@ -137,6 +154,7 @@ DirectorRefNotifier          (standalone)
 VibeTransferNotifier         (standalone)
 SlideshowNotifier            (standalone — manages slideshow configs)
 CascadeNotifier              (standalone)
+CanvasNotifier               (standalone — manages canvas layers, tools, drawing state)
 Img2ImgNotifier              (standalone)
 GenerationNotifier           (depends on: GalleryNotifier, DirectorRefNotifier, VibeTransferNotifier)
   └── via ChangeNotifierProxyProvider3
@@ -184,11 +202,14 @@ The Tools Hub sidebar defines tool items in a `_getTools()` method returning a l
 9. Image saved to `output/` folder, `GalleryNotifier` picks it up
 
 ### Img2Img / Inpainting
-1. Source image loaded into `Img2ImgNotifier` (from file or last generation)
-2. User paints mask on canvas with brush tools
-3. `Img2ImgRequestBuilder` constructs request with base64 source, mask, strength, noise
-4. `GenerationNotifier.generateImg2Img()` sends with `action: 'img2img'`
-5. Client-side mask compositing blends original and generated images per-pixel
+1. Source image loaded into `Img2ImgNotifier` (from file, last generation, or canvas editor)
+2. If using canvas: `CanvasNotifier` manages multi-layer drawing state; `CanvasFlattenService` merges visible layers to PNG
+3. PNG metadata auto-imported to populate prompt fields (tEXt + iTXt chunk extraction)
+4. User paints mask on canvas with brush tools
+5. `Img2ImgRequestBuilder` constructs request with base64 source, mask, strength, noise
+6. `GenerationNotifier.generateImg2Img()` sends with `action: 'img2img'`
+7. Client-side mask compositing blends original and generated images per-pixel
+8. Original source image saved as `Src_*.png` alongside generated `Gen_*.png` with matching timestamps
 
 ### Cascade Generation
 1. User defines beats in Cascade Editor with characters, environment tags, styles

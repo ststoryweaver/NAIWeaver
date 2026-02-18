@@ -4,7 +4,7 @@
 
 # NAIWeaver
 
-An unofficial cross-platform frontend for NovelAI's image generation API (Diffusion V4.5). Built with Flutter for Windows, Android, and Web.
+An unofficial cross-platform frontend for NovelAI's image generation API (Diffusion V4.5). Built with Flutter for Windows, Linux, Android, and Web.
 
 Check out the github page to test it out, https://ststoryweaver.github.io/NAIWeaver/
 
@@ -13,6 +13,10 @@ Check out the github page to test it out, https://ststoryweaver.github.io/NAIWea
 ### Image Generation
 - NovelAI V4.5 API integration (txt2img, img2img, inpainting, precise reference, vibe transfer, multiple characters)
 - Multi-character generation with pixel-level positioning and interactions
+- Multi-layer canvas editor for img2img source creation (paint, erase, shapes, text, layers)
+- Anlas balance tracker in app bar with auto-refresh after generation
+- Furry mode toggle for fur dataset prefix in txt2img and Cascade
+- In-app update checker via GitHub releases API
 - PNG metadata round-trip — settings embedded in images, re-importable via drag-and-drop
 - Seed control with randomization toggle for reproducible generations
 
@@ -42,7 +46,7 @@ WIP sequential scene generation. Define setting, placement, actions, emotion, an
 | **Style Editor** | Prompt style templates with prefix, suffix, and negative content |
 | **Reference Manager** | Director Reference management with type, strength, and fidelity controls |
 | **Cascade Editor** | Multi-beat sequential scene generation with character slots and prompt stitching |
-| **Img2Img Editor** | Source image loading, brush-based mask painting, and inpainting |
+| **Img2Img Editor** | Source image loading, canvas editor, brush-based mask painting, and inpainting |
 | **Slideshow** | Configurable image slideshow with transitions and Ken Burns effect from gallery or album sources |
 | **Packs** | Export/import presets, styles, wildcards, and director refs as `.vpack` files |
 | **Theme Builder** | 8 built-in themes + full custom theme editor with 15 configurable colors |
@@ -71,6 +75,7 @@ flutter pub get
 
 # Run
 flutter run -d windows    # Windows
+flutter run -d linux       # Linux
 flutter run -d chrome      # Web
 flutter run                # Android (with device connected)
 ```
@@ -79,6 +84,7 @@ flutter run                # Android (with device connected)
 
 ```bash
 flutter build windows     # Windows release
+flutter build linux        # Linux release
 flutter build apk         # Android APK
 flutter build web         # Web build
 ```
@@ -108,6 +114,7 @@ lib/
     director_ref/              # Director Reference system
     vibe_transfer/             # Vibe Transfer system
     tools/                     # Tools Hub (11 tools)
+      canvas/                  # Multi-layer canvas editor
       cascade/                 # Multi-beat sequential generation
       img2img/                 # Img2Img with inpainting
       slideshow/               # Configurable slideshow player

@@ -48,6 +48,24 @@
 - Demo mode with gallery filtering, tag suppression, configurable prompt prefixes, and demo image picker
 - Toggleable shelf visibility for reference shelves
 
+### Phase 5: Canvas, Tracking & Platform Expansion (v0.2.0–v0.3.0)
+- Multi-layer canvas editor with paint, erase, shapes, fill, text, eyedropper, layer management, and flatten-to-PNG for img2img pipeline
+- Blank canvas option in img2img source picker
+- Anlas balance tracker in app bar with auto-refresh after generation
+- Furry mode toggle (fur dataset prefix) for txt2img and Cascade
+- Custom output folder setting for desktop platforms
+- Img2img prompt auto-import from PNG metadata (tEXt + iTXt chunks)
+- Wildcard manager enhancements: per-file randomization modes (random, sequential, shuffle, weighted), drag-to-reorder
+- Style reordering and expandable style chips layout
+- Artist: category prefix for tag autocomplete filtering
+- Cascade tag autocompletion in Director View and Playback View
+- Replaced ddim sampler with k_euler
+- Release signing for APK with debug fallback
+- In-app update checker via GitHub releases API
+- Linux AppImage build and CI job
+- Japanese web build with separate `/ja/` deployment
+- Save original source image alongside img2img generation result with matching timestamps
+
 ## Architecture
 - **Language/Framework**: Dart 3.10.7+ / Flutter (stable channel)
 - **Primary Target**: Windows desktop (also supports Android, iOS, Linux, macOS, Web)
