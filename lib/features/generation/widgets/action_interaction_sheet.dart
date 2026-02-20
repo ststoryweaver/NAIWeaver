@@ -7,16 +7,20 @@ import '../models/nai_character.dart';
 import '../providers/generation_notifier.dart';
 
 class ActionInteractionSheet extends StatefulWidget {
-  final int index1;
-  final int index2;
+  final List<int> sourceIndices;
+  final List<int> targetIndices;
+  final InteractionType initialType;
+  final List<NaiCharacter> characters;
   final NaiInteraction? initialInteraction;
   final Function(NaiInteraction) onSave;
   final VoidCallback onDelete;
 
   const ActionInteractionSheet({
     super.key,
-    required this.index1,
-    required this.index2,
+    required this.sourceIndices,
+    required this.targetIndices,
+    required this.initialType,
+    required this.characters,
     this.initialInteraction,
     required this.onSave,
     required this.onDelete,
@@ -30,8 +34,8 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
   late TextEditingController _actionController;
   late FocusNode _actionFocusNode;
   late InteractionType _type;
-  late int _sourceIndex;
-  late int _targetIndex;
+  late List<int> _sourceIndices;
+  late List<int> _targetIndices;
 
   List<DanbooruTag> _actionSuggestions = [];
   bool _saved = false;
@@ -43,9 +47,9 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
     super.initState();
     _actionController = TextEditingController(text: widget.initialInteraction?.actionName ?? "");
     _actionFocusNode = FocusNode();
-    _type = widget.initialInteraction?.type ?? InteractionType.sourceTarget;
-    _sourceIndex = widget.initialInteraction?.sourceCharacterIndex ?? widget.index1;
-    _targetIndex = widget.initialInteraction?.targetCharacterIndex ?? widget.index2;
+    _type = widget.initialInteraction?.type ?? widget.initialType;
+    _sourceIndices = widget.initialInteraction?.sourceCharacterIndices.toList() ?? widget.sourceIndices.toList();
+    _targetIndices = widget.initialInteraction?.targetCharacterIndices.toList() ?? widget.targetIndices.toList();
     _actionController.addListener(_updateActionSuggestions);
   }
 
@@ -83,7 +87,6 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
     _actionController.selection = TextSelection.fromPosition(
       TextPosition(offset: _actionController.text.length),
     );
-    // Clear suggestions after selection
     setState(() => _actionSuggestions = []);
   }
 
@@ -92,8 +95,8 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
     if (_actionController.text.trim().isEmpty) return;
     _saved = true;
     widget.onSave(NaiInteraction(
-      sourceCharacterIndex: _sourceIndex,
-      targetCharacterIndex: _targetIndex,
+      sourceCharacterIndices: _sourceIndices,
+      targetCharacterIndices: _targetIndices,
       actionName: _actionController.text.trim(),
       type: _type,
     ));
@@ -101,23 +104,48 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
 
   void _toggleDirection() {
     setState(() {
-      if (_type == InteractionType.mutual) {
-        _type = InteractionType.sourceTarget;
-        _sourceIndex = widget.index1;
-        _targetIndex = widget.index2;
-      } else if (_sourceIndex == widget.index1) {
-        _sourceIndex = widget.index2;
-        _targetIndex = widget.index1;
+      if (_type == InteractionType.sourceTarget) {
+        // Swap source and target
+        final tmp = _sourceIndices;
+        _sourceIndices = _targetIndices;
+        _targetIndices = tmp;
+        // If we've swapped back to original, go to mutual
+        if (_listEquals(_sourceIndices, widget.targetIndices)) {
+          _type = InteractionType.mutual;
+          _sourceIndices = [...widget.sourceIndices, ...widget.targetIndices];
+          _targetIndices = [];
+        }
       } else {
-        _type = InteractionType.mutual;
+        // From mutual back to sourceTarget with original assignment
+        _type = InteractionType.sourceTarget;
+        _sourceIndices = widget.sourceIndices.toList();
+        _targetIndices = widget.targetIndices.toList();
       }
     });
   }
 
+  bool _listEquals(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  String _charName(int index) {
+    if (index >= 0 && index < widget.characters.length && widget.characters[index].name.isNotEmpty) {
+      return widget.characters[index].name;
+    }
+    return 'C${index + 1}';
+  }
+
   String _getDirectionLabel() {
-    if (_type == InteractionType.mutual) return "C${_sourceIndex + 1} <-> C${_targetIndex + 1}";
-    if (_sourceIndex == widget.index1) return "C${widget.index1 + 1} -> C${widget.index2 + 1}";
-    return "C${widget.index1 + 1} <- C${widget.index2 + 1}";
+    if (_type == InteractionType.mutual) {
+      return _sourceIndices.map(_charName).join(' \u2194 ');
+    }
+    final src = _sourceIndices.map(_charName).join(', ');
+    final tgt = _targetIndices.map(_charName).join(', ');
+    return '$src \u2192 $tgt';
   }
 
   @override
@@ -190,7 +218,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
             decoration: InputDecoration(
               hintText: 'ENTER ACTION (e.g., hugging)',
               hintStyle: TextStyle(fontSize: t.fontSize(9), color: t.textMinimal, letterSpacing: 2),
-              fillColor: t.borderSubtle,
+              fillColor: t.surfaceHigh,
               filled: true,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),

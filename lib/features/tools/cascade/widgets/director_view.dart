@@ -13,6 +13,7 @@ import '../../../generation/widgets/action_interaction_sheet.dart';
 import '../../../generation/models/nai_character.dart';
 import '../../../generation/providers/generation_notifier.dart';
 import '../../../generation/widgets/settings_panel.dart';
+import '../../../../core/widgets/custom_resolution_dialog.dart';
 import '../../../../tag_service.dart';
 
 class DirectorView extends StatefulWidget {
@@ -466,31 +467,36 @@ class _DirectorViewState extends State<DirectorView> {
 
   void _showLinkerMenu(BuildContext context, int sourceIndex, CascadeBeat beat, CascadeNotifier notifier) {
     final t = context.t;
+    final targetIndex = (sourceIndex + 1) % beat.characterSlots.length;
+    // Build dummy character list for the sheet's label display
+    final sheetChars = beat.characterSlots.asMap().entries.map((e) =>
+      NaiCharacter(prompt: '', uc: '', center: NaiCoordinate(x: 0.5, y: 0.5), name: 'C${e.key + 1}'),
+    ).toList();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: t.surfaceMid,
       builder: (context) => ActionInteractionSheet(
-        index1: sourceIndex,
-        index2: (sourceIndex + 1) % beat.characterSlots.length,
+        sourceIndices: [sourceIndex],
+        targetIndices: [targetIndex],
+        initialType: InteractionType.sourceTarget,
+        characters: sheetChars,
         onSave: (interaction) {
           final updatedSlots = List<BeatCharacterSlot>.from(beat.characterSlots);
 
-          String tag1, tag2;
-          if (interaction.type == InteractionType.mutual) {
-            tag1 = 'mutual#${interaction.actionName}';
-            tag2 = 'mutual#${interaction.actionName}';
-          } else {
-            tag1 = interaction.sourceCharacterIndex == sourceIndex
-                ? 'source#${interaction.actionName}'
-                : 'target#${interaction.actionName}';
-            tag2 = interaction.sourceCharacterIndex == sourceIndex
-                ? 'target#${interaction.actionName}'
-                : 'source#${interaction.actionName}';
+          for (final idx in interaction.sourceCharacterIndices) {
+            if (idx < updatedSlots.length) {
+              final tag = interaction.type == InteractionType.mutual
+                  ? 'mutual#${interaction.actionName}'
+                  : 'source#${interaction.actionName}';
+              updatedSlots[idx] = updatedSlots[idx].copyWith(actionTag: tag);
+            }
           }
-
-          updatedSlots[interaction.sourceCharacterIndex] = updatedSlots[interaction.sourceCharacterIndex].copyWith(actionTag: tag1);
-          updatedSlots[interaction.targetCharacterIndex] = updatedSlots[interaction.targetCharacterIndex].copyWith(actionTag: tag2);
+          for (final idx in interaction.targetCharacterIndices) {
+            if (idx < updatedSlots.length) {
+              updatedSlots[idx] = updatedSlots[idx].copyWith(actionTag: 'target#${interaction.actionName}');
+            }
+          }
 
           notifier.updateActiveBeat(beat.copyWith(characterSlots: updatedSlots));
         },
@@ -512,9 +518,20 @@ class _DirectorViewState extends State<DirectorView> {
         _buildCompactDropdown(
           label: l.cascadeResolution,
           value: knownRes ? resValue : resOptions.first.value,
-          items: resOptions.map((opt) => opt.value).toList(),
-          itemLabels: resOptions.map((opt) => opt.displayLabel).toList(),
-          onChanged: (val) {
+          items: [...resOptions.map((opt) => opt.value), '__custom__'],
+          itemLabels: [...resOptions.map((opt) => opt.displayLabel), '+ ${l.resCustomEntry.toUpperCase()}'],
+          onChanged: (val) async {
+            if (val == '__custom__') {
+              final result = await showCustomResolutionDialog(context);
+              if (result != null) {
+                notifier.updateActiveBeat(beat.copyWith(
+                  width: result.width,
+                  height: result.height,
+                ));
+                if (mounted) setState(() {});
+              }
+              return;
+            }
             if (val == null) return;
             final parts = val.split('x');
             notifier.updateActiveBeat(beat.copyWith(

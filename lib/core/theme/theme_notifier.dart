@@ -8,6 +8,7 @@ import 'vision_tokens.dart';
 
 class ThemeNotifier extends ChangeNotifier {
   static const defaultSectionOrder = [
+    'characters',
     'dimensions_seed',
     'steps_scale',
     'sampler_post',

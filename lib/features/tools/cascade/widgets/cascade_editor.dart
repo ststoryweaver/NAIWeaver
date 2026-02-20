@@ -2,13 +2,85 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/responsive.dart';
 import '../providers/cascade_notifier.dart';
 import 'cascade_library_view.dart';
 import 'beat_timeline.dart';
 import 'director_view.dart';
 
-class CascadeEditor extends StatelessWidget {
+class CascadeEditor extends StatefulWidget {
   const CascadeEditor({super.key});
+
+  @override
+  State<CascadeEditor> createState() => _CascadeEditorState();
+}
+
+class _CascadeEditorState extends State<CascadeEditor> {
+
+  Future<bool> _handleBack(CascadeNotifier notifier) async {
+    if (!notifier.hasUnsavedChanges) {
+      notifier.setActiveCascade(null);
+      return true;
+    }
+
+    final t = context.t;
+    final l = context.l;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: t.surfaceHigh,
+        title: Text(
+          l.cascadeUnsavedTitle.toUpperCase(),
+          style: TextStyle(
+            fontSize: t.fontSize(10),
+            letterSpacing: 2,
+            color: t.textSecondary,
+          ),
+        ),
+        content: Text(
+          l.cascadeUnsavedMessage,
+          style: TextStyle(
+            color: t.textPrimary,
+            fontSize: t.fontSize(11),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: Text(
+              l.commonCancel.toUpperCase(),
+              style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: Text(
+              l.commonSave.toUpperCase(),
+              style: TextStyle(color: t.accentCascade, fontSize: t.fontSize(9)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: Text(
+              l.cascadeDiscard.toUpperCase(),
+              style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(9)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == 'save') {
+      notifier.saveActiveToLibrary();
+      notifier.setActiveCascade(null);
+      return true;
+    } else if (result == 'discard') {
+      notifier.setActiveCascade(null);
+      return true;
+    }
+    return false; // cancel
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +115,7 @@ class CascadeEditor extends StatelessWidget {
   Widget _buildEditorHeader(BuildContext context, dynamic cascade, CascadeNotifier notifier) {
     final t = context.t;
     final l = context.l;
+    final mobile = isMobile(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -52,37 +125,52 @@ class CascadeEditor extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(Icons.arrow_back, size: 16, color: t.textDisabled),
-            onPressed: () {
-              notifier.setActiveCascade(null);
-            },
+          // Back to Library button with label
+          TextButton.icon(
+            onPressed: () => _handleBack(notifier),
+            icon: Icon(Icons.arrow_back, size: mobile ? 16 : 14, color: t.textDisabled),
+            label: Text(
+              l.cascadeBackToLibrary.toUpperCase(),
+              style: TextStyle(
+                color: t.textDisabled,
+                fontSize: t.fontSize(mobile ? 10 : 8),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: mobile ? 10 : 8),
+            ),
           ),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                cascade.name.toUpperCase(),
-                style: TextStyle(
-                  color: t.textPrimary,
-                  fontSize: t.fontSize(12),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  cascade.name.toUpperCase(),
+                  style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: t.fontSize(12),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Text(
-                l.cascadeEditorLabel,
-                style: TextStyle(
-                  color: t.accentCascade,
-                  fontSize: t.fontSize(8),
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+                Text(
+                  l.cascadeEditorLabel,
+                  style: TextStyle(
+                    color: t.accentCascade,
+                    fontSize: t.fontSize(8),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
+          // Save button
           ElevatedButton.icon(
             onPressed: () {
               notifier.saveActiveToLibrary();
@@ -101,6 +189,33 @@ class CascadeEditor extends StatelessWidget {
               foregroundColor: t.textPrimary,
               textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold),
               padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Cast button
+          ElevatedButton.icon(
+            onPressed: () {
+              notifier.saveActiveToLibrary();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l.cascadeSavedToLibrary),
+                  backgroundColor: t.accentCascade,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.play_arrow, size: mobile ? 18 : 14),
+            label: Text(l.cascadeStartCasting.toUpperCase()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: t.accentCascade,
+              foregroundColor: t.background,
+              textStyle: TextStyle(
+                fontSize: t.fontSize(mobile ? 11 : 10),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+              padding: EdgeInsets.symmetric(horizontal: mobile ? 18 : 16),
             ),
           ),
         ],

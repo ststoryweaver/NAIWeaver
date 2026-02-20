@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/tag_suggestion_overlay.dart';
 import '../providers/cascade_notifier.dart';
 import '../services/cascade_stitching_service.dart';
@@ -138,29 +139,44 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
   Widget _buildHeader(CascadeNotifier notifier) {
     final t = context.t;
     final l = context.l;
+    final mobile = isMobile(context);
 
     return Row(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              notifier.state.activeCascade!.name.toUpperCase(),
-              style: TextStyle(color: t.accentCascade, fontSize: t.fontSize(10), fontWeight: FontWeight.w900, letterSpacing: 2),
-            ),
-            Text(
-              l.cascadeCharactersAndBeats(notifier.state.activeCascade!.characterCount, notifier.state.activeCascade!.beats.length),
-              style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), fontWeight: FontWeight.bold),
-            ),
-          ],
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                notifier.state.activeCascade!.name.toUpperCase(),
+                style: TextStyle(color: t.accentCascade, fontSize: t.fontSize(10), fontWeight: FontWeight.w900, letterSpacing: 2),
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                l.cascadeCharactersAndBeats(notifier.state.activeCascade!.characterCount, notifier.state.activeCascade!.beats.length),
+                style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
-        const Spacer(),
-        IconButton(
-          focusNode: FocusNode()..skipTraversal = true,
-          icon: Icon(Icons.close, size: 16, color: t.textDisabled),
+        const SizedBox(width: 8),
+        TextButton.icon(
           onPressed: () => notifier.exitCascadeMode(),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
+          icon: Icon(Icons.close, size: mobile ? 16 : 14, color: t.textDisabled),
+          label: Text(
+            l.cascadeExitCascade.toUpperCase(),
+            style: TextStyle(
+              color: t.textDisabled,
+              fontSize: t.fontSize(mobile ? 10 : 8),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: mobile ? 12 : 8, vertical: mobile ? 8 : 4),
+            side: BorderSide(color: t.borderMedium),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          ),
         ),
       ],
     );

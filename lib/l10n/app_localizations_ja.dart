@@ -163,6 +163,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsVibeTransferShelfDesc => 'メイン画面にバイブトランスファーシェルフを表示します';
 
   @override
+  String get settingsCharEditorMode => 'キャラクターエディターモード';
+
+  @override
+  String get settingsCharEditorModeDesc =>
+      'コンパクトシェルフの代わりに設定パネル内に展開キャラクターエディターを使用';
+
+  @override
   String get settingsThemeBuilder => 'テーマビルダー';
 
   @override
@@ -1660,6 +1667,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cascadeSkipToNext => '次へスキップ';
 
   @override
+  String get cascadeStartCasting => 'キャスト';
+
+  @override
+  String get cascadeBackToLibrary => 'ライブラリ';
+
+  @override
+  String get cascadeUnsavedTitle => '未保存の変更';
+
+  @override
+  String get cascadeUnsavedMessage => 'このカスケードに未保存の変更があります。破棄しますか？';
+
+  @override
+  String get cascadeDiscard => '破棄';
+
+  @override
+  String get cascadeExitCascade => 'カスケードを終了';
+
+  @override
   String get img2imgResult => '結果';
 
   @override
@@ -2109,6 +2134,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get canvasTextPlace => '配置';
 
   @override
+  String get canvasTextFont => 'フォント';
+
+  @override
+  String get canvasTextSpacing => '文字間隔';
+
+  @override
+  String get canvasTextDefault => 'デフォルト';
+
+  @override
   String get canvasBlendNormal => '通常';
 
   @override
@@ -2134,4 +2168,136 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsOutputFolderClear => 'クリア';
+
+  @override
+  String get resCustomEntry => 'カスタム...';
+
+  @override
+  String get resCustomDialogTitle => 'カスタム解像度';
+
+  @override
+  String get resCustomWidth => '幅';
+
+  @override
+  String get resCustomHeight => '高さ';
+
+  @override
+  String get resCustomName => '名前（任意）';
+
+  @override
+  String get resCustomUseOnce => '一度だけ使用';
+
+  @override
+  String get resCustomSaveAndUse => '保存して使用';
+
+  @override
+  String get resCustomMustBeMultiple => '64の倍数で入力してください';
+
+  @override
+  String get resCustomOutOfRange => '64から2048の間で入力してください';
+
+  @override
+  String get themeSectionCharacters => 'キャラクター';
+
+  @override
+  String get charEditorTitle => 'キャラクター';
+
+  @override
+  String get charEditorExpanded => '展開';
+
+  @override
+  String get charEditorCompact => 'コンパクト';
+
+  @override
+  String get charEditorAutoPosition => '自動';
+
+  @override
+  String get charEditorUsingCompactShelf => 'プロンプト下のコンパクトシェルフを使用中';
+
+  @override
+  String get charEditorCharacterName => 'キャラクター名';
+
+  @override
+  String get charEditorPromptHint => 'キャラクタータグ、外見...';
+
+  @override
+  String get charEditorUcHint => '除外タグ...';
+
+  @override
+  String get charEditorShowUc => 'UC';
+
+  @override
+  String get charEditorShowPosition => 'POS';
+
+  @override
+  String get charEditorShowPresets => 'PRESET';
+
+  @override
+  String get charEditorAiDecidesPosition => 'AIが配置を決定';
+
+  @override
+  String get charEditorAddCharacter => 'キャラクターを追加';
+
+  @override
+  String charEditorDeleteConfirm(String name) {
+    return '「$name」を削除しますか？';
+  }
+
+  @override
+  String get charEditorDeleteCharacter => 'キャラクターを削除';
+
+  @override
+  String get charEditorInteractions => 'インタラクション';
+
+  @override
+  String get charEditorAddInteraction => 'インタラクションを追加';
+
+  @override
+  String charEditorInteractionDisplay(
+    String source,
+    String target,
+    String action,
+  ) {
+    return '$source → $target: $action';
+  }
+
+  @override
+  String charEditorMutualDisplay(String source, String target, String action) {
+    return '$source ↔ $target: $action';
+  }
+
+  @override
+  String get charEditorSavePreset => 'プリセットを保存';
+
+  @override
+  String get charEditorLoadPreset => 'プリセットを読み込み';
+
+  @override
+  String get charEditorPresetName => 'プリセット名';
+
+  @override
+  String get charEditorNoPresets => 'キャラクタープリセットが保存されていません';
+
+  @override
+  String get charEditorSelectSource => 'ソースキャラクター';
+
+  @override
+  String get charEditorSelectTarget => 'ターゲットキャラクター';
+
+  @override
+  String charEditorCharacterN(int n) {
+    return 'キャラクター $n';
+  }
+
+  @override
+  String get charEditorContinue => '続行';
+
+  @override
+  String get charEditorParticipants => '参加者';
+
+  @override
+  String get charEditorSourceTarget => 'ソース → ターゲット';
+
+  @override
+  String get charEditorMutual => '相互';
 }

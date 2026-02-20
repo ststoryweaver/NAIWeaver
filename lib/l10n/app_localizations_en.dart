@@ -169,6 +169,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the vibe transfer shelf on the main screen';
 
   @override
+  String get settingsCharEditorMode => 'Character Editor Mode';
+
+  @override
+  String get settingsCharEditorModeDesc =>
+      'Use the expanded character editor in the settings panel instead of the compact shelf';
+
+  @override
   String get settingsThemeBuilder => 'Theme Builder';
 
   @override
@@ -1694,6 +1701,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cascadeSkipToNext => 'Skip to next';
 
   @override
+  String get cascadeStartCasting => 'Cast';
+
+  @override
+  String get cascadeBackToLibrary => 'Library';
+
+  @override
+  String get cascadeUnsavedTitle => 'Unsaved Changes';
+
+  @override
+  String get cascadeUnsavedMessage =>
+      'You have unsaved changes to this cascade. Discard them?';
+
+  @override
+  String get cascadeDiscard => 'Discard';
+
+  @override
+  String get cascadeExitCascade => 'Exit Cascade';
+
+  @override
   String get img2imgResult => 'RESULT';
 
   @override
@@ -2151,6 +2177,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get canvasTextPlace => 'PLACE';
 
   @override
+  String get canvasTextFont => 'FONT';
+
+  @override
+  String get canvasTextSpacing => 'SPACING';
+
+  @override
+  String get canvasTextDefault => 'Default';
+
+  @override
   String get canvasBlendNormal => 'Normal';
 
   @override
@@ -2177,4 +2212,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOutputFolderClear => 'Clear';
+
+  @override
+  String get resCustomEntry => 'Custom...';
+
+  @override
+  String get resCustomDialogTitle => 'Custom Resolution';
+
+  @override
+  String get resCustomWidth => 'Width';
+
+  @override
+  String get resCustomHeight => 'Height';
+
+  @override
+  String get resCustomName => 'Name (optional)';
+
+  @override
+  String get resCustomUseOnce => 'Use Once';
+
+  @override
+  String get resCustomSaveAndUse => 'Save & Use';
+
+  @override
+  String get resCustomMustBeMultiple => 'Must be a multiple of 64';
+
+  @override
+  String get resCustomOutOfRange => 'Must be between 64 and 2048';
+
+  @override
+  String get themeSectionCharacters => 'CHARACTERS';
+
+  @override
+  String get charEditorTitle => 'Characters';
+
+  @override
+  String get charEditorExpanded => 'EXPANDED';
+
+  @override
+  String get charEditorCompact => 'COMPACT';
+
+  @override
+  String get charEditorAutoPosition => 'AUTO';
+
+  @override
+  String get charEditorUsingCompactShelf => 'Using compact shelf below prompt';
+
+  @override
+  String get charEditorCharacterName => 'CHARACTER NAME';
+
+  @override
+  String get charEditorPromptHint => 'Character tags, appearance...';
+
+  @override
+  String get charEditorUcHint => 'Undesired tags...';
+
+  @override
+  String get charEditorShowUc => 'UC';
+
+  @override
+  String get charEditorShowPosition => 'POS';
+
+  @override
+  String get charEditorShowPresets => 'PRESET';
+
+  @override
+  String get charEditorAiDecidesPosition => 'AI decides position';
+
+  @override
+  String get charEditorAddCharacter => 'ADD CHARACTER';
+
+  @override
+  String charEditorDeleteConfirm(String name) {
+    return 'Delete \"$name\"?';
+  }
+
+  @override
+  String get charEditorDeleteCharacter => 'DELETE CHARACTER';
+
+  @override
+  String get charEditorInteractions => 'INTERACTIONS';
+
+  @override
+  String get charEditorAddInteraction => 'ADD INTERACTION';
+
+  @override
+  String charEditorInteractionDisplay(
+    String source,
+    String target,
+    String action,
+  ) {
+    return '$source → $target: $action';
+  }
+
+  @override
+  String charEditorMutualDisplay(String source, String target, String action) {
+    return '$source ↔ $target: $action';
+  }
+
+  @override
+  String get charEditorSavePreset => 'SAVE PRESET';
+
+  @override
+  String get charEditorLoadPreset => 'LOAD PRESET';
+
+  @override
+  String get charEditorPresetName => 'Preset Name';
+
+  @override
+  String get charEditorNoPresets => 'No character presets saved';
+
+  @override
+  String get charEditorSelectSource => 'Source Character';
+
+  @override
+  String get charEditorSelectTarget => 'Target Character';
+
+  @override
+  String charEditorCharacterN(int n) {
+    return 'Character $n';
+  }
+
+  @override
+  String get charEditorContinue => 'CONTINUE';
+
+  @override
+  String get charEditorParticipants => 'PARTICIPANTS';
+
+  @override
+  String get charEditorSourceTarget => 'SOURCE → TARGET';
+
+  @override
+  String get charEditorMutual => 'MUTUAL';
 }

@@ -26,6 +26,7 @@ class CharacterEditorSheet extends StatefulWidget {
 }
 
 class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
+  late TextEditingController _nameController;
   late TextEditingController _promptController;
   late TextEditingController _ucController;
   late FocusNode _promptFocusNode;
@@ -41,6 +42,7 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController(text: widget.character.name);
     _promptController = TextEditingController(text: widget.character.prompt);
     _ucController = TextEditingController(text: widget.character.uc);
     _promptFocusNode = FocusNode();
@@ -107,6 +109,7 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
     if (_saved || _deleted) return;
     _saved = true;
     widget.onSave(NaiCharacter(
+      name: _nameController.text,
       prompt: _promptController.text,
       uc: _ucController.text,
       center: _coordinate,
@@ -123,6 +126,7 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
     _saveChanges();
     _promptController.removeListener(_updatePromptSuggestions);
     _ucController.removeListener(_updateUcSuggestions);
+    _nameController.dispose();
     _promptController.dispose();
     _ucController.dispose();
     _promptFocusNode.dispose();
@@ -174,6 +178,31 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
             ],
           ),
           const SizedBox(height: 24),
+          Text(
+            'CHARACTER NAME',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: t.fontSize(9),
+              letterSpacing: 2,
+              color: t.textDisabled,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _nameController,
+            style: TextStyle(fontSize: t.fontSize(13), color: t.textSecondary, height: 1.4),
+            decoration: InputDecoration(
+              hintText: 'NAME (OPTIONAL)',
+              hintStyle: TextStyle(fontSize: t.fontSize(9), color: t.textMinimal, letterSpacing: 2),
+              fillColor: t.borderSubtle,
+              filled: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.textMinimal)),
+              contentPadding: const EdgeInsets.all(16),
+            ),
+          ),
+          const SizedBox(height: 20),
           Text(
             'CHARACTER PROMPT',
             style: TextStyle(

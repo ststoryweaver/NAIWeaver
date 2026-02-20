@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,25 +8,41 @@ import '../../../core/utils/responsive.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/theme_notifier.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../core/widgets/custom_resolution_dialog.dart';
 import '../../../styles.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../providers/generation_notifier.dart';
+import 'inline_character_editor.dart';
 
 class ResolutionOption {
   final String label;
   final int width;
   final int height;
+  final bool isCustom;
 
-  const ResolutionOption(this.label, this.width, this.height);
+  const ResolutionOption(this.label, this.width, this.height, {this.isCustom = false});
 
   String get value => "${width}x$height";
   String get displayLabel => "$label ${width}x$height";
+
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    'width': width,
+    'height': height,
+  };
+
+  factory ResolutionOption.fromJson(Map<String, dynamic> json) => ResolutionOption(
+    json['label'] as String,
+    json['width'] as int,
+    json['height'] as int,
+    isCustom: true,
+  );
 }
 
 class AdvancedSettingsPanel extends StatelessWidget {
   static List<ResolutionOption> resolutionOptions(BuildContext context) {
     final l = context.l;
-    return [
+    final builtIn = [
       ResolutionOption(l.resNormalPortrait.toUpperCase(), 832, 1216),
       ResolutionOption(l.resNormalLandscape.toUpperCase(), 1216, 832),
       ResolutionOption(l.resNormalSquare.toUpperCase(), 1024, 1024),
@@ -35,6 +52,34 @@ class AdvancedSettingsPanel extends StatelessWidget {
       ResolutionOption(l.resWallpaperPortrait.toUpperCase(), 1088, 1920),
       ResolutionOption(l.resWallpaperLandscape.toUpperCase(), 1920, 1088),
     ];
+    final prefs = Provider.of<PreferencesService>(context, listen: false);
+    final custom = _loadCustomResolutions(prefs);
+    return [...builtIn, ...custom];
+  }
+
+  static List<ResolutionOption> _loadCustomResolutions(PreferencesService prefs) {
+    final raw = prefs.customResolutions;
+    if (raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List;
+      return list.map((e) => ResolutionOption.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> saveCustomResolution(PreferencesService prefs, ResolutionOption option) async {
+    final existing = _loadCustomResolutions(prefs);
+    existing.add(option);
+    await prefs.setCustomResolutions(jsonEncode(existing.map((e) => e.toJson()).toList()));
+  }
+
+  static Future<void> deleteCustomResolution(PreferencesService prefs, int index) async {
+    final existing = _loadCustomResolutions(prefs);
+    if (index >= 0 && index < existing.length) {
+      existing.removeAt(index);
+      await prefs.setCustomResolutions(jsonEncode(existing.map((e) => e.toJson()).toList()));
+    }
   }
 
   static const List<String> samplers = [
@@ -207,6 +252,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
       'dimensions_seed': () => _buildDimensionsSeed(notifier, state, mobile, t),
       'steps_scale': () => _buildStepsScale(notifier, state, mobile, t),
       'sampler_post': () => _buildSamplerPost(notifier, state, mobile, t),
+      'characters': () => const InlineCharacterEditor(),
       'styles': () => _buildStyles(notifier, state, t),
       'negative_prompt': () => _buildNegativePrompt(notifier, t),
       'presets': () => _buildPresets(notifier, state, t),
@@ -218,7 +264,11 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
       final builder = builders[id];
       if (builder != null) {
         if (sections.isNotEmpty) sections.add(const SizedBox(height: 24));
-        sections.add(builder());
+        try {
+          sections.add(builder());
+        } catch (e) {
+          sections.add(Text('Error in $id: $e', style: TextStyle(color: Colors.red, fontSize: t.fontSize(9))));
+        }
       }
     }
     sections.add(const SizedBox(height: 20));
@@ -238,7 +288,8 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
         Text(context.l.panelDimensions.toUpperCase(), style: labelStyle),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: AdvancedSettingsPanel.resolutionOptions(context).any((opt) => opt.width == state.width.toInt() && opt.height == state.height.toInt())
+          // ignore: deprecated_member_use
+          value: AdvancedSettingsPanel.resolutionOptions(context).any((opt) => opt.width == state.width.toInt() && opt.height == state.height.toInt())
               ? "${state.width.toInt()}x${state.height.toInt()}"
               : null,
           dropdownColor: t.surfaceHigh,
@@ -253,7 +304,18 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
             filled: true,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
           ),
-          onChanged: (String? newValue) {
+          onChanged: (String? newValue) async {
+            if (newValue == '__custom__') {
+              final result = await showCustomResolutionDialog(context);
+              if (result != null) {
+                notifier.updateSettings(
+                  width: result.width.toDouble(),
+                  height: result.height.toDouble(),
+                );
+                if (mounted) setState(() {});
+              }
+              return;
+            }
             if (newValue != null) {
               final parts = newValue.split('x');
               notifier.updateSettings(
@@ -262,12 +324,44 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
               );
             }
           },
-          items: AdvancedSettingsPanel.resolutionOptions(context).map<DropdownMenuItem<String>>((ResolutionOption opt) {
-            return DropdownMenuItem<String>(
-              value: opt.value,
-              child: Text(opt.displayLabel, style: TextStyle(fontSize: t.fontSize(10))),
-            );
-          }).toList(),
+          items: [
+            ...AdvancedSettingsPanel.resolutionOptions(context).asMap().entries.map<DropdownMenuItem<String>>((entry) {
+              final opt = entry.value;
+              final builtInCount = 8;
+              return DropdownMenuItem<String>(
+                value: opt.value,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: Text(opt.displayLabel, style: TextStyle(fontSize: t.fontSize(10)), overflow: TextOverflow.ellipsis)),
+                    if (opt.isCustom)
+                      GestureDetector(
+                        onTap: () {
+                          final prefs = context.read<PreferencesService>();
+                          AdvancedSettingsPanel.deleteCustomResolution(prefs, entry.key - builtInCount);
+                          setState(() {});
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Icon(Icons.close, size: 14, color: t.textMinimal),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+            DropdownMenuItem<String>(
+              value: '__custom__',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, size: 14, color: t.accent),
+                  const SizedBox(width: 8),
+                  Text(context.l.resCustomEntry.toUpperCase(), style: TextStyle(fontSize: t.fontSize(10), color: t.accent)),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -357,7 +451,8 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
         Text(context.l.panelSampler.toUpperCase(), style: labelStyle),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: state.sampler,
+          // ignore: deprecated_member_use
+          value: state.sampler,
           dropdownColor: t.surfaceHigh,
           style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(11), letterSpacing: 1),
           decoration: InputDecoration(

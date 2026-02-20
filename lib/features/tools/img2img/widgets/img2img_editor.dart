@@ -275,35 +275,6 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
             onPressed: () => img2imgNotifier.clearSession(),
             tooltip: l.img2imgBackToPicker,
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  img2imgNotifier.hasMask ? l.img2imgInpainting : l.img2imgTitle,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: t.textPrimary,
-                    fontSize: t.fontSize(12),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                  ),
-                ),
-                Text(
-                  session != null
-                      ? '${session.sourceWidth} x ${session.sourceHeight}'
-                      : l.img2imgEditorLabel,
-                  style: TextStyle(
-                    color: t.accentEdit,
-                    fontSize: t.fontSize(8),
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
           const Spacer(),
 
           // Edit in Canvas button (only when session exists)

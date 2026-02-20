@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 
@@ -12,7 +13,27 @@ import '../models/canvas_layer.dart';
 import '../models/paint_stroke.dart';
 import '../providers/canvas_notifier.dart';
 
-/// The painting widget: source image + paint overlay (CustomPaint) + gesture handling + cursor preview.
+/// Build a [TextStyle] with an optional Google Fonts family.
+TextStyle _buildFontStyle({
+  required Color color,
+  required double fontSize,
+  String? fontFamily,
+  double? letterSpacing,
+}) {
+  final base = TextStyle(
+    color: color,
+    fontSize: fontSize,
+    letterSpacing: letterSpacing,
+  );
+  if (fontFamily == null) return base;
+  try {
+    return GoogleFonts.getFont(fontFamily, textStyle: base);
+  } catch (_) {
+    return base;
+  }
+}
+
+/// The painting widget: source image + paint overlay (CustomPaint) + gesture handling + cursor preview + inline text editor.
 class CanvasPaintSurface extends StatefulWidget {
   const CanvasPaintSurface({super.key});
 
@@ -22,6 +43,15 @@ class CanvasPaintSurface extends StatefulWidget {
 
 class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
   Rect _imageRect = Rect.zero;
+  final TextEditingController _textController = TextEditingController();
+  final FocusNode _textFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _textFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,60 +78,188 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
         final offsetY = (containerSize.height - renderHeight) / 2;
         _imageRect = Rect.fromLTWH(offsetX, offsetY, renderWidth, renderHeight);
 
-        return Listener(
-          onPointerSignal: (event) {
-            if (event is PointerScrollEvent) {
-              _onPointerSignal(event, notifier);
-            }
-          },
-          child: MouseRegion(
-            cursor: SystemMouseCursors.none,
-            child: GestureDetector(
-              onPanStart: (details) => _onPanStart(details, notifier),
-              onPanUpdate: (details) => _onPanUpdate(details, notifier),
-              onPanEnd: (_) => notifier.endStroke(),
-              child: Stack(
-                children: [
-                  // Source image
-                  Positioned.fill(
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Image.memory(
-                        session.sourceImageBytes,
-                        width: session.sourceWidth.toDouble(),
-                        height: session.sourceHeight.toDouble(),
-                        gaplessPlayback: true,
-                      ),
-                    ),
-                  ),
+        // Build pending text stroke for live preview
+        PaintStroke? pendingTextStroke;
+        if (notifier.hasPendingText && notifier.pendingTextContent.isNotEmpty) {
+          pendingTextStroke = PaintStroke(
+            points: [notifier.pendingTextPosition!],
+            radius: 0,
+            colorValue: notifier.brushColor,
+            opacity: notifier.brushOpacity,
+            strokeType: StrokeType.text,
+            text: notifier.pendingTextContent,
+            fontSize: notifier.pendingTextFontSize,
+            fontFamily: notifier.pendingTextFontFamily,
+            letterSpacing: notifier.pendingTextLetterSpacing,
+          );
+        }
 
-                  // Paint overlay — per-layer compositing
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _CanvasPaintOverlayPainter(
-                        layers: session.layers,
-                        activeLayerId: session.activeLayerId,
-                        activeStroke: notifier.activeStroke,
-                        imageRect: _imageRect,
+        return Stack(
+          children: [
+            Listener(
+              onPointerSignal: (event) {
+                if (event is PointerScrollEvent) {
+                  _onPointerSignal(event, notifier);
+                }
+              },
+              child: MouseRegion(
+                cursor: SystemMouseCursors.none,
+                child: GestureDetector(
+                  onTapUp: (details) => _onTapUp(details, notifier),
+                  onPanStart: (details) => _onPanStart(details, notifier),
+                  onPanUpdate: (details) => _onPanUpdate(details, notifier),
+                  onPanEnd: (_) => notifier.endStroke(),
+                  child: Stack(
+                    children: [
+                      // Source image
+                      Positioned.fill(
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: Image.memory(
+                            session.sourceImageBytes,
+                            width: session.sourceWidth.toDouble(),
+                            height: session.sourceHeight.toDouble(),
+                            gaplessPlayback: true,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
 
-                  // Cursor preview
-                  Positioned.fill(
-                    child: _CanvasCursorPreview(
-                      brushRadius: notifier.brushRadius,
-                      tool: notifier.tool,
-                      brushColor: notifier.brushColorAsColor,
-                      imageRect: _imageRect,
-                    ),
+                      // Paint overlay — per-layer compositing + pending text preview
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _CanvasPaintOverlayPainter(
+                            layers: session.layers,
+                            activeLayerId: session.activeLayerId,
+                            activeStroke: notifier.activeStroke,
+                            pendingTextStroke: pendingTextStroke,
+                            imageRect: _imageRect,
+                          ),
+                        ),
+                      ),
+
+                      // Blinking text cursor
+                      if (notifier.hasPendingText)
+                        _BlinkingTextCursor(
+                          normalizedPosition: notifier.pendingTextPosition!,
+                          currentText: notifier.pendingTextContent,
+                          fontSizeNormalized: notifier.pendingTextFontSize,
+                          fontFamily: notifier.pendingTextFontFamily,
+                          letterSpacing: notifier.pendingTextLetterSpacing,
+                          imageRect: _imageRect,
+                          color: notifier.brushColorAsColor,
+                        ),
+
+                      // Cursor preview
+                      Positioned.fill(
+                        child: _CanvasCursorPreview(
+                          brushRadius: notifier.brushRadius,
+                          tool: notifier.tool,
+                          brushColor: notifier.brushColorAsColor,
+                          imageRect: _imageRect,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+
+            // Inline text editor — outside the canvas GestureDetector so
+            // button taps are not stolen by the pan recognizer.
+            if (notifier.hasPendingText)
+              _buildInlineTextEditor(notifier),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildInlineTextEditor(CanvasNotifier notifier) {
+    final t = context.t;
+    final l = context.l;
+    final pos = notifier.pendingTextPosition!;
+
+    // Convert normalized position to screen position
+    final screenX = _imageRect.left + pos.dx * _imageRect.width;
+    final screenY = _imageRect.top + pos.dy * _imageRect.height;
+
+    // Clamp so the editor doesn't overflow outside the image rect
+    const editorWidth = 220.0;
+    const editorHeight = 40.0;
+    final clampedX = screenX.clamp(_imageRect.left, _imageRect.right - editorWidth);
+    final clampedY = (screenY - editorHeight - 8).clamp(_imageRect.top, _imageRect.bottom - editorHeight);
+
+    return Positioned(
+      left: clampedX,
+      top: clampedY,
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(6),
+        color: t.surfaceHigh,
+        child: Container(
+          width: editorWidth,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: t.accentEdit, width: 1),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: KeyboardListener(
+                  focusNode: FocusNode(),
+                  onKeyEvent: (event) {
+                    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+                      notifier.cancelPendingText();
+                      _textController.clear();
+                    }
+                  },
+                  child: TextField(
+                    controller: _textController,
+                    focusNode: _textFocusNode,
+                    autofocus: true,
+                    style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(9)),
+                    decoration: InputDecoration(
+                      hintText: l.canvasTextHint,
+                      hintStyle: TextStyle(color: t.textMinimal, fontSize: t.fontSize(9)),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: notifier.updatePendingText,
+                    onSubmitted: (_) {
+                      notifier.commitPendingText();
+                      _textController.clear();
+                    },
+                  ),
+                ),
+              ),
+              // Confirm button
+              GestureDetector(
+                onTap: () {
+                  notifier.commitPendingText();
+                  _textController.clear();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.check, size: 16, color: t.accentEdit),
+                ),
+              ),
+              // Cancel button
+              GestureDetector(
+                onTap: () {
+                  notifier.cancelPendingText();
+                  _textController.clear();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.close, size: 16, color: t.textDisabled),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -121,7 +279,8 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
     }
   }
 
-  void _onPanStart(DragStartDetails details, CanvasNotifier notifier) {
+  void _onTapUp(TapUpDetails details, CanvasNotifier notifier) {
+    if (!_imageRect.contains(details.localPosition)) return;
     final normalized = _toNormalized(details.localPosition);
     if (normalized == null) return;
 
@@ -130,7 +289,39 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
     } else if (notifier.tool == CanvasTool.fill) {
       notifier.applyFill(normalized);
     } else if (notifier.tool == CanvasTool.text) {
-      _showTextDialog(normalized, notifier);
+      if (notifier.hasPendingText) {
+        notifier.commitPendingText();
+        _textController.clear();
+      }
+      notifier.beginTextEditing(normalized);
+      _textController.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _textFocusNode.requestFocus();
+      });
+    }
+  }
+
+  void _onPanStart(DragStartDetails details, CanvasNotifier notifier) {
+    if (!_imageRect.contains(details.localPosition)) return;
+    final normalized = _toNormalized(details.localPosition);
+    if (normalized == null) return;
+
+    if (notifier.tool == CanvasTool.eyedropper) {
+      _samplePixel(normalized, notifier);
+    } else if (notifier.tool == CanvasTool.fill) {
+      notifier.applyFill(normalized);
+    } else if (notifier.tool == CanvasTool.text) {
+      // If there's already a pending text, commit it first
+      if (notifier.hasPendingText) {
+        notifier.commitPendingText();
+        _textController.clear();
+      }
+      notifier.beginTextEditing(normalized);
+      _textController.clear();
+      // Re-focus the text field after a frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _textFocusNode.requestFocus();
+      });
     } else {
       notifier.beginStroke(normalized);
     }
@@ -148,144 +339,6 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
     final x = (localPosition.dx - _imageRect.left) / _imageRect.width;
     final y = (localPosition.dy - _imageRect.top) / _imageRect.height;
     return Offset(x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
-  }
-
-  void _showTextDialog(Offset position, CanvasNotifier notifier) {
-    final t = context.tRead;
-    final l = context.l;
-    final textController = TextEditingController();
-    double fontSize = 0.05;
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setDialogState) {
-            final previewColor = Color(notifier.brushColor)
-                .withValues(alpha: notifier.brushOpacity);
-            return AlertDialog(
-              backgroundColor: t.surfaceHigh,
-              title: Text(
-                l.canvasText,
-                style: TextStyle(
-                  color: t.textSecondary,
-                  fontSize: t.fontSize(10),
-                  letterSpacing: 2,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: textController,
-                    autofocus: true,
-                    maxLines: null,
-                    style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(10)),
-                    decoration: InputDecoration(
-                      hintText: l.canvasTextHint,
-                      hintStyle: TextStyle(color: t.textMinimal),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: t.borderSubtle),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: t.accentEdit),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        l.canvasTextSize,
-                        style: TextStyle(
-                          color: t.textDisabled,
-                          fontSize: t.fontSize(8),
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SliderTheme(
-                          data: SliderTheme.of(ctx).copyWith(
-                            activeTrackColor: t.textDisabled,
-                            inactiveTrackColor: t.textMinimal,
-                            thumbColor: t.textPrimary,
-                            trackHeight: 2,
-                            thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 6),
-                            overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 12),
-                          ),
-                          child: Slider(
-                            value: fontSize,
-                            min: 0.01,
-                            max: 0.20,
-                            onChanged: (v) => setDialogState(() => fontSize = v),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 40,
-                        child: Text(
-                          '${(fontSize * 100).round()}%',
-                          style: TextStyle(
-                            color: t.textTertiary,
-                            fontSize: t.fontSize(8),
-                          ),
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Sample',
-                    style: TextStyle(
-                      color: previewColor,
-                      fontSize: 20,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    l.commonCancel.toUpperCase(),
-                    style: TextStyle(
-                      color: t.textDisabled,
-                      fontSize: t.fontSize(9),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    final text = textController.text.trim();
-                    if (text.isNotEmpty) {
-                      notifier.addTextStroke(
-                        position: position,
-                        text: text,
-                        fontSize: fontSize,
-                      );
-                    }
-                    Navigator.pop(ctx);
-                  },
-                  child: Text(
-                    l.canvasTextPlace,
-                    style: TextStyle(
-                      color: t.accentEdit,
-                      fontSize: t.fontSize(9),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
   void _samplePixel(Offset normalized, CanvasNotifier notifier) {
@@ -317,18 +370,24 @@ class _CanvasPaintOverlayPainter extends CustomPainter {
   final List<CanvasLayer> layers;
   final String activeLayerId;
   final PaintStroke? activeStroke;
+  final PaintStroke? pendingTextStroke;
   final Rect imageRect;
 
   _CanvasPaintOverlayPainter({
     required this.layers,
     required this.activeLayerId,
     this.activeStroke,
+    this.pendingTextStroke,
     required this.imageRect,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (imageRect.isEmpty) return;
+
+    // Clip all paint to image bounds
+    canvas.save();
+    canvas.clipRect(imageRect);
 
     // Iterate layers bottom-to-top
     for (final layer in layers) {
@@ -355,6 +414,13 @@ class _CanvasPaintOverlayPainter extends CustomPainter {
 
       canvas.restore();
     }
+
+    // Draw pending text preview on top of all layers
+    if (pendingTextStroke != null) {
+      _drawStroke(canvas, pendingTextStroke!);
+    }
+
+    canvas.restore();
   }
 
   void _drawStroke(Canvas canvas, PaintStroke stroke) {
@@ -417,14 +483,16 @@ class _CanvasPaintOverlayPainter extends CustomPainter {
             final pos = _toScreen(stroke.points.first);
             final textFontSize =
                 (stroke.fontSize ?? 0.05) * imageRect.height;
+            final textLetterSpacing =
+                (stroke.letterSpacing ?? 0.0) * imageRect.height;
+            final style = _buildFontStyle(
+              color: strokeColor,
+              fontSize: textFontSize,
+              fontFamily: stroke.fontFamily,
+              letterSpacing: textLetterSpacing,
+            );
             final textPainter = TextPainter(
-              text: TextSpan(
-                text: stroke.text,
-                style: TextStyle(
-                  color: strokeColor,
-                  fontSize: textFontSize,
-                ),
-              ),
+              text: TextSpan(text: stroke.text, style: style),
               textDirection: TextDirection.ltr,
             )..layout();
             textPainter.paint(canvas, pos);
@@ -556,7 +624,7 @@ class _CanvasCursorPainter extends CustomPainter {
     if (position == null) return;
 
     if (tool == CanvasTool.eyedropper || tool == CanvasTool.fill || tool == CanvasTool.text) {
-      // Eyedropper / Fill: crosshair only (no circle outline)
+      // Eyedropper / Fill / Text: crosshair only (no circle outline)
       final crossPaint = Paint()
         ..color = Colors.white
         ..strokeWidth = 1.5;
@@ -621,4 +689,96 @@ class _CanvasCursorPainter extends CustomPainter {
       radius != oldDelegate.radius ||
       tool != oldDelegate.tool ||
       brushColor != oldDelegate.brushColor;
+}
+
+/// A blinking vertical cursor line shown on the canvas at the text insertion point.
+class _BlinkingTextCursor extends StatefulWidget {
+  final Offset normalizedPosition;
+  final String currentText;
+  final double fontSizeNormalized;
+  final String? fontFamily;
+  final double letterSpacing;
+  final Rect imageRect;
+  final Color color;
+
+  const _BlinkingTextCursor({
+    required this.normalizedPosition,
+    required this.currentText,
+    required this.fontSizeNormalized,
+    required this.fontFamily,
+    required this.letterSpacing,
+    required this.imageRect,
+    required this.color,
+  });
+
+  @override
+  State<_BlinkingTextCursor> createState() => _BlinkingTextCursorState();
+}
+
+class _BlinkingTextCursorState extends State<_BlinkingTextCursor>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 530),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fontSize = widget.fontSizeNormalized * widget.imageRect.height;
+    final letterSpacing = widget.letterSpacing * widget.imageRect.height;
+
+    // Measure current text width to position cursor at end
+    double textWidth = 0;
+    if (widget.currentText.isNotEmpty) {
+      final style = _buildFontStyle(
+        color: widget.color,
+        fontSize: fontSize,
+        fontFamily: widget.fontFamily,
+        letterSpacing: letterSpacing,
+      );
+      final textPainter = TextPainter(
+        text: TextSpan(text: widget.currentText, style: style),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textWidth = textPainter.width;
+    }
+
+    final screenX = widget.imageRect.left +
+        widget.normalizedPosition.dx * widget.imageRect.width +
+        textWidth;
+    final screenY = widget.imageRect.top +
+        widget.normalizedPosition.dy * widget.imageRect.height;
+
+    final cursorHeight = fontSize.clamp(8.0, 200.0);
+
+    return Positioned(
+      left: screenX,
+      top: screenY,
+      child: IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (_, _) => Opacity(
+            opacity: _controller.value > 0.5 ? 1.0 : 0.0,
+            child: Container(
+              width: 2,
+              height: cursorHeight,
+              color: widget.color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

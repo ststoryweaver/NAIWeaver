@@ -153,18 +153,15 @@ class NovelAIService {
 
       // Find interactions involving this character
       for (final interaction in interactions) {
-        if (interaction.sourceCharacterIndex == i || interaction.targetCharacterIndex == i) {
-          String tag = "";
-          if (interaction.type == InteractionType.mutual) {
-            tag = "mutual#${interaction.actionName}, ";
-          } else if (interaction.sourceCharacterIndex == i) {
-            tag = "source#${interaction.actionName}, ";
-          } else if (interaction.targetCharacterIndex == i) {
-            tag = "target#${interaction.actionName}, ";
+        if (interaction.type == InteractionType.mutual) {
+          if (interaction.sourceCharacterIndices.contains(i)) {
+            caption = "mutual#${interaction.actionName}, $caption";
           }
-          
-          if (tag.isNotEmpty) {
-            caption = "$tag$caption";
+        } else {
+          if (interaction.sourceCharacterIndices.contains(i)) {
+            caption = "source#${interaction.actionName}, $caption";
+          } else if (interaction.targetCharacterIndices.contains(i)) {
+            caption = "target#${interaction.actionName}, $caption";
           }
         }
       }

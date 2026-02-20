@@ -547,7 +547,13 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                           const DirectorRefShelf(),
                         if (state.showVibeTransferShelf)
                           const VibeTransferShelf(),
-                        const CharacterShelf(),
+                        Selector<GenerationNotifier, String>(
+                          selector: (_, n) => n.state.characterEditorMode,
+                          builder: (context, mode, _) {
+                            if (mode == 'compact') return const CharacterShelf();
+                            return const SizedBox.shrink();
+                          },
+                        ),
                         // Tag suggestion row — dedicated row with opaque backdrop
                         Listener(
                           behavior: HitTestBehavior.translucent,

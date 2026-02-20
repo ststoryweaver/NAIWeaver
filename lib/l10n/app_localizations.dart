@@ -398,6 +398,18 @@ abstract class AppLocalizations {
   /// **'Show the vibe transfer shelf on the main screen'**
   String get settingsVibeTransferShelfDesc;
 
+  /// No description provided for @settingsCharEditorMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Character Editor Mode'**
+  String get settingsCharEditorMode;
+
+  /// No description provided for @settingsCharEditorModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the expanded character editor in the settings panel instead of the compact shelf'**
+  String get settingsCharEditorModeDesc;
+
   /// No description provided for @settingsThemeBuilder.
   ///
   /// In en, this message translates to:
@@ -3164,6 +3176,42 @@ abstract class AppLocalizations {
   /// **'Skip to next'**
   String get cascadeSkipToNext;
 
+  /// No description provided for @cascadeStartCasting.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast'**
+  String get cascadeStartCasting;
+
+  /// No description provided for @cascadeBackToLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get cascadeBackToLibrary;
+
+  /// No description provided for @cascadeUnsavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved Changes'**
+  String get cascadeUnsavedTitle;
+
+  /// No description provided for @cascadeUnsavedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes to this cascade. Discard them?'**
+  String get cascadeUnsavedMessage;
+
+  /// No description provided for @cascadeDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get cascadeDiscard;
+
+  /// No description provided for @cascadeExitCascade.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Cascade'**
+  String get cascadeExitCascade;
+
   /// No description provided for @img2imgResult.
   ///
   /// In en, this message translates to:
@@ -4010,6 +4058,24 @@ abstract class AppLocalizations {
   /// **'PLACE'**
   String get canvasTextPlace;
 
+  /// No description provided for @canvasTextFont.
+  ///
+  /// In en, this message translates to:
+  /// **'FONT'**
+  String get canvasTextFont;
+
+  /// No description provided for @canvasTextSpacing.
+  ///
+  /// In en, this message translates to:
+  /// **'SPACING'**
+  String get canvasTextSpacing;
+
+  /// No description provided for @canvasTextDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get canvasTextDefault;
+
   /// No description provided for @canvasBlendNormal.
   ///
   /// In en, this message translates to:
@@ -4063,6 +4129,250 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get settingsOutputFolderClear;
+
+  /// No description provided for @resCustomEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom...'**
+  String get resCustomEntry;
+
+  /// No description provided for @resCustomDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Resolution'**
+  String get resCustomDialogTitle;
+
+  /// No description provided for @resCustomWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get resCustomWidth;
+
+  /// No description provided for @resCustomHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get resCustomHeight;
+
+  /// No description provided for @resCustomName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (optional)'**
+  String get resCustomName;
+
+  /// No description provided for @resCustomUseOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Once'**
+  String get resCustomUseOnce;
+
+  /// No description provided for @resCustomSaveAndUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Use'**
+  String get resCustomSaveAndUse;
+
+  /// No description provided for @resCustomMustBeMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be a multiple of 64'**
+  String get resCustomMustBeMultiple;
+
+  /// No description provided for @resCustomOutOfRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be between 64 and 2048'**
+  String get resCustomOutOfRange;
+
+  /// No description provided for @themeSectionCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'CHARACTERS'**
+  String get themeSectionCharacters;
+
+  /// No description provided for @charEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Characters'**
+  String get charEditorTitle;
+
+  /// No description provided for @charEditorExpanded.
+  ///
+  /// In en, this message translates to:
+  /// **'EXPANDED'**
+  String get charEditorExpanded;
+
+  /// No description provided for @charEditorCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'COMPACT'**
+  String get charEditorCompact;
+
+  /// No description provided for @charEditorAutoPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'AUTO'**
+  String get charEditorAutoPosition;
+
+  /// No description provided for @charEditorUsingCompactShelf.
+  ///
+  /// In en, this message translates to:
+  /// **'Using compact shelf below prompt'**
+  String get charEditorUsingCompactShelf;
+
+  /// No description provided for @charEditorCharacterName.
+  ///
+  /// In en, this message translates to:
+  /// **'CHARACTER NAME'**
+  String get charEditorCharacterName;
+
+  /// No description provided for @charEditorPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Character tags, appearance...'**
+  String get charEditorPromptHint;
+
+  /// No description provided for @charEditorUcHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Undesired tags...'**
+  String get charEditorUcHint;
+
+  /// No description provided for @charEditorShowUc.
+  ///
+  /// In en, this message translates to:
+  /// **'UC'**
+  String get charEditorShowUc;
+
+  /// No description provided for @charEditorShowPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'POS'**
+  String get charEditorShowPosition;
+
+  /// No description provided for @charEditorShowPresets.
+  ///
+  /// In en, this message translates to:
+  /// **'PRESET'**
+  String get charEditorShowPresets;
+
+  /// No description provided for @charEditorAiDecidesPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'AI decides position'**
+  String get charEditorAiDecidesPosition;
+
+  /// No description provided for @charEditorAddCharacter.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD CHARACTER'**
+  String get charEditorAddCharacter;
+
+  /// No description provided for @charEditorDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"?'**
+  String charEditorDeleteConfirm(String name);
+
+  /// No description provided for @charEditorDeleteCharacter.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE CHARACTER'**
+  String get charEditorDeleteCharacter;
+
+  /// No description provided for @charEditorInteractions.
+  ///
+  /// In en, this message translates to:
+  /// **'INTERACTIONS'**
+  String get charEditorInteractions;
+
+  /// No description provided for @charEditorAddInteraction.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD INTERACTION'**
+  String get charEditorAddInteraction;
+
+  /// No description provided for @charEditorInteractionDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} → {target}: {action}'**
+  String charEditorInteractionDisplay(
+    String source,
+    String target,
+    String action,
+  );
+
+  /// No description provided for @charEditorMutualDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} ↔ {target}: {action}'**
+  String charEditorMutualDisplay(String source, String target, String action);
+
+  /// No description provided for @charEditorSavePreset.
+  ///
+  /// In en, this message translates to:
+  /// **'SAVE PRESET'**
+  String get charEditorSavePreset;
+
+  /// No description provided for @charEditorLoadPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'LOAD PRESET'**
+  String get charEditorLoadPreset;
+
+  /// No description provided for @charEditorPresetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset Name'**
+  String get charEditorPresetName;
+
+  /// No description provided for @charEditorNoPresets.
+  ///
+  /// In en, this message translates to:
+  /// **'No character presets saved'**
+  String get charEditorNoPresets;
+
+  /// No description provided for @charEditorSelectSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Character'**
+  String get charEditorSelectSource;
+
+  /// No description provided for @charEditorSelectTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Target Character'**
+  String get charEditorSelectTarget;
+
+  /// No description provided for @charEditorCharacterN.
+  ///
+  /// In en, this message translates to:
+  /// **'Character {n}'**
+  String charEditorCharacterN(int n);
+
+  /// No description provided for @charEditorContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'CONTINUE'**
+  String get charEditorContinue;
+
+  /// No description provided for @charEditorParticipants.
+  ///
+  /// In en, this message translates to:
+  /// **'PARTICIPANTS'**
+  String get charEditorParticipants;
+
+  /// No description provided for @charEditorSourceTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'SOURCE → TARGET'**
+  String get charEditorSourceTarget;
+
+  /// No description provided for @charEditorMutual.
+  ///
+  /// In en, this message translates to:
+  /// **'MUTUAL'**
+  String get charEditorMutual;
 }
 
 class _AppLocalizationsDelegate

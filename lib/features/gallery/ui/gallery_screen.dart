@@ -1089,12 +1089,12 @@ class _GalleryScreenState extends State<GalleryScreen> {
               bottom: 4,
               left: 4,
               child: Container(
-                padding: const EdgeInsets.all(2),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(3),
+                  color: t.accentEdit.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                child: Icon(Icons.layers, size: mobile ? 14 : 11, color: Colors.white70),
+                child: Icon(Icons.palette, size: mobile ? 16 : 13, color: Colors.white),
               ),
             ),
           // Selection checkmark (top-right)

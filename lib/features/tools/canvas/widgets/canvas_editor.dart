@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/l10n/l10n_extensions.dart';
@@ -39,6 +40,7 @@ class _CanvasEditorState extends State<CanvasEditor> {
     final mobile = isMobile(context);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: t.background,
       body: SafeArea(
         child: Column(
@@ -281,13 +283,23 @@ class _CanvasEditorState extends State<CanvasEditor> {
           stroke.points.first.dy * height,
         );
         final fontSize = (stroke.fontSize ?? 0.05) * height;
+        final letterSpacing = (stroke.letterSpacing ?? 0.0) * height;
         final color = Color(stroke.colorValue)
             .withValues(alpha: stroke.opacity);
+        TextStyle style = TextStyle(
+          color: color,
+          fontSize: fontSize,
+          letterSpacing: letterSpacing,
+        );
+        if (stroke.fontFamily != null) {
+          try {
+            style = GoogleFonts.getFont(stroke.fontFamily!, textStyle: style);
+          } catch (_) {
+            // Fall back to default if font not available
+          }
+        }
         final textPainter = TextPainter(
-          text: TextSpan(
-            text: stroke.text,
-            style: TextStyle(color: color, fontSize: fontSize),
-          ),
+          text: TextSpan(text: stroke.text, style: style),
           textDirection: TextDirection.ltr,
         )..layout();
         textPainter.paint(canvas, pos);

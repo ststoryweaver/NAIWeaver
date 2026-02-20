@@ -29,16 +29,13 @@ class CharacterShelf extends StatelessWidget {
 
   void _openInteractionEditor(
       BuildContext context, GenerationNotifier notifier, int index1, int index2) {
-    final interaction = notifier.state.interactions.firstWhere(
-      (i) =>
-          (i.sourceCharacterIndex == index1 && i.targetCharacterIndex == index2) ||
-          (i.sourceCharacterIndex == index2 && i.targetCharacterIndex == index1),
-      orElse: () => NaiInteraction(
-        sourceCharacterIndex: index1,
-        targetCharacterIndex: index2,
-        actionName: "",
-        type: InteractionType.sourceTarget,
-      ),
+    // Find existing interaction involving these two characters
+    final existing = notifier.state.interactions.cast<NaiInteraction?>().firstWhere(
+      (i) => i != null &&
+          ((i.sourceCharacterIndices.contains(index1) && i.targetCharacterIndices.contains(index2)) ||
+           (i.sourceCharacterIndices.contains(index2) && i.targetCharacterIndices.contains(index1)) ||
+           (i.type == InteractionType.mutual && i.sourceCharacterIndices.contains(index1) && i.sourceCharacterIndices.contains(index2))),
+      orElse: () => null,
     );
 
     showModalBottomSheet(
@@ -46,11 +43,15 @@ class CharacterShelf extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: const Color(0xFF111111),
       builder: (context) => ActionInteractionSheet(
-        index1: index1,
-        index2: index2,
-        initialInteraction: interaction.actionName.isEmpty ? null : interaction,
-        onSave: (updated) => notifier.updateInteraction(updated),
-        onDelete: () => notifier.removeInteraction(index1, index2),
+        sourceIndices: existing?.sourceCharacterIndices ?? [index1],
+        targetIndices: existing?.targetCharacterIndices ?? [index2],
+        initialType: existing?.type ?? InteractionType.sourceTarget,
+        characters: notifier.state.characters,
+        initialInteraction: existing,
+        onSave: (updated) => notifier.updateInteraction(updated, replacing: existing),
+        onDelete: () {
+          if (existing != null) notifier.removeInteraction(existing);
+        },
       ),
     );
   }
@@ -118,8 +119,9 @@ class CharacterShelf extends StatelessWidget {
                   final charIndex1 = adjustedIndex ~/ 2;
                   final charIndex2 = charIndex1 + 1;
                   final hasInteraction = interactions.any((i) =>
-                      (i.sourceCharacterIndex == charIndex1 && i.targetCharacterIndex == charIndex2) ||
-                      (i.sourceCharacterIndex == charIndex2 && i.targetCharacterIndex == charIndex1));
+                      (i.sourceCharacterIndices.contains(charIndex1) && i.targetCharacterIndices.contains(charIndex2)) ||
+                      (i.sourceCharacterIndices.contains(charIndex2) && i.targetCharacterIndices.contains(charIndex1)) ||
+                      (i.type == InteractionType.mutual && i.sourceCharacterIndices.contains(charIndex1) && i.sourceCharacterIndices.contains(charIndex2)));
 
                   return _LinkButton(
                     isActive: hasInteraction,

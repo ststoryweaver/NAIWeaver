@@ -8,6 +8,7 @@ import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/services/preferences_service.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/image_utils.dart';
+import '../../../../core/widgets/custom_resolution_dialog.dart';
 import '../../../gallery/providers/gallery_notifier.dart';
 import '../../../generation/providers/generation_notifier.dart';
 import '../../../generation/widgets/settings_panel.dart';
@@ -188,12 +189,17 @@ void _showBlankCanvasDialog(BuildContext context) {
   String selectedValue = resOptions.any((o) => o.value == currentValue)
       ? currentValue
       : resOptions.first.value;
+  // Track ad-hoc custom entry that isn't in the saved list
+  ResolutionOption? adHocCustom;
 
   showDialog(
     context: context,
     builder: (ctx) {
       return StatefulBuilder(
         builder: (ctx, setDialogState) {
+          // Build items, including ad-hoc custom if present
+          final allOptions = [...resOptions, if (adHocCustom != null && !resOptions.any((o) => o.value == adHocCustom!.value)) adHocCustom!];
+
           return AlertDialog(
             backgroundColor: t.surfaceHigh,
             title: Text(
@@ -221,18 +227,39 @@ void _showBlankCanvasDialog(BuildContext context) {
                   fontSize: t.fontSize(11),
                   letterSpacing: 1,
                 ),
-                onChanged: (val) {
+                onChanged: (val) async {
+                  if (val == '__custom__') {
+                    final result = await showCustomResolutionDialog(ctx);
+                    if (result != null) {
+                      setDialogState(() {
+                        adHocCustom = result;
+                        selectedValue = result.value;
+                      });
+                    }
+                    return;
+                  }
                   if (val != null) {
                     setDialogState(() => selectedValue = val);
                   }
                 },
-                items: resOptions
-                    .map((opt) => DropdownMenuItem<String>(
-                          value: opt.value,
-                          child: Text(opt.displayLabel,
-                              style: TextStyle(fontSize: t.fontSize(10))),
-                        ))
-                    .toList(),
+                items: [
+                  ...allOptions.map((opt) => DropdownMenuItem<String>(
+                        value: opt.value,
+                        child: Text(opt.displayLabel,
+                            style: TextStyle(fontSize: t.fontSize(10))),
+                      )),
+                  DropdownMenuItem<String>(
+                    value: '__custom__',
+                    child: Row(
+                      children: [
+                        Icon(Icons.add, size: 14, color: t.accentSuccess),
+                        const SizedBox(width: 8),
+                        Text(l.resCustomEntry.toUpperCase(),
+                            style: TextStyle(fontSize: t.fontSize(10), color: t.accentSuccess)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             actions: [

@@ -38,6 +38,9 @@ class PreferencesService {
   static const String _keyShowAnlasTracker = 'show_anlas_tracker';
   static const String _keyCanvasAutoSave = 'canvas_auto_save';
   static const String _keyCustomOutputDir = 'custom_output_dir';
+  static const String _keyCustomResolutions = 'custom_resolutions';
+  static const String _keyCharacterEditorMode = 'character_editor_mode';
+  static const String _keyCharacterPresets = 'character_presets';
 
   static const String _secureKeyApiKey = 'nai_api_key_secure';
 
@@ -318,6 +321,14 @@ class PreferencesService {
     }
   }
 
+  // — Custom Resolutions —
+
+  String get customResolutions => _prefs.getString(_keyCustomResolutions) ?? '';
+
+  Future<void> setCustomResolutions(String value) async {
+    await _prefs.setString(_keyCustomResolutions, value);
+  }
+
   // — Default Save Album —
 
   String? get defaultSaveAlbumId => _prefs.getString(_keyDefaultSaveAlbumId);
@@ -328,5 +339,23 @@ class PreferencesService {
     } else {
       await _prefs.setString(_keyDefaultSaveAlbumId, id);
     }
+  }
+
+  // — Character Editor Mode —
+
+  String get characterEditorMode =>
+      _prefs.getString(_keyCharacterEditorMode) ?? 'expanded';
+
+  Future<void> setCharacterEditorMode(String value) async {
+    await _prefs.setString(_keyCharacterEditorMode, value);
+  }
+
+  // — Character Presets —
+
+  String get characterPresets =>
+      _prefs.getString(_keyCharacterPresets) ?? '';
+
+  Future<void> setCharacterPresets(String value) async {
+    await _prefs.setString(_keyCharacterPresets, value);
   }
 }

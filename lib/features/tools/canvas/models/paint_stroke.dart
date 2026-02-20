@@ -15,6 +15,8 @@ class PaintStroke {
   final bool smooth;
   final String? text;
   final double? fontSize; // normalized 0-1 relative to image height
+  final String? fontFamily; // Google Fonts family name (null = default)
+  final double? letterSpacing; // normalized relative to image height
 
   const PaintStroke({
     required this.points,
@@ -26,6 +28,8 @@ class PaintStroke {
     this.smooth = false,
     this.text,
     this.fontSize,
+    this.fontFamily,
+    this.letterSpacing,
   });
 
   Color get color => Color(colorValue);
@@ -40,6 +44,8 @@ class PaintStroke {
         'smooth': smooth,
         if (text != null) 'text': text,
         if (fontSize != null) 'fontSize': fontSize,
+        if (fontFamily != null) 'fontFamily': fontFamily,
+        if (letterSpacing != null) 'letterSpacing': letterSpacing,
       };
 
   factory PaintStroke.fromJson(Map<String, dynamic> json) {
@@ -58,6 +64,8 @@ class PaintStroke {
       smooth: json['smooth'] as bool? ?? false,
       text: json['text'] as String?,
       fontSize: (json['fontSize'] as num?)?.toDouble(),
+      fontFamily: json['fontFamily'] as String?,
+      letterSpacing: (json['letterSpacing'] as num?)?.toDouble(),
     );
   }
 }

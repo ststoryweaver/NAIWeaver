@@ -51,9 +51,16 @@ class CascadeState {
 
 class CascadeNotifier extends ChangeNotifier {
   static const String _storageKey = 'saved_prompt_cascades';
-  
+
   CascadeState _state = CascadeState();
   CascadeState get state => _state;
+
+  String? _savedSnapshot;
+
+  bool get hasUnsavedChanges {
+    if (_state.activeCascade == null) return false;
+    return json.encode(_state.activeCascade!.toJson()) != _savedSnapshot;
+  }
 
   CascadeNotifier() {
     _loadFromStorage();
@@ -91,6 +98,7 @@ class CascadeNotifier extends ChangeNotifier {
   }
 
   void setActiveCascade(PromptCascade? cascade) {
+    _savedSnapshot = cascade != null ? json.encode(cascade.toJson()) : null;
     _state = _state.copyWith(
       activeCascade: cascade,
       clearActiveCascade: cascade == null,
@@ -157,13 +165,14 @@ class CascadeNotifier extends ChangeNotifier {
         ),
       ],
     );
+    _savedSnapshot = null; // Never saved yet → always dirty
     _state = _state.copyWith(activeCascade: newCascade, selectedBeatIndex: 0);
     notifyListeners();
   }
 
   void saveActiveToLibrary() {
     if (_state.activeCascade == null) return;
-    
+
     final existingIndex = _state.savedCascades.indexWhere((c) => c.name == _state.activeCascade!.name);
     List<PromptCascade> updatedList;
     if (existingIndex >= 0) {
@@ -171,7 +180,8 @@ class CascadeNotifier extends ChangeNotifier {
     } else {
       updatedList = List<PromptCascade>.from(_state.savedCascades)..add(_state.activeCascade!);
     }
-    
+
+    _savedSnapshot = json.encode(_state.activeCascade!.toJson());
     _state = _state.copyWith(savedCascades: updatedList);
     _saveToStorage();
     notifyListeners();

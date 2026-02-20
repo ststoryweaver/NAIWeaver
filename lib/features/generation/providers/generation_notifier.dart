@@ -18,6 +18,7 @@ import '../../../styles.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../../tools/providers/tag_library_notifier.dart';
 import '../models/nai_character.dart';
+import '../models/character_preset.dart';
 import '../../tools/cascade/services/cascade_stitching_service.dart';
 import '../../tools/img2img/services/img2img_request_builder.dart';
 import '../../director_ref/models/director_reference.dart';
@@ -61,6 +62,8 @@ class GenerationState {
   final bool furryMode;
   final String? errorMessage;
   final int? anlas;
+  final String characterEditorMode;
+  final List<CharacterPreset> characterPresets;
 
   GenerationState({
     this.generatedImage,
@@ -95,6 +98,8 @@ class GenerationState {
     this.furryMode = false,
     this.errorMessage,
     this.anlas,
+    this.characterEditorMode = 'expanded',
+    this.characterPresets = const [],
   });
 
   GenerationState copyWith({
@@ -132,6 +137,8 @@ class GenerationState {
     bool clearErrorMessage = false,
     int? anlas,
     bool clearAnlas = false,
+    String? characterEditorMode,
+    List<CharacterPreset>? characterPresets,
   }) {
     return GenerationState(
       generatedImage: generatedImage ?? this.generatedImage,
@@ -166,6 +173,8 @@ class GenerationState {
       furryMode: furryMode ?? this.furryMode,
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       anlas: clearAnlas ? null : (anlas ?? this.anlas),
+      characterEditorMode: characterEditorMode ?? this.characterEditorMode,
+      characterPresets: characterPresets ?? this.characterPresets,
     );
   }
 }
@@ -279,7 +288,9 @@ class GenerationNotifier extends ChangeNotifier {
       brightTheme: _prefs.brightTheme,
       showEditButton: _prefs.showEditButton,
       furryMode: _prefs.furryMode,
+      characterEditorMode: _prefs.characterEditorMode,
     );
+    loadCharacterPresets();
     notifyListeners();
 
     await _restoreSessionSnapshot();
@@ -407,10 +418,11 @@ class GenerationNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addCharacter() {
+  void addCharacter({String name = ''}) {
     if (_state.characters.length >= 6) return;
     final updated = List<NaiCharacter>.from(_state.characters)
       ..add(NaiCharacter(
+        name: name,
         prompt: "",
         uc: "",
         center: NaiCoordinate(x: 0.5, y: 0.5),
@@ -429,22 +441,22 @@ class GenerationNotifier extends ChangeNotifier {
 
   void removeCharacter(int index) {
     if (index < 0 || index >= _state.characters.length) return;
-    
+
     // Update characters
     final updatedChars = List<NaiCharacter>.from(_state.characters)..removeAt(index);
-    
-    // Cleanup interactions involving this character or with higher indices
+
+    // Cleanup interactions: remove the index from lists, decrement higher indices
     final updatedInteractions = _state.interactions
-        .where((i) => i.sourceCharacterIndex != index && i.targetCharacterIndex != index)
         .map((i) {
-          int newSource = i.sourceCharacterIndex;
-          int newTarget = i.targetCharacterIndex;
-          if (newSource > index) newSource--;
-          if (newTarget > index) newTarget--;
-          return i.copyWith(
-            sourceCharacterIndex: newSource,
-            targetCharacterIndex: newTarget,
-          );
+          var sources = i.sourceCharacterIndices.where((s) => s != index).toList();
+          var targets = i.targetCharacterIndices.where((t) => t != index).toList();
+          sources = sources.map((s) => s > index ? s - 1 : s).toList();
+          targets = targets.map((t) => t > index ? t - 1 : t).toList();
+          return i.copyWith(sourceCharacterIndices: sources, targetCharacterIndices: targets);
+        })
+        .where((i) {
+          if (i.type == InteractionType.mutual) return i.sourceCharacterIndices.isNotEmpty;
+          return i.sourceCharacterIndices.isNotEmpty && i.targetCharacterIndices.isNotEmpty;
         })
         .toList();
 
@@ -455,13 +467,13 @@ class GenerationNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateInteraction(NaiInteraction interaction) {
+  void updateInteraction(NaiInteraction interaction, {NaiInteraction? replacing}) {
     final updated = List<NaiInteraction>.from(_state.interactions);
-    final existingIndex = updated.indexWhere((i) =>
-        (i.sourceCharacterIndex == interaction.sourceCharacterIndex &&
-            i.targetCharacterIndex == interaction.targetCharacterIndex) ||
-        (i.sourceCharacterIndex == interaction.targetCharacterIndex &&
-            i.targetCharacterIndex == interaction.sourceCharacterIndex));
+
+    // Find existing by identity match (same action + overlapping participants) or explicit replacing reference
+    final existingIndex = replacing != null
+        ? updated.indexWhere((i) => i.actionName == replacing.actionName && i.type == replacing.type)
+        : updated.indexWhere((i) => i.actionName == interaction.actionName);
 
     if (existingIndex >= 0) {
       if (interaction.actionName.isEmpty) {
@@ -492,12 +504,66 @@ class GenerationNotifier extends ChangeNotifier {
     }
   }
 
-  void removeInteraction(int index1, int index2) {
+  void removeInteraction(NaiInteraction interaction) {
     final updated = List<NaiInteraction>.from(_state.interactions);
-    updated.removeWhere((i) =>
-        (i.sourceCharacterIndex == index1 && i.targetCharacterIndex == index2) ||
-        (i.sourceCharacterIndex == index2 && i.targetCharacterIndex == index1));
+    updated.removeWhere((i) => i.actionName == interaction.actionName && i.type == interaction.type);
     _state = _state.copyWith(interactions: updated);
+    notifyListeners();
+  }
+
+  // — Character Editor Mode —
+
+  Future<void> setCharacterEditorMode(String mode) async {
+    await _prefs.setCharacterEditorMode(mode);
+    _state = _state.copyWith(characterEditorMode: mode);
+    notifyListeners();
+  }
+
+  // — Character Presets —
+
+  void loadCharacterPresets() {
+    final raw = _prefs.characterPresets;
+    if (raw.isEmpty) return;
+    try {
+      final list = jsonDecode(raw) as List;
+      final presets = list
+          .map((e) => CharacterPreset.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _state = _state.copyWith(characterPresets: presets);
+    } catch (_) {}
+  }
+
+  Future<void> _persistCharacterPresets() async {
+    final json = jsonEncode(
+        _state.characterPresets.map((p) => p.toJson()).toList());
+    await _prefs.setCharacterPresets(json);
+  }
+
+  Future<void> saveCharacterPreset(CharacterPreset preset) async {
+    final updated = List<CharacterPreset>.from(_state.characterPresets)
+      ..add(preset);
+    _state = _state.copyWith(characterPresets: updated);
+    notifyListeners();
+    await _persistCharacterPresets();
+  }
+
+  Future<void> deleteCharacterPreset(String id) async {
+    final updated = List<CharacterPreset>.from(_state.characterPresets)
+      ..removeWhere((p) => p.id == id);
+    _state = _state.copyWith(characterPresets: updated);
+    notifyListeners();
+    await _persistCharacterPresets();
+  }
+
+  void applyCharacterPreset(int charIndex, CharacterPreset preset) {
+    if (charIndex < 0 || charIndex >= _state.characters.length) return;
+    final updated = List<NaiCharacter>.from(_state.characters);
+    updated[charIndex] = updated[charIndex].copyWith(
+      name: preset.name,
+      prompt: preset.prompt,
+      uc: preset.uc,
+    );
+    _state = _state.copyWith(characters: updated);
     notifyListeners();
   }
 
@@ -795,7 +861,12 @@ class GenerationNotifier extends ChangeNotifier {
                   ? negCaption['char_captions'] as List?
                   : null;
 
+              final interactionPattern =
+                  RegExp(r'^(source|target|mutual)#([^,]+),\s*');
               final characters = <NaiCharacter>[];
+              final rawTags =
+                  <({int charIndex, String type, String action})>[];
+
               for (int i = 0; i < charCaptions.length; i++) {
                 final cc = charCaptions[i] as Map<String, dynamic>;
                 final centers = cc['centers'] as List?;
@@ -811,19 +882,76 @@ class GenerationNotifier extends ChangeNotifier {
                       '';
                 }
 
+                // Extract and strip interaction prefixes from char_caption
+                String caption = cc['char_caption'] ?? '';
+                while (true) {
+                  final match = interactionPattern.firstMatch(caption);
+                  if (match == null) break;
+                  rawTags.add((
+                    charIndex: i,
+                    type: match.group(1)!,
+                    action: match.group(2)!,
+                  ));
+                  caption = caption.substring(match.end);
+                }
+
                 characters.add(NaiCharacter(
-                  prompt: cc['char_caption'] ?? '',
+                  prompt: caption,
                   uc: uc,
                   center: center,
                 ));
               }
 
+              // Build NaiInteraction objects by grouping chars with the same (type, action)
+              final interactions = <NaiInteraction>[];
+              final actionGroups = <String, ({List<int> sources, List<int> targets, List<int> mutuals})>{};
+
+              for (final tag in rawTags) {
+                final group = actionGroups.putIfAbsent(
+                  tag.action,
+                  () => (sources: <int>[], targets: <int>[], mutuals: <int>[]),
+                );
+                if (tag.type == 'source') {
+                  group.sources.add(tag.charIndex);
+                } else if (tag.type == 'target') {
+                  group.targets.add(tag.charIndex);
+                } else if (tag.type == 'mutual') {
+                  group.mutuals.add(tag.charIndex);
+                }
+              }
+
+              for (final entry in actionGroups.entries) {
+                final g = entry.value;
+                if (g.sources.isNotEmpty && g.targets.isNotEmpty) {
+                  interactions.add(NaiInteraction(
+                    sourceCharacterIndices: g.sources,
+                    targetCharacterIndices: g.targets,
+                    actionName: entry.key,
+                    type: InteractionType.sourceTarget,
+                  ));
+                }
+                if (g.mutuals.isNotEmpty) {
+                  interactions.add(NaiInteraction(
+                    sourceCharacterIndices: g.mutuals,
+                    targetCharacterIndices: [],
+                    actionName: entry.key,
+                    type: InteractionType.mutual,
+                  ));
+                }
+              }
+
               final useCoords = v4Prompt['use_coords'] as bool? ?? false;
               _state = _state.copyWith(
                 characters: characters,
+                interactions: interactions,
                 autoPositioning: !useCoords,
               );
             }
+          } else {
+            _state = _state.copyWith(
+              characters: [],
+              interactions: [],
+            );
           }
         }
       }

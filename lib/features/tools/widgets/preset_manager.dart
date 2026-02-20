@@ -643,13 +643,15 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
                             final updated = List<NaiCharacter>.from(preset.characters)..removeAt(index);
                             // Also cleanup interactions
                             final updatedInts = preset.interactions
-                                .where((i) => i.sourceCharacterIndex != index && i.targetCharacterIndex != index)
                                 .map((i) {
-                              int s = i.sourceCharacterIndex;
-                              int tIdx = i.targetCharacterIndex;
-                              if (s > index) s--;
-                              if (tIdx > index) tIdx--;
-                              return i.copyWith(sourceCharacterIndex: s, targetCharacterIndex: tIdx);
+                              var sources = i.sourceCharacterIndices.where((s) => s != index).toList();
+                              var targets = i.targetCharacterIndices.where((t) => t != index).toList();
+                              sources = sources.map((s) => s > index ? s - 1 : s).toList();
+                              targets = targets.map((t) => t > index ? t - 1 : t).toList();
+                              return i.copyWith(sourceCharacterIndices: sources, targetCharacterIndices: targets);
+                            }).where((i) {
+                              if (i.type == InteractionType.mutual) return i.sourceCharacterIndices.isNotEmpty;
+                              return i.sourceCharacterIndices.isNotEmpty && i.targetCharacterIndices.isNotEmpty;
                             }).toList();
                             notifier.updateCurrentPreset(characters: updated, interactions: updatedInts);
                           },
@@ -704,7 +706,9 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "${interaction.sourceCharacterIndex + 1} -> ${interaction.targetCharacterIndex + 1}: ${interaction.actionName.toUpperCase()}",
+                      interaction.type == InteractionType.mutual
+                          ? "${interaction.sourceCharacterIndices.map((i) => i + 1).join(' \u2194 ')}: ${interaction.actionName.toUpperCase()}"
+                          : "${interaction.sourceCharacterIndices.map((i) => i + 1).join(',')} -> ${interaction.targetCharacterIndices.map((i) => i + 1).join(',')}: ${interaction.actionName.toUpperCase()}",
                       style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(8)),
                     ),
                     const SizedBox(width: 4),

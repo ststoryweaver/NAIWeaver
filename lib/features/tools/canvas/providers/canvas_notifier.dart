@@ -33,6 +33,72 @@ class CanvasNotifier extends ChangeNotifier {
   bool _smoothStrokes = true;
   bool get smoothStrokes => _smoothStrokes;
 
+  // --- Persistent text-tool settings ---
+  double _pendingTextFontSize = 0.05;
+  String? _pendingTextFontFamily;
+  double _pendingTextLetterSpacing = 0.0;
+
+  double get pendingTextFontSize => _pendingTextFontSize;
+  String? get pendingTextFontFamily => _pendingTextFontFamily;
+  double get pendingTextLetterSpacing => _pendingTextLetterSpacing;
+
+  void setPendingTextFontSize(double size) {
+    _pendingTextFontSize = size.clamp(0.01, 0.20);
+    notifyListeners();
+  }
+
+  void setPendingTextFontFamily(String? family) {
+    _pendingTextFontFamily = family;
+    notifyListeners();
+  }
+
+  void setPendingTextLetterSpacing(double spacing) {
+    _pendingTextLetterSpacing = spacing.clamp(-0.01, 0.05);
+    notifyListeners();
+  }
+
+  // --- Pending text editing state ---
+  Offset? _pendingTextPosition; // normalized tap position
+  String _pendingTextContent = '';
+
+  Offset? get pendingTextPosition => _pendingTextPosition;
+  String get pendingTextContent => _pendingTextContent;
+  bool get hasPendingText => _pendingTextPosition != null;
+
+  void beginTextEditing(Offset normalizedPos) {
+    _pendingTextPosition = normalizedPos;
+    _pendingTextContent = '';
+    notifyListeners();
+  }
+
+  void updatePendingText(String text) {
+    _pendingTextContent = text;
+    notifyListeners();
+  }
+
+  void commitPendingText() {
+    if (_pendingTextPosition == null || _pendingTextContent.trim().isEmpty) {
+      cancelPendingText();
+      return;
+    }
+    addTextStroke(
+      position: _pendingTextPosition!,
+      text: _pendingTextContent.trim(),
+      fontSize: _pendingTextFontSize,
+      fontFamily: _pendingTextFontFamily,
+      letterSpacing: _pendingTextLetterSpacing,
+    );
+    _pendingTextPosition = null;
+    _pendingTextContent = '';
+    notifyListeners();
+  }
+
+  void cancelPendingText() {
+    _pendingTextPosition = null;
+    _pendingTextContent = '';
+    notifyListeners();
+  }
+
   // --- Eyedropper state ---
   CanvasTool? _previousToolBeforeEyedropper;
 
@@ -78,6 +144,8 @@ class CanvasNotifier extends ChangeNotifier {
   void clearSession() {
     _session = null;
     _currentStrokePoints = null;
+    _pendingTextPosition = null;
+    _pendingTextContent = '';
     notifyListeners();
   }
 
@@ -205,6 +273,8 @@ class CanvasNotifier extends ChangeNotifier {
     required Offset position,
     required String text,
     required double fontSize,
+    String? fontFamily,
+    double? letterSpacing,
   }) {
     if (_session == null) return;
     final activeLayer = _session!.activeLayer;
@@ -217,6 +287,8 @@ class CanvasNotifier extends ChangeNotifier {
       strokeType: StrokeType.text,
       text: text,
       fontSize: fontSize,
+      fontFamily: fontFamily,
+      letterSpacing: letterSpacing,
     );
     _pushAction(AddStrokeAction(layerId: activeLayer.id, stroke: stroke));
   }

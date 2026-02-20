@@ -113,6 +113,8 @@ class _AppSettingsState extends State<AppSettings> {
             t: t,
           ),
           const SizedBox(height: 12),
+          _buildCharEditorModeToggle(notifier, state, t),
+          const SizedBox(height: 12),
           _buildThemeBuilderButton(t),
           const SizedBox(height: 32),
           _buildHeader(l.settingsExport.toUpperCase(), t),
@@ -445,6 +447,20 @@ class _AppSettingsState extends State<AppSettings> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildCharEditorModeToggle(GenerationNotifier notifier, GenerationState state, dynamic t) {
+    final l = context.l;
+    return _buildShelfToggle(
+      label: l.settingsCharEditorMode.toUpperCase(),
+      description: l.settingsCharEditorModeDesc,
+      value: state.characterEditorMode == 'expanded',
+      onChanged: (_) {
+        final newMode = state.characterEditorMode == 'expanded' ? 'compact' : 'expanded';
+        notifier.setCharacterEditorMode(newMode);
+      },
+      t: t,
     );
   }
 

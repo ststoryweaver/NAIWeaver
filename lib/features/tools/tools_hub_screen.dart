@@ -140,7 +140,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
             )
           : null,
       body: mobile
-          ? _buildToolContent()
+          ? SafeArea(top: false, child: _buildToolContent())
           : Row(
               children: [
                 _buildSidebar(t, tools),
