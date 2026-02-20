@@ -12,8 +12,10 @@ Check out the github page to test it out, https://ststoryweaver.github.io/NAIWea
 
 ### Image Generation
 - NovelAI V4.5 API integration (txt2img, img2img, inpainting, precise reference, vibe transfer, multiple characters)
-- Multi-character generation with pixel-level positioning and interactions
-- Multi-layer canvas editor for img2img source creation (paint, erase, shapes, text, layers)
+- Multi-character generation with pixel-level positioning and multi-participant interactions
+- Expanded inline character editor with tag suggestions, UC editing, position grid, and character presets (save/load)
+- Multi-layer canvas editor for img2img source creation (paint, erase, shapes, text with Google Fonts, layers)
+- Custom resolution dialog with 64-snap validation and save-for-reuse
 - Anlas balance tracker in app bar with auto-refresh after generation
 - Furry mode toggle for fur dataset prefix in txt2img and Cascade
 - In-app update checker via GitHub releases API
@@ -27,7 +29,7 @@ Upload reference images to guide character appearance or artistic style. Support
 Apply the aesthetic "vibe" of reference images to generations. Each vibe has independent strength and information extraction controls, allowing fine-tuned style influence without precise character matching.
 
 ### Cascade System
-WIP sequential scene generation. Define setting, placement, actions, emotion, and state for each scene. Once your story is made, head back to the main editor, add your characters, and watch them play out the scenes.
+Sequential scene generation. Define setting, placement, actions, emotion, and state for each scene. Once your story is made, use the Cast button to return to the main editor, add your characters, and watch them play out the scenes. Includes unsaved-changes detection with save/discard confirmation.
 
 ### Gallery
 - Favorites, search, multi-select with drag-to-select
@@ -46,11 +48,11 @@ WIP sequential scene generation. Define setting, placement, actions, emotion, an
 | **Style Editor** | Prompt style templates with prefix, suffix, and negative content |
 | **Reference Manager** | Director Reference management with type, strength, and fidelity controls |
 | **Cascade Editor** | Multi-beat sequential scene generation with character slots and prompt stitching |
-| **Img2Img Editor** | Source image loading, canvas editor, brush-based mask painting, and inpainting |
+| **Img2Img Editor** | Source image loading, canvas editor, custom resolutions, brush-based mask painting, and inpainting |
 | **Slideshow** | Configurable image slideshow with transitions and Ken Burns effect from gallery or album sources |
 | **Packs** | Export/import presets, styles, wildcards, and director refs as `.vpack` files |
 | **Theme Builder** | 8 built-in themes + full custom theme editor with 15 configurable colors |
-| **Settings** | API key, auto-save, shelf visibility, and locale configuration |
+| **Settings** | API key, auto-save, shelf visibility, character editor mode, and locale configuration |
 
 ### Localization
 English and Japanese out of the box. Extensible via `.arb` files — see [Contributing](#localization-1) for adding new languages.
@@ -107,14 +109,15 @@ lib/
     l10n/                      # Locale state management
     services/                  # Preferences, paths, pack service
     utils/                     # Image utils, responsive helpers
+    widgets/                   # Shared widgets (custom resolution dialog, color picker, etc.)
   l10n/                        # ARB translation files (en, ja)
   features/
-    generation/                # Main generation UI and logic
+    generation/                # Main generation UI, character editor, presets
     gallery/                   # Image gallery with albums
     director_ref/              # Director Reference system
     vibe_transfer/             # Vibe Transfer system
     tools/                     # Tools Hub (11 tools)
-      canvas/                  # Multi-layer canvas editor
+      canvas/                  # Multi-layer canvas editor with text/font tools
       cascade/                 # Multi-beat sequential generation
       img2img/                 # Img2Img with inpainting
       slideshow/               # Configurable slideshow player

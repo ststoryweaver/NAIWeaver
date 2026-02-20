@@ -66,6 +66,21 @@
 - Japanese web build with separate `/ja/` deployment
 - Save original source image alongside img2img generation result with matching timestamps
 
+### Phase 6: Character System, Custom Resolutions & Canvas Text (post-v0.3.0)
+- Expanded inline character editor with tag suggestions, UC editing, position grid, and character presets (save/load)
+- Character editor mode toggle (expanded vs compact) in Settings
+- Multi-participant interactions: source and target now support multiple characters per interaction
+- Custom resolution dialog with 64-snap validation and save-for-reuse, integrated into blank canvas and Cascade
+- Canvas inline text editor with live preview, Google Fonts picker, and letter spacing control
+- Canvas `onTapUp` gesture handler for Android touch (tap-based tools: text, fill, eyedropper)
+- Canvas keyboard-safe Scaffold (resizeToAvoidBottomInset: false)
+- Cascade unsaved-changes guard with save/discard confirmation
+- Cascade "Cast" button for quick save-and-return workflow
+- Responsive cascade navigation buttons and overflow fixes
+- Gallery canvas badge redesign (palette icon with accent color)
+- Characters section in theme builder panel ordering
+- Full EN and JA localization for all new features
+
 ## Architecture
 - **Language/Framework**: Dart 3.10.7+ / Flutter (stable channel)
 - **Primary Target**: Windows desktop (also supports Android, iOS, Linux, macOS, Web)
@@ -86,6 +101,21 @@ NovelAI's Director Tools API provides image transformation capabilities beyond g
 
 These will be integrated as additional tools in the Tools Hub or as post-processing options accessible from the image viewer.
 
+### Enhance (Upscale)
+Image enhancement/upscale via NovelAI's API. Planned capabilities:
+- **Upscale**: Increase image resolution while preserving detail
+- Integration as a post-generation action in the image viewer and gallery detail view
+- Configurable enhancement parameters (strength, scale factor)
+
+### Cascade Editor Revamp
+Major overhaul of the Cascade Editor to improve usability and creative control:
+- Visual timeline with drag-and-drop beat reordering
+- Per-beat image preview thumbnails
+- Inline character appearance editing within beats
+- Beat duplication and templating
+- Improved multi-character slot management with visual indicators
+- Side-by-side beat comparison view
+
 ### NAI v4 Vibe Bundle Support
 Support for NovelAI's native vibe file formats:
 - **`.naiv4vibe`** — Single pre-encoded vibe file
@@ -101,5 +131,5 @@ Have an idea? Feature requests are welcome — please open a [GitHub Issue](../.
 - **Batch generation**: Queue N generations with seed increment or wildcard variance
 - **Keyboard shortcuts**: Hotkeys for common actions (generate, randomize seed, toggle settings)
 - **Prompt weight visualization**: Highlight tags with `{}` or `[]` weighting inline in the prompt field
-- **Resolution presets**: Named resolution presets per use-case (avatar, wallpaper, portrait, etc.)
+- ~~**Resolution presets**: Named resolution presets per use-case~~ *(Done — custom resolution dialog with save-for-reuse in Phase 6)*
 - **Cloud sync**: Sync presets, wildcards, and styles across devices

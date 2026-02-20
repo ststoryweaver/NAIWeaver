@@ -1,5 +1,49 @@
 # Changelog
 
+## Unreleased — Character Editor, Custom Resolutions & Canvas Text Tools
+
+### Character System
+- Expanded inline character editor as alternative to the compact shelf, with per-character tag suggestions, UC editing, position grid, and character presets
+- Character preset system: save and load reusable character configurations (prompt, UC, name) via SharedPreferences
+- Character editor mode toggle in Settings (expanded vs compact)
+- Multi-participant interactions: source and target now support multiple characters per interaction (backward-compatible JSON deserialization)
+- Redesigned action interaction sheet with multi-participant selection flow
+- Characters section added to theme builder panel ordering
+
+### Canvas Editor
+- Inline text editor with live canvas preview and blinking cursor, replacing the old modal dialog
+- Google Fonts picker for text tool (any Google Fonts family)
+- Letter spacing control for text tool
+- Persistent text-tool settings (font size, font family, letter spacing) across strokes
+- `onTapUp` gesture handler so tap-based tools (text, fill, eyedropper) work on Android touch devices
+- `resizeToAvoidBottomInset: false` on canvas Scaffold to prevent keyboard from resizing canvas
+- Google Fonts and letter spacing support in flatten pre-render pipeline
+- Expanded toolbar with text font/spacing controls
+
+### Custom Resolutions
+- Custom resolution dialog with width/height input, 64-snap validation, and optional save-for-reuse
+- Integrated custom resolution entry into blank canvas dialog and Cascade director beat settings
+- Saved custom resolutions persisted via SharedPreferences
+
+### Cascade
+- Unsaved-changes detection with save/discard confirmation dialog when leaving the editor
+- "Cast" button: save cascade to library and return to main screen in one action
+- Labeled "Back to Library" and "Exit Cascade" buttons with responsive sizing
+- Fixed text overflow on cascade name headers
+
+### Other
+- Gallery canvas badge uses palette icon with accent color instead of layers icon
+- Tools Hub mobile body wrapped in SafeArea
+- Simplified img2img editor header (removed redundant title and dimensions)
+- Full EN and JA localization for all new strings
+
+### New Files
+- `lib/core/widgets/custom_resolution_dialog.dart` — Custom resolution input dialog
+- `lib/features/generation/models/character_preset.dart` — CharacterPreset model
+- `lib/features/generation/widgets/inline_character_editor.dart` — Expanded inline character editor widget
+
+---
+
 ## v0.3.0 — Canvas Editor, Anlas Tracker & Furry Mode
 
 ### Canvas Editor

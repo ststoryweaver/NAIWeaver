@@ -7,7 +7,11 @@
 - **Img2Img Prompt Auto-Import**: Automatically extract and apply prompt from PNG metadata (tEXt + iTXt chunks) when loading a source image
 - **Custom Output Folder**: Configurable output directory for desktop platforms (Windows, Linux)
 - **Multi-Character Generation**: Up to 6 characters with independent prompts, negative prompts, and pixel-coordinate positioning via `char_captions` and `use_coords`
-- **Character Interactions**: Typed interaction tags (`source#action`, `target#action`, `mutual#action`) automatically injected into character captions
+- **Character Interactions**: Typed interaction tags (`source#action`, `target#action`, `mutual#action`) automatically injected into character captions, with multi-participant support (multiple source/target characters per interaction)
+- **Expanded Character Editor**: Inline character editor in the settings panel with per-character tag suggestions, UC editing, position grid, and character presets — alternative to the compact shelf
+- **Character Presets**: Save and load reusable character configurations (name, prompt, UC) for quick character switching
+- **Character Editor Mode**: Toggle between expanded (settings panel) and compact (shelf below prompt) modes via Settings
+- **Custom Resolution Dialog**: Enter arbitrary resolutions with automatic 64-snap validation; optionally save custom resolutions for reuse across sessions
 - **Seed Control**: Manual seed input with randomization toggle for reproducible or varied generations
 
 ## Reference Systems
@@ -33,26 +37,35 @@
 - **Preset Manager**: Full preset editor with inline sliders, character/interaction editing, and reference management
 - **Style Editor**: Create and edit prompt style templates with prefix, suffix, and negative content
 - **Reference Manager**: Add, configure, and manage Director Reference images with type/strength/fidelity controls
-- **Cascade Editor**: Multi-beat sequential scene generation with character slots, environment tags, and prompt stitching
-- **Img2Img Editor**: Source image loading, multi-layer canvas editor integration, blank canvas option, brush-based mask painting, strength/noise controls, client-side inpainting
+- **Cascade Editor**: Multi-beat sequential scene generation with character slots, environment tags, prompt stitching, custom resolutions per beat, and Cast button for quick save-and-return
+- **Img2Img Editor**: Source image loading, multi-layer canvas editor integration, blank canvas option with custom resolutions, brush-based mask painting, strength/noise controls, client-side inpainting
 - **Slideshow**: Configurable image slideshow player with transition timing, Ken Burns (pan/zoom) effect, and source selection from gallery or specific albums
 - **Packs**: Export and import NAIWeaver Packs (`.vpack` files) containing presets, styles, wildcards, and director reference images as portable ZIP archives
 - **Theme Builder**: Full theme customization with 8 built-in themes, custom user themes, color picker, font selector, text scale slider, bright mode toggle, and live preview
-- **Settings**: API key management, auto-save toggle, shelf visibility toggle (Director Reference, Vibe Transfer), custom output folder (desktop), locale selection
+- **Settings**: API key management, auto-save toggle, shelf visibility toggle (Director Reference, Vibe Transfer), character editor mode toggle, custom output folder (desktop), locale selection
 
 ## Cascade System
-- **Multi-Beat Scenes**: Define sequential beats with character slots, environment tags, and per-beat prompts
+- **Multi-Beat Scenes**: Define sequential beats with character slots, environment tags, per-beat prompts, and custom resolutions per beat
 - **Prompt Stitching Service**: Assembles final prompts from character appearances + environment + global styles
 - **Character Appearance Casting**: Define a character's look once and reuse across multiple beats
 - **Cascade Library**: Save and load cascade configurations via SharedPreferences
 - **Cascade Playback View**: Inline beat-by-beat playback overlay for cascade mode
+- **Unsaved Changes Guard**: Save/discard confirmation dialog when leaving the cascade editor with unsaved modifications
+- **Cast Button**: Save the active cascade to library and return to the main screen in one action
+- **Responsive Navigation**: Labeled "Back to Library" and "Exit Cascade" buttons with mobile/desktop sizing
 
 ## Canvas Editor
 - **Multi-Layer Canvas**: Full canvas editor with layer management — add, delete, reorder layers, per-layer visibility toggle and opacity control
 - **Drawing Tools**: Paint brush, eraser, shapes (rectangle, circle, line), fill bucket, and text tool
+- **Inline Text Editor**: Text tool opens an inline editor with live canvas preview and blinking cursor (replaces modal dialog)
+- **Google Fonts for Text**: Choose any Google Fonts family for the text tool via a searchable font picker
+- **Letter Spacing Control**: Adjustable letter spacing for canvas text strokes
+- **Persistent Text Settings**: Font size, font family, and letter spacing persist across text strokes within a session
 - **Eyedropper**: Pick colors from the canvas for precise color matching
-- **Flatten-to-PNG**: Merge all visible layers into a single PNG for seamless img2img pipeline integration
-- **Blank Canvas Option**: Start from a blank canvas in the img2img source picker instead of loading an existing image
+- **Android Touch Support**: Tap-based tools (text, fill, eyedropper) work correctly on touch devices via `onTapUp` gesture handling
+- **Keyboard-Safe Canvas**: Canvas does not resize when the soft keyboard opens for text editing
+- **Flatten-to-PNG**: Merge all visible layers into a single PNG for seamless img2img pipeline integration, with Google Fonts and letter spacing rendered correctly
+- **Blank Canvas Option**: Start from a blank canvas in the img2img source picker with standard or custom resolutions
 - **Img2Img Source Image Save**: Automatically save the source drawing (`Src_*.png`) alongside the generated result (`Gen_*.png`) with matching timestamps
 
 ## Anlas Balance Tracker
@@ -137,7 +150,7 @@
 - **Dark Theme (Default)**: High-contrast black (#000000) background with off-white (#FAFAFA) text, JetBrains Mono font
 - **Collapsible Settings Panel**: Slide-up advanced settings panel with grabber handle
 - **Interactive Image Viewer**: Pinch-to-zoom with `InteractiveViewer`, loading pulse animation, drag-drop overlay
-- **Character Shelf**: Horizontal scrollable shelf for quick character management on the main screen
+- **Character Shelf**: Horizontal scrollable shelf for quick character management on the main screen (compact mode); alternative expanded inline editor available in the settings panel
 - **Director Reference Shelf**: Horizontal shelf with type-colored chips for reference images (toggleable via Settings)
 - **Vibe Transfer Shelf**: Horizontal shelf with green-accented chips for vibe references (toggleable via Settings)
 - **Quick Edit Button**: One-tap access to send the current generation into the Img2Img editor

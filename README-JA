@@ -1,6 +1,6 @@
 NAIWeaver
 
-NovelAIの画像生成API (Diffusion V4.5) 用の非公式クロスプラットフォーム・フロントエンドです。Flutterで構築されており、Windows、Android、Webに対応しています。
+NovelAIの画像生成API (Diffusion V4.5) 用の非公式クロスプラットフォーム・フロントエンドです。Flutterで構築されており、Windows、Linux、Android、Webに対応しています。
 
 こちらのGitHubページでテスト可能です: https://ststoryweaver.github.io/NAIWeaver/
 機能 (Features)
@@ -8,7 +8,19 @@ NovelAIの画像生成API (Diffusion V4.5) 用の非公式クロスプラット�
 
     NovelAI V4.5 API統合: txt2img、img2img、インペインティング、Director Reference (Precise reference)、Vibe Transfer、複数キャラクター生成に対応。
 
-    複数キャラクター生成: ピクセルレベルでの位置指定や相互作用（インタラクション）が可能。
+    複数キャラクター生成: ピクセルレベルでの位置指定やマルチ参加者インタラクションが可能。
+
+    展開キャラクターエディター: タグ提案、UC編集、位置グリッド、キャラクタープリセット（保存/読み込み）を備えたインライン・キャラクターエディター。
+
+    マルチレイヤーキャンバスエディター: ペイント、消しゴム、図形、Google Fontsによるテキスト、レイヤーを備えたimg2imgソース作成用エディター。
+
+    カスタム解像度: 64スナップ検証と再利用可能な保存機能を備えたカスタム解像度ダイアログ。
+
+    Anlasバランストラッカー: 生成後に自動更新されるアプリバーのAnlas残高表示。
+
+    ファーリーモード: txt2imgとCascade生成用のファーリーデータセットプレフィックストグル。
+
+    アプリ内アップデートチェッカー: GitHub Releases APIによるバージョン確認。
 
     PNGメタデータの双方向利用: 設定は画像に埋め込まれ、ドラッグ＆ドロップで設定を再インポート可能。
 
@@ -22,7 +34,7 @@ Vibe Transfer
 参照画像の「雰囲気（Vibe）」を生成画像に適用します。各Vibeには独立した強度設定と情報抽出（Information Extraction）の制御があり、キャラクターの一致を強制することなく、スタイルの影響のみを微調整できます。
 Cascade System (カスケードシステム)
 
-※開発中 (WIP): 連続したシーン生成機能です。各シーンの設定、配置、アクション、感情、状態を定義します。ストーリーを作成したら、メインエディターに戻り、キャラクターを追加して、シーンが展開される様子を確認できます。
+連続したシーン生成機能です。各シーンの設定、配置、アクション、感情、状態を定義します。ストーリーを作成したら、キャストボタンでメインエディターに戻り、キャラクターを追加して、シーンが展開される様子を確認できます。未保存の変更検出機能と保存/破棄確認ダイアログを搭載。
 ギャラリー (Gallery)
 
     お気に入り、検索、ドラッグによる複数選択機能。
@@ -42,12 +54,12 @@ Tag Library	視覚的な例とインラインプレビュー生成を備えたDa
 Preset Manager	キャラクター、インタラクション、参照画像管理を含む完全なプリセットエディタ。
 Style Editor	プレフィックス（前置詞）、サフィックス（後置詞）、ネガティブプロンプトを含むプロンプトスタイルのテンプレート管理。
 Reference Manager	タイプ、強度、忠実度の制御を含むDirector Referenceの管理。
-Cascade Editor	キャラクタースロットとプロンプトの結合機能を備えた、マルチビート・シーケンシャル・シーン生成（連続シーン作成）。
-Img2Img Editor	ソース画像の読み込み、ブラシによるマスクペイント、インペインティング機能。
+Cascade Editor	キャスト機能、未保存変更検出、カスタム解像度を備えたマルチビート・シーケンシャル・シーン生成。
+Img2Img Editor	ソース画像の読み込み、キャンバスエディター、カスタム解像度、ブラシによるマスクペイント、インペインティング機能。
 Slideshow	ギャラリーやアルバムのソースから、トランジションやケン・バーンズ効果（パン＆ズーム）の設定が可能なスライドショー再生。
 Packs	プリセット、スタイル、ワイルドカード、Director Referenceを .vpack ファイルとしてエクスポート/インポート。
 Theme Builder	8つの内蔵テーマに加え、15の構成色をフルカスタマイズできるテーマエディタ。
-Settings	APIキー、自動保存、シェルフの表示設定、ロケール（言語）設定。
+Settings	APIキー、自動保存、シェルフの表示設定、キャラクターエディターモード、ロケール（言語）設定。
 多言語対応 (Localization)
 
 英語と日本語に標準対応しています。.arb ファイルによる拡張も可能です（新しい言語の追加については「Contributing」を参照してください）。
@@ -76,6 +88,7 @@ flutter pub get
 code Bash
 
 flutter run -d windows    # Windows
+flutter run -d linux       # Linux
 flutter run -d chrome     # Web
 flutter run               # Android (デバイス接続時)
 
@@ -83,6 +96,7 @@ flutter run               # Android (デバイス接続時)
 code Bash
 
 flutter build windows     # Windows リリースビルド
+flutter build linux        # Linux リリースビルド
 flutter build apk         # Android APK
 flutter build web         # Web ビルド
 
@@ -107,13 +121,15 @@ lib/
     l10n/                      # ロケール状態管理
     services/                  # 設定(Preferences)、パス、Packサービス
     utils/                     # 画像ユーティリティ、レスポンシブヘルパー
+    widgets/                   # 共有ウィジェット（カスタム解像度ダイアログ、カラーピッカーなど）
   l10n/                        # ARB 翻訳ファイル (en, ja)
   features/
-    generation/                # メイン生成UIおよびロジック
+    generation/                # メイン生成UI、キャラクターエディター、プリセット
     gallery/                   # アルバム機能付き画像ギャラリー
     director_ref/              # Director Reference システム
     vibe_transfer/             # Vibe Transfer システム
     tools/                     # ツールハブ (11ツール)
+      canvas/                  # テキスト/フォントツール付きマルチレイヤーキャンバスエディター
       cascade/                 # マルチビート・シーケンシャル生成
       img2img/                 # インペインティング付き Img2Img
       slideshow/               # 設定可能なスライドショープレイヤー

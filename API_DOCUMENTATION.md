@@ -91,6 +91,8 @@ Interaction tags are prepended to character captions:
 - **Target action**: `target#action_name, <character tags>`
 - **Mutual action**: `mutual#action_name, <character tags>`
 
+NAIWeaver supports multi-participant interactions where multiple characters can share the same source or target role. The interaction tag is prepended to each participating character's caption independently. For example, two source characters each get `source#holding_hands, ...` prepended, while the single target gets `target#holding_hands, ...`.
+
 ### Img2Img / Inpainting Parameters
 
 | Parameter | Type | Description |

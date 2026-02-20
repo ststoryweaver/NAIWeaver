@@ -21,7 +21,7 @@ lib/
 │   │   ├── locale_notifier.dart           # Locale state management (ChangeNotifier) with persistence
 │   │   └── l10n_extensions.dart           # BuildContext extension: `context.l` for localized strings
 │   ├── services/
-│   │   ├── preferences_service.dart       # SharedPreferences wrapper (API key, auto-save, shelf visibility, theme, favorites, locale, slideshow)
+│   │   ├── preferences_service.dart       # SharedPreferences wrapper (API key, auto-save, shelf visibility, theme, favorites, locale, slideshow, custom resolutions, character editor mode, character presets)
 │   │   ├── path_service.dart              # Platform-aware directory resolution
 │   │   ├── pack_service.dart              # ZIP-based .vpack export/import for presets, styles, wildcards, director refs
 │   │   ├── wildcard_service.dart          # Wildcard file I/O and indexing
@@ -33,7 +33,8 @@ lib/
 │   │   └── tag_suggestion_helper.dart     # Tag auto-complete logic shared across features
 │   └── widgets/
 │       ├── tag_suggestion_overlay.dart    # Reusable tag suggestion dropdown
-│       └── color_picker_dialog.dart       # Hex color picker with palette grid
+│       ├── color_picker_dialog.dart       # Hex color picker with palette grid
+│       └── custom_resolution_dialog.dart  # Custom resolution input with 64-snap validation and save-for-reuse
 ├── l10n/
 │   ├── app_en.arb                         # English translation strings
 │   ├── app_ja.arb                         # Japanese translation strings
@@ -43,13 +44,17 @@ lib/
 └── features/
     ├── generation/                        # Main generation feature
     │   ├── models/
-    │   │   └── nai_character.dart          # NaiCharacter, NaiInteraction, NaiCoordinate models
+    │   │   ├── nai_character.dart          # NaiCharacter, NaiInteraction (multi-participant), NaiCoordinate models
+    │   │   └── character_preset.dart       # CharacterPreset model for save/load character configurations
     │   ├── providers/
-    │   │   └── generation_notifier.dart    # Central business logic (~1200 lines)
+    │   │   └── generation_notifier.dart    # Central business logic (~1400 lines)
     │   └── widgets/
-    │       ├── settings_panel.dart         # Collapsible advanced settings panel
+    │       ├── settings_panel.dart         # Collapsible advanced settings panel with custom resolutions
     │       ├── image_viewer.dart           # Interactive image display with zoom
-    │       ├── character_shelf.dart        # Horizontal character chip shelf
+    │       ├── character_shelf.dart        # Horizontal character chip shelf (compact mode)
+    │       ├── inline_character_editor.dart # Expanded inline character editor with presets, tag suggestions, position grid
+    │       ├── character_editor_sheet.dart # Character editing bottom sheet
+    │       ├── action_interaction_sheet.dart # Multi-participant interaction editor
     │       └── vibe_transfer_shelf.dart    # Horizontal vibe transfer chip shelf
     ├── gallery/                           # Image vault / gallery
     │   ├── models/
@@ -93,34 +98,34 @@ lib/
         │   ├── tag_library_manager.dart    # Tag browser with preview generation
         │   ├── theme_builder.dart          # Theme customization UI (colors, font, scale, preview)
         │   ├── pack_manager.dart           # Pack export/import management UI
-        │   └── app_settings.dart           # API key, auto-save, shelf visibility, locale
+        │   └── app_settings.dart           # API key, auto-save, shelf visibility, character editor mode, locale
         ├── cascade/                       # Cascade sequential generation
         │   ├── models/
         │   │   ├── prompt_cascade.dart     # PromptCascade, CascadeBeat models
         │   │   └── cascade_character.dart  # Character slot definitions
         │   ├── providers/
-        │   │   └── cascade_notifier.dart   # Cascade state machine
+        │   │   └── cascade_notifier.dart   # Cascade state machine with unsaved-changes detection
         │   ├── services/
         │   │   └── cascade_stitching_service.dart  # Beat prompt assembly
         │   └── widgets/
-        │       ├── cascade_editor.dart     # Timeline editor UI
-        │       ├── cascade_playback_view.dart  # Main-screen playback overlay
-        │       └── ...                     # Director, beat editor, etc.
+        │       ├── cascade_editor.dart     # Timeline editor UI with unsaved-changes guard and Cast button
+        │       ├── cascade_playback_view.dart  # Main-screen playback overlay with responsive controls
+        │       └── ...                     # Director (custom resolutions), beat editor, library, etc.
         ├── canvas/                        # Multi-layer canvas editor
         │   ├── models/
         │   │   ├── canvas_action.dart      # Undo/redo action models
         │   │   ├── canvas_layer.dart       # Layer model (visibility, opacity)
         │   │   ├── canvas_session.dart     # Canvas session state
-        │   │   └── paint_stroke.dart       # Paint stroke data model
+        │   │   └── paint_stroke.dart       # Paint stroke data model (fontFamily, letterSpacing)
         │   ├── providers/
-        │   │   └── canvas_notifier.dart    # Canvas state management (layers, tools, colors)
+        │   │   └── canvas_notifier.dart    # Canvas state management (layers, tools, colors, pending text state)
         │   ├── services/
         │   │   ├── canvas_flatten_service.dart      # Flatten visible layers to PNG
         │   │   └── canvas_persistence_service.dart  # Canvas session persistence
         │   └── widgets/
         │       ├── canvas_color_picker.dart  # Canvas-specific color picker
-        │       ├── canvas_editor.dart       # Main canvas editor UI
-        │       ├── canvas_paint_surface.dart # Drawing surface with gesture handling
+        │       ├── canvas_editor.dart       # Main canvas editor UI (resizeToAvoidBottomInset: false)
+        │       ├── canvas_paint_surface.dart # Drawing surface with gesture handling, inline text editor, tap support
         │       ├── canvas_toolbar.dart      # Tool selection toolbar
         │       └── layer_panel.dart         # Layer management panel
         ├── img2img/                       # Img2Img editor
