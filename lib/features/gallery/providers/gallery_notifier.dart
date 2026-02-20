@@ -309,13 +309,17 @@ class GalleryNotifier extends ChangeNotifier {
           converted++;
         }
 
+        final srcStat = await srcFile.stat();
+        final sourceDate = srcStat.modified;
+
         final now = DateTime.now();
         final destName = 'Imp_${fmt.format(now)}.png';
         final destPath = p.join(outputDir, destName);
         final destFile = File(destPath);
         await destFile.writeAsBytes(pngBytes);
+        await destFile.setLastModified(sourceDate);
 
-        addFile(destFile, now);
+        addFile(destFile, sourceDate);
 
         // Check for NovelAI metadata
         final metadata = await compute(extractMetadata, pngBytes);

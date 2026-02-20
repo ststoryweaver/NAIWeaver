@@ -246,14 +246,14 @@ class _AddCharacterButton extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: t.borderSubtle,
+          color: t.accent.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: t.textMinimal, width: 0.5),
+          border: Border.all(color: t.accent.withValues(alpha: 0.4), width: 0.5),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, size: 14, color: t.textTertiary),
+            Icon(Icons.add, size: 14, color: t.accent),
             const SizedBox(width: 6),
             Text(
               label,
@@ -261,7 +261,7 @@ class _AddCharacterButton extends StatelessWidget {
                 fontSize: t.fontSize(9),
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
-                color: t.textTertiary,
+                color: t.accent,
               ),
             ),
           ],
@@ -554,7 +554,7 @@ class _CharacterCardState extends State<_CharacterCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: t.borderSubtle.withValues(alpha: 0.5),
+        color: t.borderSubtle,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: t.borderMedium, width: 0.5),
       ),
@@ -614,17 +614,22 @@ class _CharacterCardState extends State<_CharacterCard> {
                         // Name field
                         Text(l.charEditorCharacterName, style: subLabelStyle),
                         const SizedBox(height: 6),
-                        TextField(
-                          controller: _nameController,
-                          style: TextStyle(fontSize: t.fontSize(9), color: t.textSecondary),
-                          decoration: InputDecoration(
-                            hintText: l.charEditorCharacterN(widget.index + 1).toUpperCase(),
-                            hintStyle: TextStyle(fontSize: t.fontSize(9), color: t.textMinimal),
-                            fillColor: t.surfaceHigh,
-                            filled: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
-                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderMedium)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        SizedBox(
+                          width: mobile ? double.infinity : 400,
+                          child: TextField(
+                            controller: _nameController,
+                            maxLines: 1,
+                            style: TextStyle(fontSize: t.fontSize(9), color: t.textSecondary),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: l.charEditorCharacterN(widget.index + 1).toUpperCase(),
+                              hintStyle: TextStyle(fontSize: t.fontSize(9), color: t.textMinimal),
+                              fillColor: t.surfaceHigh,
+                              filled: true,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderMedium)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                            ),
                           ),
                         ),
 
@@ -835,10 +840,10 @@ class _SubChip extends StatelessWidget {
           vertical: mobile ? 6 : 3,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? t.accent.withValues(alpha: 0.2) : t.borderSubtle,
+          color: isSelected ? t.accent.withValues(alpha: 0.2) : t.surfaceHigh,
           borderRadius: BorderRadius.circular(2),
           border: Border.all(
-            color: isSelected ? t.accent : t.textMinimal,
+            color: isSelected ? t.accent : t.borderMedium,
             width: 0.5,
           ),
         ),
@@ -848,7 +853,7 @@ class _SubChip extends StatelessWidget {
             fontSize: t.fontSize(mobile ? 9 : 7),
             fontWeight: FontWeight.bold,
             letterSpacing: 1,
-            color: isSelected ? t.accent : t.textDisabled,
+            color: isSelected ? t.accent : t.textTertiary,
           ),
         ),
       ),
@@ -1131,14 +1136,14 @@ class _InteractionsSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: t.borderSubtle,
+              color: t.accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: t.textMinimal, width: 0.5),
+              border: Border.all(color: t.accent.withValues(alpha: 0.4), width: 0.5),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add, size: 14, color: t.textTertiary),
+                Icon(Icons.add, size: 14, color: t.accent),
                 const SizedBox(width: 6),
                 Text(
                   l.charEditorAddInteraction,
@@ -1146,7 +1151,7 @@ class _InteractionsSection extends StatelessWidget {
                     fontSize: t.fontSize(8),
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
-                    color: t.textTertiary,
+                    color: t.accent,
                   ),
                 ),
               ],
