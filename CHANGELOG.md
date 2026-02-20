@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Character Editor, Custom Resolutions & Canvas Text Tools
+## v0.4.0 — The Character Update
 
 ### Character System
 - Expanded inline character editor as alternative to the compact shelf, with per-character tag suggestions, UC editing, position grid, and character presets
