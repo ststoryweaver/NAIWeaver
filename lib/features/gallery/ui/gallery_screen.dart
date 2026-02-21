@@ -21,6 +21,13 @@ import '../../tools/slideshow/models/slideshow_config.dart';
 import '../../tools/slideshow/providers/slideshow_notifier.dart';
 import '../../tools/slideshow/widgets/slideshow_player.dart';
 import '../../tools/tools_hub_screen.dart';
+import '../../../core/ml/ml_notifier.dart';
+import '../../../core/ml/widgets/ml_processing_overlay.dart';
+import '../../../core/ml/widgets/bg_removal_overlay.dart';
+import '../../tools/canvas/providers/canvas_notifier.dart';
+import '../../tools/canvas/widgets/canvas_editor.dart';
+import '../../tools/ml/widgets/segmentation_overlay.dart';
+import '../../../core/ml/widgets/upscale_comparison_view.dart';
 import 'comparison_view.dart';
 
 class GalleryScreen extends StatefulWidget {
@@ -277,6 +284,198 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   void _bulkFavorite(List<GalleryItem> selectedItems) {
     Provider.of<GalleryNotifier>(context, listen: false).addToFavorites(selectedItems);
+    _exitSelectionMode();
+  }
+
+  Future<void> _openSegmentation(GalleryItem item) async {
+    _exitSelectionMode();
+    final gallery = context.read<GalleryNotifier>();
+    final imageBytes = await item.file.readAsBytes();
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => ChangeNotifierProvider.value(
+          value: context.read<MLNotifier>(),
+          child: Scaffold(
+            backgroundColor: ctx.tRead.background,
+            body: SafeArea(
+              child: SegmentationOverlay(
+                sourceImage: imageBytes,
+                onSave: (resultBytes) async {
+                  final baseName = p.basenameWithoutExtension(item.file.path);
+                  final ts = DateTime.now().millisecondsSinceEpoch;
+                  await gallery.saveMLResult(resultBytes, 'SEG_${baseName}_$ts.png');
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                onDiscard: () => Navigator.pop(ctx),
+                onSendToCanvas: (resultBytes) {
+                  Navigator.pop(ctx);
+                  final canvasNotifier = context.read<CanvasNotifier>();
+                  canvasNotifier.addImageLayer(resultBytes, name: 'Segmented');
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openInCanvas(GalleryItem item) async {
+    _exitSelectionMode();
+    final img2imgNotifier = context.read<Img2ImgNotifier>();
+    final imageBytes = await item.file.readAsBytes();
+    if (!mounted) return;
+
+    // Load into img2img which decodes dimensions in isolate
+    await img2imgNotifier.loadSourceImage(imageBytes, filePath: item.file.path);
+    final session = img2imgNotifier.session;
+    if (session == null || !mounted) return;
+
+    // Start canvas from the loaded session
+    final canvasNotifier = context.read<CanvasNotifier>();
+    canvasNotifier.startSession(
+      session.sourceImageBytes,
+      session.sourceWidth,
+      session.sourceHeight,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CanvasEditor()),
+    );
+  }
+
+  Future<void> _bulkRemoveBg(List<GalleryItem> selectedItems) async {
+    final ml = context.read<MLNotifier>();
+    final gallery = context.read<GalleryNotifier>();
+    final t = context.tRead;
+    final total = selectedItems.length;
+    int completed = 0;
+
+    StateSetter? dialogSetState;
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setState) {
+            dialogSetState = setState;
+            final t = ctx.tRead;
+            return AlertDialog(
+              backgroundColor: t.surfaceHigh,
+              title: Text('REMOVING BACKGROUNDS', style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(
+                    value: total > 0 ? completed / total : 0,
+                    backgroundColor: t.borderSubtle,
+                    color: t.accent,
+                  ),
+                  const SizedBox(height: 12),
+                  Text('$completed/$total', style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    for (final item in selectedItems) {
+      final bytes = await item.file.readAsBytes();
+      final result = await ml.removeBackground(bytes);
+      if (result != null) {
+        final baseName = p.basenameWithoutExtension(item.file.path);
+        final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+        await gallery.saveMLResult(result, 'BG_${baseName}_$timestamp.png');
+      }
+      completed++;
+      dialogSetState?.call(() {});
+    }
+
+    if (mounted) Navigator.of(context).pop();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('BG REMOVED: $completed/$total IMAGES',
+            style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
+        backgroundColor: const Color(0xFF0A1A0A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
+        ),
+      ));
+    }
+    _exitSelectionMode();
+  }
+
+  Future<void> _bulkUpscale(List<GalleryItem> selectedItems) async {
+    final ml = context.read<MLNotifier>();
+    final gallery = context.read<GalleryNotifier>();
+    final t = context.tRead;
+    final total = selectedItems.length;
+    int completed = 0;
+
+    StateSetter? dialogSetState;
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setState) {
+            dialogSetState = setState;
+            final t = ctx.tRead;
+            return AlertDialog(
+              backgroundColor: t.surfaceHigh,
+              title: Text('UPSCALING IMAGES', style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(
+                    value: total > 0 ? completed / total : 0,
+                    backgroundColor: t.borderSubtle,
+                    color: t.accent,
+                  ),
+                  const SizedBox(height: 12),
+                  Text('$completed/$total', style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    for (final item in selectedItems) {
+      final bytes = await item.file.readAsBytes();
+      final result = await ml.upscaleImage(bytes);
+      if (result != null) {
+        final baseName = p.basenameWithoutExtension(item.file.path);
+        final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+        await gallery.saveMLResult(result, 'UP_${baseName}_$timestamp.png');
+      }
+      completed++;
+      dialogSetState?.call(() {});
+    }
+
+    if (mounted) Navigator.of(context).pop();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('UPSCALED: $completed/$total IMAGES',
+            style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
+        backgroundColor: const Color(0xFF0A1A0A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
+        ),
+      ));
+    }
     _exitSelectionMode();
   }
 
@@ -1282,6 +1481,51 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   onTap: count > 0 ? () => _bulkExport(selectedItems) : null,
                 ),
                 SizedBox(width: mobile ? 12 : 8),
+                if (context.read<MLNotifier>().hasBgRemovalModel)
+                  _ActionButton(
+                    icon: Icons.content_cut,
+                    label: 'REMOVE BG',
+                    color: t.accent,
+                    mobile: mobile,
+                    iconOnly: mobile,
+                    onTap: count > 0 ? () => _bulkRemoveBg(selectedItems) : null,
+                  ),
+                if (context.read<MLNotifier>().hasBgRemovalModel)
+                  SizedBox(width: mobile ? 12 : 8),
+                if (context.read<MLNotifier>().hasUpscaleModel)
+                  _ActionButton(
+                    icon: Icons.zoom_out_map,
+                    label: 'UPSCALE',
+                    color: t.accent,
+                    mobile: mobile,
+                    iconOnly: mobile,
+                    onTap: count > 0 ? () => _bulkUpscale(selectedItems) : null,
+                  ),
+                if (context.read<MLNotifier>().hasUpscaleModel)
+                  SizedBox(width: mobile ? 12 : 8),
+                if (context.read<MLNotifier>().hasSegmentationModel && count == 1)
+                  _ActionButton(
+                    icon: Icons.auto_awesome,
+                    label: 'SEGMENT',
+                    color: t.accent,
+                    mobile: mobile,
+                    iconOnly: mobile,
+                    onTap: () => _openSegmentation(selectedItems.first),
+                  ),
+                if (context.read<MLNotifier>().hasSegmentationModel && count == 1)
+                  SizedBox(width: mobile ? 12 : 8),
+                // Send to Canvas (single image)
+                if (count == 1)
+                  _ActionButton(
+                    icon: Icons.brush,
+                    label: 'CANVAS',
+                    color: t.accentEdit,
+                    mobile: mobile,
+                    iconOnly: mobile,
+                    onTap: () => _openInCanvas(selectedItems.first),
+                  ),
+                if (count == 1)
+                  SizedBox(width: mobile ? 12 : 8),
                 _ActionButton(
                   icon: Icons.star,
                   label: context.l.galleryFavorite.toUpperCase(),
@@ -1721,6 +1965,112 @@ class _ImageDetailViewState extends State<ImageDetailView>
     }
   }
 
+  Future<void> _handleRemoveBg(GalleryItem item) async {
+    final ml = context.read<MLNotifier>();
+    final gallery = context.read<GalleryNotifier>();
+    final t = context.tRead;
+
+    final bytes = await item.file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await ml.removeBackground(bytes);
+    if (!mounted) return;
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('BG REMOVAL FAILED',
+            style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(11))),
+        backgroundColor: const Color(0xFF1A0A0A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
+        ),
+      ));
+      return;
+    }
+
+    // Show BG removal overlay
+    if (!mounted) return;
+    final saved = await showDialog<Uint8List>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog.fullscreen(
+        backgroundColor: t.background,
+        child: BGRemovalOverlay(
+          resultImage: result,
+          onSave: (img) => Navigator.pop(ctx, img),
+          onDiscard: () => Navigator.pop(ctx),
+        ),
+      ),
+    );
+
+    if (saved != null && mounted) {
+      final baseName = p.basenameWithoutExtension(item.file.path);
+      final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+      final outputName = 'BG_${baseName}_$timestamp.png';
+      await gallery.saveMLResult(saved, outputName);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('BG REMOVED: SAVED AS $outputName',
+              style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
+          backgroundColor: const Color(0xFF0A1A0A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+            side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
+          ),
+        ));
+      }
+    }
+  }
+
+  Future<void> _handleUpscale(GalleryItem item) async {
+    final ml = context.read<MLNotifier>();
+    final gallery = context.read<GalleryNotifier>();
+    final t = context.tRead;
+
+    final bytes = await item.file.readAsBytes();
+    if (!mounted) return;
+
+    final result = await ml.upscaleImage(bytes);
+    if (!mounted) return;
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('UPSCALE FAILED',
+            style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(11))),
+        backgroundColor: const Color(0xFF1A0A0A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
+        ),
+      ));
+      return;
+    }
+
+    final baseName = p.basenameWithoutExtension(item.file.path);
+    final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+    final outputName = 'UP_${baseName}_$timestamp.png';
+
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UpscaleComparisonView(
+            originalBytes: bytes,
+            upscaledBytes: result,
+            outputName: outputName,
+            onSave: () {
+              gallery.saveMLResultWithMetadata(result, outputName, sourceBytes: bytes);
+            },
+          ),
+        ),
+      );
+    }
+  }
+
   void _launchSlideshow() {
     final gallery = context.read<GalleryNotifier>();
     final slideshowNotifier = context.read<SlideshowNotifier>();
@@ -2009,120 +2359,147 @@ class _ImageDetailViewState extends State<ImageDetailView>
                                       letterSpacing: 1)),
                             const SizedBox(height: 12),
                             // Action buttons row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _ViewerAction(
-                                  icon: Icons.upload_outlined,
-                                  label: context.l.galleryPrompt.toUpperCase(),
-                                  color: t.accent,
-                                  mobile: mobile,
-                                  onTap: () {
-                                    context.read<GenerationNotifier>().importImageMetadata(item.file);
-                                    Navigator.pop(context);
-                                    Navigator.pop(context);
-                                  },
-                                ),
-                                _ViewerAction(
-                                  icon: Icons.brush_outlined,
-                                  label: context.l.galleryImg2img.toUpperCase(),
-                                  color: t.accentEdit,
-                                  mobile: mobile,
-                                  onTap: () async {
-                                    final bytes = await item.file.readAsBytes();
-                                    if (!context.mounted) return;
-                                    String? prompt;
-                                    String? negativePrompt;
-                                    final prefs = context.read<PreferencesService>();
-                                    if (prefs.img2imgImportPrompt) {
-                                      final metadata = extractMetadata(bytes);
-                                      if (metadata != null && metadata.containsKey('Comment')) {
-                                        final json = parseCommentJson(metadata['Comment']!);
-                                        if (json != null) {
-                                          prompt = json['prompt'] as String?;
-                                          negativePrompt = json['uc'] as String?;
-                                        }
-                                      }
-                                    }
-                                    if (!context.mounted) return;
-                                    context.read<Img2ImgNotifier>().loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt, filePath: item.file.path);
-                                    Navigator.pop(context);
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) => const ToolsHubScreen(initialToolId: 'img2img')),
-                                    );
-                                  },
-                                ),
-                                _ViewerAction(
-                                  icon: Icons.person_outline,
-                                  label: context.l.galleryCharRef.toUpperCase(),
-                                  color: t.accentRefCharacter,
-                                  mobile: mobile,
-                                  onTap: () async {
-                                    final bytes = await item.file.readAsBytes();
-                                    if (!context.mounted) return;
-                                    await context.read<DirectorRefNotifier>().addReference(bytes);
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: Text(context.l.galleryAddedAsCharRef,
-                                          style: TextStyle(color: t.accentRefCharacter, fontSize: t.fontSize(11))),
-                                      backgroundColor: const Color(0xFF0A1A0A),
-                                      behavior: SnackBarBehavior.floating,
-                                      duration: const Duration(seconds: 2),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(4),
-                                        side: BorderSide(color: t.accentRefCharacter.withValues(alpha: 0.3)),
-                                      ),
-                                    ));
-                                  },
-                                ),
-                                _ViewerAction(
-                                  icon: Icons.palette_outlined,
-                                  label: context.l.galleryVibe.toUpperCase(),
-                                  color: t.accentVibeTransfer,
-                                  mobile: mobile,
-                                  onTap: () async {
-                                    try {
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _ViewerAction(
+                                    icon: Icons.upload_outlined,
+                                    label: context.l.galleryPrompt.toUpperCase(),
+                                    color: t.accent,
+                                    mobile: mobile,
+                                    onTap: () {
+                                      context.read<GenerationNotifier>().importImageMetadata(item.file);
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                  _ViewerAction(
+                                    icon: Icons.brush_outlined,
+                                    label: context.l.galleryImg2img.toUpperCase(),
+                                    color: t.accentEdit,
+                                    mobile: mobile,
+                                    onTap: () async {
                                       final bytes = await item.file.readAsBytes();
                                       if (!context.mounted) return;
-                                      await context.read<VibeTransferNotifier>().addVibe(bytes);
+                                      String? prompt;
+                                      String? negativePrompt;
+                                      final prefs = context.read<PreferencesService>();
+                                      if (prefs.img2imgImportPrompt) {
+                                        final metadata = extractMetadata(bytes);
+                                        if (metadata != null && metadata.containsKey('Comment')) {
+                                          final json = parseCommentJson(metadata['Comment']!);
+                                          if (json != null) {
+                                            prompt = json['prompt'] as String?;
+                                            negativePrompt = json['uc'] as String?;
+                                          }
+                                        }
+                                      }
+                                      if (!context.mounted) return;
+                                      context.read<Img2ImgNotifier>().loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt, filePath: item.file.path);
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) => const ToolsHubScreen(initialToolId: 'img2img')),
+                                      );
+                                    },
+                                  ),
+                                  if (context.read<MLNotifier>().hasBgRemovalModel)
+                                    _ViewerAction(
+                                      icon: context.watch<MLNotifier>().isProcessing
+                                          ? Icons.hourglass_top
+                                          : Icons.content_cut,
+                                      label: 'REMOVE BG',
+                                      color: t.accent,
+                                      mobile: mobile,
+                                      onTap: context.watch<MLNotifier>().isProcessing
+                                          ? () {}
+                                          : () => _handleRemoveBg(item),
+                                    ),
+                                  if (context.read<MLNotifier>().hasUpscaleModel)
+                                    _ViewerAction(
+                                      icon: context.watch<MLNotifier>().isProcessing
+                                          ? Icons.hourglass_top
+                                          : Icons.zoom_out_map,
+                                      label: 'UPSCALE',
+                                      color: t.accent,
+                                      mobile: mobile,
+                                      onTap: context.watch<MLNotifier>().isProcessing
+                                          ? () {}
+                                          : () => _handleUpscale(item),
+                                    ),
+                                  _ViewerAction(
+                                    icon: Icons.person_outline,
+                                    label: context.l.galleryCharRef.toUpperCase(),
+                                    color: t.accentRefCharacter,
+                                    mobile: mobile,
+                                    onTap: () async {
+                                      final bytes = await item.file.readAsBytes();
+                                      if (!context.mounted) return;
+                                      await context.read<DirectorRefNotifier>().addReference(bytes);
                                       if (!context.mounted) return;
                                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                        content: Text(context.l.galleryAddedAsVibe,
-                                            style: TextStyle(color: t.accentVibeTransfer, fontSize: t.fontSize(11))),
+                                        content: Text(context.l.galleryAddedAsCharRef,
+                                            style: TextStyle(color: t.accentRefCharacter, fontSize: t.fontSize(11))),
                                         backgroundColor: const Color(0xFF0A1A0A),
                                         behavior: SnackBarBehavior.floating,
                                         duration: const Duration(seconds: 2),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(4),
-                                          side: BorderSide(color: t.accentVibeTransfer.withValues(alpha: 0.3)),
+                                          side: BorderSide(color: t.accentRefCharacter.withValues(alpha: 0.3)),
                                         ),
                                       ));
-                                    } catch (e) {
-                                      if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                        content: Text(context.l.galleryVibeTransferFailed(e.toString()),
-                                            style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(11))),
-                                        backgroundColor: const Color(0xFF1A0A0A),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(4),
-                                          side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
-                                        ),
-                                      ));
-                                    }
-                                  },
-                                ),
-                                _ViewerAction(
-                                  icon: Icons.slideshow_outlined,
-                                  label: context.l.gallerySlideshow.toUpperCase(),
-                                  color: t.textSecondary,
-                                  mobile: mobile,
-                                  onTap: _launchSlideshow,
-                                ),
-                              ],
+                                    },
+                                  ),
+                                  _ViewerAction(
+                                    icon: Icons.palette_outlined,
+                                    label: context.l.galleryVibe.toUpperCase(),
+                                    color: t.accentVibeTransfer,
+                                    mobile: mobile,
+                                    onTap: () async {
+                                      try {
+                                        final bytes = await item.file.readAsBytes();
+                                        if (!context.mounted) return;
+                                        await context.read<VibeTransferNotifier>().addVibe(bytes);
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                          content: Text(context.l.galleryAddedAsVibe,
+                                              style: TextStyle(color: t.accentVibeTransfer, fontSize: t.fontSize(11))),
+                                          backgroundColor: const Color(0xFF0A1A0A),
+                                          behavior: SnackBarBehavior.floating,
+                                          duration: const Duration(seconds: 2),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(4),
+                                            side: BorderSide(color: t.accentVibeTransfer.withValues(alpha: 0.3)),
+                                          ),
+                                        ));
+                                      } catch (e) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                          content: Text(context.l.galleryVibeTransferFailed(e.toString()),
+                                              style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(11))),
+                                          backgroundColor: const Color(0xFF1A0A0A),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(4),
+                                            side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
+                                          ),
+                                        ));
+                                      }
+                                    },
+                                  ),
+                                  _ViewerAction(
+                                    icon: Icons.slideshow_outlined,
+                                    label: context.l.gallerySlideshow.toUpperCase(),
+                                    color: t.textSecondary,
+                                    mobile: mobile,
+                                    onTap: _launchSlideshow,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -2130,6 +2507,8 @@ class _ImageDetailViewState extends State<ImageDetailView>
                     ),
                   ),
                 ),
+                // ML Processing overlay
+                const MLProcessingOverlay(),
               ],
             ),
           ),

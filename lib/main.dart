@@ -27,6 +27,8 @@ import 'features/tools/providers/tag_library_notifier.dart';
 import 'features/gallery/providers/gallery_notifier.dart';
 import 'features/gallery/ui/gallery_screen.dart';
 import 'features/generation/widgets/character_shelf.dart';
+import 'core/ml/ml_notifier.dart';
+import 'core/ml/widgets/upscale_comparison_view.dart';
 import 'features/tools/cascade/providers/cascade_notifier.dart';
 import 'features/tools/canvas/providers/canvas_notifier.dart';
 import 'features/tools/img2img/providers/img2img_notifier.dart';
@@ -37,6 +39,7 @@ import 'features/vibe_transfer/providers/vibe_transfer_notifier.dart';
 import 'features/generation/widgets/vibe_transfer_shelf.dart';
 import 'features/tools/slideshow/providers/slideshow_notifier.dart';
 import 'core/widgets/tag_suggestion_overlay.dart';
+import 'core/jukebox/providers/jukebox_notifier.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -117,6 +120,12 @@ void main() {
               tagLibraryNotifier!,
         ),
         ChangeNotifierProvider(
+          create: (_) => MLNotifier(
+            mlModelsDir: paths.mlModelsDir,
+            prefs: preferencesService,
+          ),
+        ),
+        ChangeNotifierProvider(
           create: (_) => CascadeNotifier(),
         ),
         ChangeNotifierProvider(
@@ -130,6 +139,16 @@ void main() {
             final n = SlideshowNotifier();
             n.loadFromJson(preferencesService.slideshowConfigs);
             n.setDefaultConfigId(preferencesService.defaultSlideshowId);
+            return n;
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final n = JukeboxNotifier(
+              soundfontsDir: paths.soundfontsDir,
+              prefs: preferencesService,
+            );
+            n.initialize();
             return n;
           },
         ),
@@ -503,6 +522,147 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                   ),
                 ),
               
+              // REMOVE BG quick-access button
+              Builder(builder: (context) {
+                final ml = context.watch<MLNotifier>();
+                if (!ml.hasBgRemovalModel || state.generatedImage == null || state.isLoading) {
+                  return const Positioned(top: 0, child: SizedBox.shrink());
+                }
+                // Calculate top offset based on visible buttons above
+                double topOffset = 12;
+                if (!state.autoSaveImages && !notifier.imageSaved) topOffset += 40;
+                if (state.showEditButton) topOffset += 40;
+                return Positioned(
+                  top: topOffset,
+                  right: 20,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: ml.isProcessing ? null : () async {
+                        final result = await ml.removeBackground(state.generatedImage!);
+                        if (result != null && context.mounted) {
+                          final gallery = context.read<GalleryNotifier>();
+                          final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+                          await gallery.saveMLResult(result, 'BG_gen_$timestamp.png');
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('BG REMOVED & SAVED',
+                                  style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
+                              backgroundColor: const Color(0xFF0A1A0A),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                                side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
+                              ),
+                            ));
+                          }
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 10, vertical: mobile ? 10 : 6),
+                        decoration: BoxDecoration(
+                          color: t.background.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: t.accent.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (ml.isProcessing)
+                              SizedBox(width: mobile ? 16 : 12, height: mobile ? 16 : 12, child: CircularProgressIndicator(strokeWidth: 2, color: t.accent))
+                            else
+                              Icon(Icons.content_cut, size: mobile ? 16 : 12, color: t.accent),
+                            const SizedBox(width: 6),
+                            Text(
+                              'REMOVE BG',
+                              style: TextStyle(
+                                color: t.accent,
+                                fontSize: t.fontSize(mobile ? 12 : 9),
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+
+              // UPSCALE quick-access button
+              Builder(builder: (context) {
+                final ml = context.watch<MLNotifier>();
+                if (!ml.hasUpscaleModel || state.generatedImage == null || state.isLoading) {
+                  return const Positioned(top: 0, child: SizedBox.shrink());
+                }
+                double topOffset = 12;
+                if (!state.autoSaveImages && !notifier.imageSaved) topOffset += 40;
+                if (state.showEditButton) topOffset += 40;
+                if (ml.hasBgRemovalModel) topOffset += 40;
+                return Positioned(
+                  top: topOffset,
+                  right: 20,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: ml.isProcessing ? null : () async {
+                        final sourceBytes = state.generatedImage!;
+                        final result = await ml.upscaleImage(sourceBytes);
+                        if (result != null && context.mounted) {
+                          final gallery = context.read<GalleryNotifier>();
+                          final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+                          final outputName = 'UP_gen_$timestamp.png';
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => UpscaleComparisonView(
+                                originalBytes: sourceBytes,
+                                upscaledBytes: result,
+                                outputName: outputName,
+                                onSave: () {
+                                  gallery.saveMLResultWithMetadata(result, outputName,
+                                      sourceBytes: sourceBytes);
+                                },
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 10, vertical: mobile ? 10 : 6),
+                        decoration: BoxDecoration(
+                          color: t.background.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: t.accent.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (ml.isProcessing)
+                              SizedBox(width: mobile ? 16 : 12, height: mobile ? 16 : 12, child: CircularProgressIndicator(strokeWidth: 2, color: t.accent))
+                            else
+                              Icon(Icons.zoom_out_map, size: mobile ? 16 : 12, color: t.accent),
+                            const SizedBox(width: 6),
+                            Text(
+                              'UPSCALE',
+                              style: TextStyle(
+                                color: t.accent,
+                                fontSize: t.fontSize(mobile ? 12 : 9),
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+
               // Cascade Mode Overlay
               if (isCascadeMode)
                 Positioned(
@@ -511,8 +671,10 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                   bottom: mobile
                       ? (MediaQuery.of(context).viewInsets.bottom > 0
                           ? MediaQuery.of(context).viewInsets.bottom
-                          : 44.0)
-                      : 34.0,
+                          : (48.0 + MediaQuery.of(context).viewPadding.bottom))
+                      : (MediaQuery.of(context).viewInsets.bottom > 0
+                        ? MediaQuery.of(context).viewInsets.bottom
+                        : 40.0 + MediaQuery.of(context).viewPadding.bottom),
                   child: const CascadePlaybackView(),
                 ),
 
@@ -524,8 +686,10 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                   bottom: mobile
                       ? (MediaQuery.of(context).viewInsets.bottom > 0
                           ? MediaQuery.of(context).viewInsets.bottom
-                          : 44.0)
-                      : 34.0,
+                          : (48.0 + MediaQuery.of(context).viewPadding.bottom))
+                      : (MediaQuery.of(context).viewInsets.bottom > 0
+                        ? MediaQuery.of(context).viewInsets.bottom
+                        : 40.0 + MediaQuery.of(context).viewPadding.bottom),
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12), // Increased bottom padding for clearance
                     decoration: BoxDecoration(
@@ -587,7 +751,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                                 },
                                 child: TextField(
                                 controller: notifier.promptController,
-                                maxLines: mobile ? t.promptMaxLines + 1 : t.promptMaxLines,
+                                maxLines: mobile ? t.promptMaxLines + 2 : t.promptMaxLines + 1,
                                 onChanged: (val) => notifier.handleTagSuggestions(val, notifier.promptController.selection),
                                 onTapOutside: (_) {
                                   Future.delayed(const Duration(milliseconds: 200), () {
@@ -603,7 +767,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                                     notifier.generate();
                                   }
                                 },
-                                style: TextStyle(fontSize: t.promptFontSize, letterSpacing: 0.5),
+                                style: TextStyle(fontSize: t.promptFontSize - 1, letterSpacing: 0.5),
                                 decoration: InputDecoration(
                                   hintText: context.l.mainEnterPrompt.toUpperCase(),
                                   hintStyle: TextStyle(fontSize: t.fontSize(mobile ? 12 : 9), letterSpacing: 2, color: t.hintText),
@@ -622,7 +786,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                               ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4),
                             SizedBox(
                               height: mobile ? 64 : 58,
                               width: mobile ? 64 : 58,
