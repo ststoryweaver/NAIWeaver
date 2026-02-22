@@ -66,7 +66,9 @@ class Img2ImgRequestBuilder {
       if (kDebugMode) {
         try {
           await MaskEncoder.debugSaveMask(maskBase64, 'output/_debug_mask.png');
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Img2ImgRequestBuilder.build: $e');
+        }
       }
     }
 

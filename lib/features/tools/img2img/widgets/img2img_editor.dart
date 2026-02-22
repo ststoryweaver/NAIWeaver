@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../generation/providers/generation_notifier.dart';
 import '../../canvas/providers/canvas_notifier.dart';
@@ -10,6 +11,8 @@ import '../../canvas/services/canvas_gallery_service.dart';
 import '../../canvas/widgets/canvas_editor.dart';
 import '../providers/img2img_notifier.dart';
 import '../services/img2img_request_builder.dart';
+import '../../../../core/ml/ml_notifier.dart';
+import '../../ml/widgets/segmentation_overlay.dart';
 import 'mask_canvas.dart';
 import 'mask_toolbar.dart';
 import 'img2img_settings_panel.dart';
@@ -155,6 +158,7 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
             bottom: 16,
             child: FloatingActionButton(
               mini: true,
+              tooltip: context.l.img2imgSettings,
               backgroundColor: t.accentEdit,
               onPressed: () {
                 showModalBottomSheet(
@@ -201,6 +205,7 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
               child: Image.memory(
                 resultBytes,
                 gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
               ),
             ),
           ),
@@ -261,6 +266,7 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
     final l = context.l;
     final session = img2imgNotifier.session;
     final hasResult = session?.resultImageBytes != null;
+    final ml = context.watch<MLNotifier>();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -281,17 +287,84 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
           if (session != null) ...[
             SizedBox(
               height: 36,
-              child: TextButton.icon(
-                onPressed: () => _openCanvasEditor(context, img2imgNotifier),
-                icon: Icon(Icons.palette, size: 14),
-                label: Text(l.canvasEditInCanvas),
-                style: TextButton.styleFrom(
-                  foregroundColor: t.accentEdit,
-                  textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
-                ),
-              ),
+              child: isMobile(context)
+                  ? IconButton(
+                      onPressed: () => _openCanvasEditor(context, img2imgNotifier),
+                      icon: const Icon(Icons.palette, size: 14),
+                      tooltip: l.canvasEditInCanvas,
+                      style: IconButton.styleFrom(foregroundColor: t.accentEdit),
+                    )
+                  : TextButton.icon(
+                      onPressed: () => _openCanvasEditor(context, img2imgNotifier),
+                      icon: Icon(Icons.palette, size: 14),
+                      label: Text(l.canvasEditInCanvas),
+                      style: TextButton.styleFrom(
+                        foregroundColor: t.accentEdit,
+                        textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                      ),
+                    ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
+          ],
+
+          // ML: Remove BG button
+          if (session != null && ml.hasBgRemovalModel) ...[
+            SizedBox(
+              height: 36,
+              child: ml.isProcessing
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  : TextButton.icon(
+                      onPressed: () => _handleMLRemoveBg(img2imgNotifier),
+                      icon: Icon(Icons.content_cut, size: 14),
+                      label: isMobile(context) ? const SizedBox.shrink() : Text(context.l.mlRemoveBg.toUpperCase()),
+                      style: TextButton.styleFrom(
+                        foregroundColor: t.accent,
+                        textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 4),
+          ],
+
+          // ML: Upscale button (only when result exists)
+          if (hasResult && ml.hasUpscaleModel) ...[
+            SizedBox(
+              height: 36,
+              child: ml.isProcessing
+                  ? const SizedBox.shrink()
+                  : TextButton.icon(
+                      onPressed: () => _handleMLUpscale(img2imgNotifier),
+                      icon: Icon(Icons.zoom_out_map, size: 14),
+                      label: isMobile(context) ? const SizedBox.shrink() : Text(context.l.mlUpscale.toUpperCase()),
+                      style: TextButton.styleFrom(
+                        foregroundColor: t.accent,
+                        textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 4),
+          ],
+
+          // ML: Segment button
+          if (session != null && ml.selectedSegmentationModelId != null) ...[
+            SizedBox(
+              height: 36,
+              child: ml.isProcessing
+                  ? const SizedBox.shrink()
+                  : TextButton.icon(
+                      onPressed: () => _handleMLSegment(img2imgNotifier),
+                      icon: const Icon(Icons.auto_awesome, size: 14),
+                      label: isMobile(context) ? const SizedBox.shrink() : Text(context.l.mlSegment.toUpperCase()),
+                      style: TextButton.styleFrom(
+                        foregroundColor: t.accent,
+                        textStyle: TextStyle(fontSize: t.fontSize(10), fontWeight: FontWeight.bold, letterSpacing: 1),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 4),
           ],
 
           // Result / Canvas toggle (only when result exists)
@@ -310,8 +383,8 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
             const SizedBox(width: 4),
           ],
 
-          // Generate button — icon-only on mobile when result toggle is visible
-          if (isMobile(context) && hasResult)
+          // Generate button — icon-only on mobile
+          if (isMobile(context))
             SizedBox(
               height: 36,
               child: IconButton(
@@ -323,6 +396,7 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: t.background),
                       )
                     : const Icon(Icons.auto_awesome, size: 14),
+                tooltip: isLoading ? l.img2imgGenerating : l.img2imgGenerate,
                 style: IconButton.styleFrom(
                   backgroundColor: t.accent,
                   foregroundColor: t.background,
@@ -392,6 +466,74 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
     );
   }
 
+  Future<void> _handleMLRemoveBg(Img2ImgNotifier img2imgNotifier) async {
+    final session = img2imgNotifier.session;
+    if (session == null) return;
+
+    final ml = context.read<MLNotifier>();
+    // Process whichever image is currently displayed
+    final imageBytes = (_showResult && session.resultImageBytes != null)
+        ? session.resultImageBytes!
+        : session.sourceImageBytes;
+
+    final result = await ml.removeBackground(imageBytes);
+    if (result != null && mounted) {
+      await img2imgNotifier.replaceSourceImage(result);
+      setState(() => _showResult = false);
+    }
+  }
+
+  Future<void> _handleMLUpscale(Img2ImgNotifier img2imgNotifier) async {
+    final session = img2imgNotifier.session;
+    if (session == null || session.resultImageBytes == null) return;
+
+    final ml = context.read<MLNotifier>();
+    final result = await ml.upscaleImage(session.resultImageBytes!);
+    if (result != null && mounted) {
+      await img2imgNotifier.replaceSourceImage(result);
+      setState(() => _showResult = false);
+    }
+  }
+
+  void _handleMLSegment(Img2ImgNotifier img2imgNotifier) {
+    final session = img2imgNotifier.session;
+    if (session == null) return;
+
+    final imageBytes = (_showResult && session.resultImageBytes != null)
+        ? session.resultImageBytes!
+        : session.sourceImageBytes;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => ChangeNotifierProvider.value(
+          value: context.read<MLNotifier>(),
+          child: Scaffold(
+            backgroundColor: ctx.tRead.background,
+            body: SafeArea(
+              child: SegmentationOverlay(
+                sourceImage: imageBytes,
+                onSave: (resultBytes) async {
+                  await img2imgNotifier.replaceSourceImage(resultBytes);
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    setState(() => _showResult = false);
+                  }
+                },
+                onDiscard: () => Navigator.pop(ctx),
+                onSendToCanvas: (resultBytes) {
+                  Navigator.pop(ctx);
+                  final canvasNotifier = context.read<CanvasNotifier>();
+                  canvasNotifier.addImageLayer(resultBytes, name: 'Segmented');
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _generate(
     Img2ImgNotifier img2imgNotifier,
     GenerationNotifier genNotifier,
@@ -434,9 +576,7 @@ class _Img2ImgEditorState extends State<Img2ImgEditor> {
       genNotifier.setLoading(false);
       debugPrint('Img2Img generate error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l.img2imgGenerationFailed(e.toString()))),
-        );
+        showErrorSnackBar(context, context.l.img2imgGenerationFailed(e.toString()));
       }
     }
   }

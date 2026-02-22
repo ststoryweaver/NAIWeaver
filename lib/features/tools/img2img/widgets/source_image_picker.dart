@@ -117,7 +117,7 @@ class SourceImagePicker extends StatelessWidget {
             const SizedBox(height: 12),
 
             // Gallery grid
-            if (galleryNotifier.items.isNotEmpty) ...[
+            if (!galleryNotifier.demoMode && galleryNotifier.items.isNotEmpty) ...[
               Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
@@ -142,7 +142,7 @@ class SourceImagePicker extends StatelessWidget {
                     crossAxisSpacing: 4,
                     childAspectRatio: 0.75,
                   ),
-                  itemCount: galleryNotifier.items.length.clamp(0, 20),
+                  itemCount: galleryNotifier.items.length,
                   itemBuilder: (context, index) {
                     final item = galleryNotifier.items[index];
                     return _GalleryThumbnail(
@@ -398,7 +398,7 @@ class _GalleryThumbnail extends StatelessWidget {
           child: Image.file(
             file,
             fit: BoxFit.cover,
-            cacheWidth: 200,
+            filterQuality: FilterQuality.medium,
           ),
         ),
       ),

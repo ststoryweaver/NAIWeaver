@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/widgets/vision_slider.dart';
 import '../providers/img2img_notifier.dart';
 
 class MaskToolbar extends StatelessWidget {
@@ -44,21 +45,12 @@ class MaskToolbar extends StatelessWidget {
           const SizedBox(width: 8),
           SizedBox(
             width: 120,
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: t.textDisabled,
-                inactiveTrackColor: t.textMinimal,
-                thumbColor: t.textPrimary,
-                trackHeight: 2,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-              ),
-              child: Slider(
-                value: notifier.brushRadius,
-                min: 0.005,
-                max: 0.15,
-                onChanged: notifier.setBrushRadius,
-              ),
+            child: VisionSlider.subtle(
+              value: notifier.brushRadius,
+              min: 0.005,
+              max: 0.15,
+              onChanged: notifier.setBrushRadius,
+              t: t,
             ),
           ),
         ],

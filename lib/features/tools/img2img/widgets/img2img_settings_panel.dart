@@ -4,6 +4,7 @@ import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/services/preferences_service.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/theme/vision_tokens.dart';
+import '../../../../core/widgets/vision_slider.dart';
 import '../providers/img2img_notifier.dart';
 
 class Img2ImgSettingsPanel extends StatefulWidget {
@@ -219,21 +220,12 @@ class _Img2ImgSettingsPanelState extends State<Img2ImgSettingsPanel> {
             ),
           ],
         ),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: t.textDisabled,
-            inactiveTrackColor: t.textMinimal,
-            thumbColor: t.textPrimary,
-            trackHeight: 2,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-          ),
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            onChanged: onChanged,
-          ),
+        VisionSlider.subtle(
+          value: value,
+          min: min,
+          max: max,
+          onChanged: onChanged,
+          t: t,
         ),
       ],
     );

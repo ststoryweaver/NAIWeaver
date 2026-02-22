@@ -1,5 +1,6 @@
+import 'package:flutter/foundation.dart';
 import '../../../generation/models/nai_character.dart';
-import '../../../../styles.dart';
+import '../../../../core/services/styles.dart';
 import '../models/cascade_beat.dart';
 
 class CascadeStitchedRequest {
@@ -68,7 +69,9 @@ class CascadeStitchingService {
         if (style.prefix.isNotEmpty) stylePrefix = (stylePrefix ?? '') + style.prefix;
         if (style.suffix.isNotEmpty) styleSuffix = (styleSuffix ?? '') + style.suffix;
         if (style.negativeContent.isNotEmpty) styleNegatives.add(style.negativeContent);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('CascadeStitchingService.render: $e');
+      }
     }
 
     final rawCaption = basePromptParts.join(", ");

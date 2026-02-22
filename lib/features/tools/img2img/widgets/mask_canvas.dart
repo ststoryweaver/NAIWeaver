@@ -58,6 +58,7 @@ class _MaskCanvasState extends State<MaskCanvas> {
                       width: session.sourceWidth.toDouble(),
                       height: session.sourceHeight.toDouble(),
                       gaplessPlayback: true,
+                      filterQuality: FilterQuality.medium,
                     ),
                   ),
                 ),

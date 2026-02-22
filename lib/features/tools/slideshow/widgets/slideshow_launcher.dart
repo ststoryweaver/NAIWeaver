@@ -5,9 +5,14 @@ import '../../../../core/services/preferences_service.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/theme/vision_tokens.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
+import '../../../../core/widgets/vision_slider.dart';
 import '../../../gallery/providers/gallery_notifier.dart';
 import '../models/slideshow_config.dart';
 import '../providers/slideshow_notifier.dart';
+import '../../../../core/jukebox/jukebox_registry.dart';
+import '../../../../core/jukebox/models/jukebox_song.dart';
+import '../../jukebox/widgets/jukebox_panel.dart';
 import 'image_source_selector.dart';
 import 'slideshow_player.dart';
 
@@ -105,19 +110,47 @@ class _SlideshowLauncherState extends State<SlideshowLauncher> {
                   fontSize: t.fontSize(12),
                   letterSpacing: 4,
                   fontWeight: FontWeight.w900)),
-          TextButton.icon(
-            onPressed: () => _playAll(context, notifier),
-            icon: Icon(Icons.play_arrow, size: 16, color: t.accent),
-            label: Text(l.slideshowPlayAll,
-                style: TextStyle(
-                    color: t.accent,
-                    fontSize: t.fontSize(9),
-                    letterSpacing: 1,
-                    fontWeight: FontWeight.bold)),
-            style: TextButton.styleFrom(
-              backgroundColor: t.accent.withValues(alpha: 0.1),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.music_note, size: 18, color: t.accent),
+                tooltip: l.jukeboxTitle,
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => Dialog.fullscreen(
+                      backgroundColor: Colors.black,
+                      child: Scaffold(
+                        backgroundColor: Colors.black,
+                        appBar: AppBar(
+                          backgroundColor: Colors.black,
+                          leading: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white70),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ),
+                        body: const JukeboxPanel(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              TextButton.icon(
+                onPressed: () => _playAll(context, notifier),
+                icon: Icon(Icons.play_arrow, size: 16, color: t.accent),
+                label: Text(l.slideshowPlayAll,
+                    style: TextStyle(
+                        color: t.accent,
+                        fontSize: t.fontSize(9),
+                        letterSpacing: 1,
+                        fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(
+                  backgroundColor: t.accent.withValues(alpha: 0.1),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -427,6 +460,54 @@ class _SlideshowLauncherState extends State<SlideshowLauncher> {
                 ),
                 const SizedBox(height: 24),
 
+                // Music
+                _sectionTitle('MUSIC', t),
+                _buildToggle(
+                  label: 'ENABLE MUSIC',
+                  value: config.musicEnabled,
+                  onChanged: (v) {
+                    notifier.updateConfig(config.copyWith(musicEnabled: v));
+                    _save(context, notifier);
+                  },
+                  t: t,
+                ),
+                if (config.musicEnabled) ...[
+                  const SizedBox(height: 12),
+                  // Song picker
+                  _buildMusicSongPicker(config, notifier, t),
+                  const SizedBox(height: 12),
+                  // Category filter
+                  _buildMusicCategoryPicker(config, notifier, t),
+                  const SizedBox(height: 12),
+                  // Volume
+                  _buildSlider(
+                    label: 'MUSIC VOLUME',
+                    value: config.musicVolume,
+                    min: 0.0,
+                    max: 1.0,
+                    onChanged: (v) {
+                      notifier.updateConfig(config.copyWith(musicVolume: v));
+                      _save(context, notifier);
+                    },
+                    t: t,
+                  ),
+                  const SizedBox(height: 12),
+                  // SoundFont picker
+                  _buildMusicSoundFontPicker(config, notifier, t),
+                  const SizedBox(height: 12),
+                  // Karaoke toggle
+                  _buildToggle(
+                    label: 'KARAOKE LYRICS',
+                    value: config.karaokeEnabled,
+                    onChanged: (v) {
+                      notifier.updateConfig(config.copyWith(karaokeEnabled: v));
+                      _save(context, notifier);
+                    },
+                    t: t,
+                  ),
+                ],
+                const SizedBox(height: 24),
+
                 // Default slideshow
                 _sectionTitle(l.slideshowDefault, t),
                 _buildToggle(
@@ -569,23 +650,16 @@ class _SlideshowLauncherState extends State<SlideshowLauncher> {
                     fontWeight: FontWeight.bold)),
           ],
         ),
-        SliderTheme(
-          data: SliderThemeData(
-            trackHeight: 2,
-            thumbShape:
-                const RoundSliderThumbShape(enabledThumbRadius: 6),
-            overlayShape:
-                const RoundSliderOverlayShape(overlayRadius: 12),
-            activeTrackColor: t.textPrimary.withValues(alpha: 0.2),
-            inactiveTrackColor: t.borderSubtle,
-            thumbColor: t.textPrimary,
-          ),
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            onChanged: onChanged,
-          ),
+        VisionSlider(
+          value: value,
+          onChanged: onChanged,
+          min: min,
+          max: max,
+          activeColor: t.textPrimary.withValues(alpha: 0.2),
+          inactiveColor: t.borderSubtle,
+          thumbColor: t.textPrimary,
+          thumbRadius: 6,
+          overlayRadius: 12,
         ),
       ],
     );
@@ -664,41 +738,153 @@ class _SlideshowLauncherState extends State<SlideshowLauncher> {
     prefs.setSlideshowConfigs(notifier.toJsonString());
   }
 
-  void _showDeleteConfirm(BuildContext context, SlideshowNotifier notifier,
-      SlideshowConfig config, VisionTokens t) {
-    final l = context.l;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: t.surfaceHigh,
-        title: Text(l.slideshowDeleteConfig,
-            style: TextStyle(
-                fontSize: t.fontSize(10),
-                letterSpacing: 2,
-                color: t.textSecondary)),
-        content: Text(
-            l.slideshowDeleteConfirm(config.name.toUpperCase()),
-            style: TextStyle(
-                color: t.textDisabled, fontSize: t.fontSize(11))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l.commonCancel,
+  Widget _buildMusicSongPicker(SlideshowConfig config, SlideshowNotifier notifier, VisionTokens t) {
+    final songs = JukeboxRegistry.allSongs;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('SONGS (TAP TO SELECT, EMPTY = ALL)',
+            style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(7), letterSpacing: 1)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: songs.map((song) {
+            final selected = config.musicSongIds.contains(song.id);
+            return InkWell(
+              onTap: () {
+                final ids = List<String>.from(config.musicSongIds);
+                if (selected) {
+                  ids.remove(song.id);
+                } else {
+                  ids.add(song.id);
+                }
+                notifier.updateConfig(config.copyWith(musicSongIds: ids));
+                _save(context, notifier);
+              },
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: selected ? t.accent.withValues(alpha: 0.15) : t.borderSubtle,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: selected ? t.accent : Colors.transparent),
+                ),
+                child: Text(song.title.toUpperCase(),
+                    style: TextStyle(
+                        color: selected ? t.accent : t.textSecondary,
+                        fontSize: t.fontSize(7),
+                        letterSpacing: 0.5,
+                        fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMusicCategoryPicker(SlideshowConfig config, SlideshowNotifier notifier, VisionTokens t) {
+    final categories = [null, ...SongCategory.values];
+    final labels = ['ALL', ...SongCategory.values.map((c) => JukeboxRegistry.categoryDisplayName(c))];
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: List.generate(categories.length, (i) {
+        final catIndex = categories[i]?.index;
+        final selected = config.musicCategoryIndex == catIndex;
+        return InkWell(
+          onTap: () {
+            if (catIndex == null) {
+              notifier.updateConfig(config.copyWith(clearMusicCategory: true));
+            } else {
+              notifier.updateConfig(config.copyWith(musicCategoryIndex: catIndex));
+            }
+            _save(context, notifier);
+          },
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: selected ? t.accent.withValues(alpha: 0.15) : t.borderSubtle,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: selected ? t.accent : Colors.transparent),
+            ),
+            child: Text(labels[i],
                 style: TextStyle(
-                    color: t.textDisabled, fontSize: t.fontSize(9))),
+                    color: selected ? t.accent : t.textSecondary,
+                    fontSize: t.fontSize(8),
+                    letterSpacing: 1,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
           ),
-          TextButton(
-            onPressed: () {
-              notifier.deleteConfig(config.id);
-              _save(context, notifier);
-              Navigator.pop(ctx);
-            },
-            child: Text(l.commonDelete,
-                style: TextStyle(
-                    color: t.accentDanger, fontSize: t.fontSize(9))),
-          ),
-        ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildMusicSoundFontPicker(SlideshowConfig config, SlideshowNotifier notifier, VisionTokens t) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('SOUNDFONT',
+            style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1)),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            // Default option
+            _sfChip(null, 'DEFAULT', config.musicSoundFontId == null, notifier, config, t),
+            ...JukeboxRegistry.allSoundFonts.map((sf) =>
+                _sfChip(sf.id, sf.name.toUpperCase(), config.musicSoundFontId == sf.id, notifier, config, t)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _sfChip(String? sfId, String label, bool selected, SlideshowNotifier notifier, SlideshowConfig config, VisionTokens t) {
+    return InkWell(
+      onTap: () {
+        if (sfId == null) {
+          notifier.updateConfig(config.copyWith(clearMusicSoundFontId: true));
+        } else {
+          notifier.updateConfig(config.copyWith(musicSoundFontId: sfId));
+        }
+        _save(context, notifier);
+      },
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? t.accent.withValues(alpha: 0.15) : t.borderSubtle,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: selected ? t.accent : Colors.transparent),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: selected ? t.accent : t.textSecondary,
+                fontSize: t.fontSize(7),
+                letterSpacing: 1,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
       ),
     );
+  }
+
+  Future<void> _showDeleteConfirm(BuildContext context, SlideshowNotifier notifier,
+      SlideshowConfig config, VisionTokens t) async {
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.slideshowDeleteConfig,
+      message: l.slideshowDeleteConfirm(config.name.toUpperCase()),
+      confirmLabel: l.commonDelete,
+      confirmColor: t.accentDanger,
+    );
+    if (confirm == true && context.mounted) {
+      notifier.deleteConfig(config.id);
+      _save(context, notifier);
+    }
   }
 }

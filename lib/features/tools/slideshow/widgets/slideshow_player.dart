@@ -1,7 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
+import '../../../../core/jukebox/jukebox_registry.dart';
+import '../../../../core/jukebox/models/jukebox_song.dart';
+import '../../../../core/jukebox/providers/jukebox_notifier.dart';
+import '../../../../core/jukebox/widgets/karaoke_overlay.dart';
+import '../../jukebox/widgets/jukebox_panel.dart';
 import '../../../gallery/providers/gallery_notifier.dart';
 import '../models/slideshow_config.dart';
 import '../services/slideshow_animation_service.dart';
@@ -36,6 +42,8 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
 
   // Manual zoom controller
   final TransformationController _manualZoomController = TransformationController();
+  bool _showKaraoke = false;
+  bool _musicMuted = false;
 
   @override
   void initState() {
@@ -49,9 +57,53 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
     _startKenBurns();
     _scheduleSlide();
     _scheduleHideControls();
+    _showKaraoke = widget.config.karaokeEnabled;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _preloadNext();
+      _startMusic();
     });
+  }
+
+  void _startMusic() {
+    if (!widget.config.musicEnabled) return;
+    if (!mounted) return;
+
+    final jukebox = context.read<JukeboxNotifier>();
+    if (!jukebox.synthAvailable) return;
+
+    // Determine songs to play
+    List<JukeboxSong> songs;
+    if (widget.config.musicSongIds.isNotEmpty) {
+      songs = widget.config.musicSongIds
+          .map((id) => JukeboxRegistry.findSongById(id))
+          .whereType<JukeboxSong>()
+          .toList();
+    } else if (widget.config.musicCategoryIndex != null) {
+      final cat = SongCategory.values[widget.config.musicCategoryIndex!];
+      songs = JukeboxRegistry.songsByCategory(cat);
+    } else {
+      songs = JukeboxRegistry.allSongs.toList();
+    }
+
+    if (songs.isEmpty) return;
+
+    // Set soundfont if specified
+    if (widget.config.musicSoundFontId != null) {
+      final sf = JukeboxRegistry.findSoundFontById(widget.config.musicSoundFontId!);
+      if (sf != null) jukebox.setSoundFont(sf);
+    }
+
+    // Set volume
+    jukebox.setVolume(widget.config.musicVolume);
+
+    // Play
+    jukebox.playQueue(songs, shuffleQueue: true);
+  }
+
+  void _stopMusic() {
+    if (!mounted) return;
+    final jukebox = context.read<JukeboxNotifier>();
+    jukebox.stop();
   }
 
   @override
@@ -61,6 +113,7 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
     _kenBurnsController.dispose();
     _manualZoomController.dispose();
     _focusNode.dispose();
+    _stopMusic();
     super.dispose();
   }
 
@@ -99,26 +152,28 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
 
   void _goNext() {
     if (!mounted || widget.playlist.isEmpty) return;
-    int next = _currentIndex + 1;
-    if (next >= widget.playlist.length) {
-      if (widget.config.loopEnabled) {
-        next = 0;
-      } else {
-        setState(() => _isPlaying = false);
+    int next = _currentIndex;
+    for (int i = 0; i < widget.playlist.length; i++) {
+      next++;
+      if (next >= widget.playlist.length) {
+        if (widget.config.loopEnabled) {
+          next = 0;
+        } else {
+          setState(() => _isPlaying = false);
+          return;
+        }
+      }
+      if (widget.playlist[next].file.existsSync()) {
+        setState(() => _currentIndex = next);
+        _manualZoomController.value = Matrix4.identity();
+        _startKenBurns();
+        _scheduleSlide();
+        _preloadNext();
         return;
       }
     }
-    // Skip deleted files
-    if (!widget.playlist[next].file.existsSync()) {
-      _currentIndex = next;
-      _goNext();
-      return;
-    }
-    setState(() => _currentIndex = next);
-    _manualZoomController.value = Matrix4.identity();
-    _startKenBurns();
-    _scheduleSlide();
-    _preloadNext();
+    // All files deleted — stop playback
+    setState(() => _isPlaying = false);
   }
 
   void _goPrev() {
@@ -175,6 +230,20 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
         return KeyEventResult.handled;
       case LogicalKeyboardKey.escape:
         Navigator.pop(context);
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyM:
+        // Toggle music mute
+        if (widget.config.musicEnabled) {
+          setState(() => _musicMuted = !_musicMuted);
+          final jukebox = context.read<JukeboxNotifier>();
+          jukebox.toggleMute();
+          _showControlsAndReset();
+        }
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyK:
+        // Toggle karaoke overlay
+        setState(() => _showKaraoke = !_showKaraoke);
+        _showControlsAndReset();
         return KeyEventResult.handled;
       default:
         return KeyEventResult.ignored;
@@ -286,6 +355,15 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
                   ),
                 ),
 
+                // Karaoke overlay
+                if (_showKaraoke && widget.config.musicEnabled)
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 80,
+                    child: KaraokeOverlay(),
+                  ),
+
                 // Controls overlay
                 if (_showControls) ...[
                   // Top bar
@@ -317,10 +395,38 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
                                 fontSize: 14,
                                 letterSpacing: 1),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white70, size: 24),
-                            onPressed: () => Navigator.pop(context),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.music_note,
+                                    color: Colors.white70, size: 20),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => Dialog.fullscreen(
+                                      backgroundColor: Colors.black,
+                                      child: Scaffold(
+                                        backgroundColor: Colors.black,
+                                        appBar: AppBar(
+                                          backgroundColor: Colors.black,
+                                          leading: IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white70),
+                                            onPressed: () => Navigator.pop(context),
+                                          ),
+                                        ),
+                                        body: const JukeboxPanel(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close,
+                                    color: Colors.white70, size: 24),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
                           ),
                         ],
                       ),

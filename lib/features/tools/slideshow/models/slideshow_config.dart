@@ -29,6 +29,14 @@ class SlideshowConfig {
   final bool shuffleEnabled;
   final bool loopEnabled;
 
+  // Music
+  final bool musicEnabled;
+  final String? musicSoundFontId;
+  final List<String> musicSongIds;
+  final int? musicCategoryIndex;
+  final double musicVolume;
+  final bool karaokeEnabled;
+
   const SlideshowConfig({
     required this.id,
     this.name = 'Untitled',
@@ -43,6 +51,12 @@ class SlideshowConfig {
     this.manualZoomEnabled = false,
     this.shuffleEnabled = false,
     this.loopEnabled = true,
+    this.musicEnabled = false,
+    this.musicSoundFontId,
+    this.musicSongIds = const [],
+    this.musicCategoryIndex,
+    this.musicVolume = 0.7,
+    this.karaokeEnabled = false,
   });
 
   SlideshowConfig copyWith({
@@ -60,6 +74,14 @@ class SlideshowConfig {
     bool? manualZoomEnabled,
     bool? shuffleEnabled,
     bool? loopEnabled,
+    bool? musicEnabled,
+    String? musicSoundFontId,
+    bool clearMusicSoundFontId = false,
+    List<String>? musicSongIds,
+    int? musicCategoryIndex,
+    bool clearMusicCategory = false,
+    double? musicVolume,
+    bool? karaokeEnabled,
   }) {
     return SlideshowConfig(
       id: id ?? this.id,
@@ -75,6 +97,12 @@ class SlideshowConfig {
       manualZoomEnabled: manualZoomEnabled ?? this.manualZoomEnabled,
       shuffleEnabled: shuffleEnabled ?? this.shuffleEnabled,
       loopEnabled: loopEnabled ?? this.loopEnabled,
+      musicEnabled: musicEnabled ?? this.musicEnabled,
+      musicSoundFontId: clearMusicSoundFontId ? null : (musicSoundFontId ?? this.musicSoundFontId),
+      musicSongIds: musicSongIds ?? this.musicSongIds,
+      musicCategoryIndex: clearMusicCategory ? null : (musicCategoryIndex ?? this.musicCategoryIndex),
+      musicVolume: musicVolume ?? this.musicVolume,
+      karaokeEnabled: karaokeEnabled ?? this.karaokeEnabled,
     );
   }
 
@@ -92,6 +120,12 @@ class SlideshowConfig {
         'manualZoomEnabled': manualZoomEnabled,
         'shuffleEnabled': shuffleEnabled,
         'loopEnabled': loopEnabled,
+        'musicEnabled': musicEnabled,
+        'musicSoundFontId': musicSoundFontId,
+        'musicSongIds': musicSongIds,
+        'musicCategoryIndex': musicCategoryIndex,
+        'musicVolume': musicVolume,
+        'karaokeEnabled': karaokeEnabled,
       };
 
   factory SlideshowConfig.fromJson(Map<String, dynamic> json) {
@@ -111,6 +145,12 @@ class SlideshowConfig {
       manualZoomEnabled: json['manualZoomEnabled'] as bool? ?? false,
       shuffleEnabled: json['shuffleEnabled'] as bool? ?? false,
       loopEnabled: json['loopEnabled'] as bool? ?? true,
+      musicEnabled: json['musicEnabled'] as bool? ?? false,
+      musicSoundFontId: json['musicSoundFontId'] as String?,
+      musicSongIds: (json['musicSongIds'] as List<dynamic>?)?.cast<String>() ?? [],
+      musicCategoryIndex: json['musicCategoryIndex'] as int?,
+      musicVolume: (json['musicVolume'] as num?)?.toDouble() ?? 0.7,
+      karaokeEnabled: json['karaokeEnabled'] as bool? ?? false,
     );
   }
 }

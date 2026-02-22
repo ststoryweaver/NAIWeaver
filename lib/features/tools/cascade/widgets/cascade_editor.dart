@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/responsive.dart';
 import '../providers/cascade_notifier.dart';
 import 'cascade_library_view.dart';
@@ -174,13 +175,7 @@ class _CascadeEditorState extends State<CascadeEditor> {
           ElevatedButton.icon(
             onPressed: () {
               notifier.saveActiveToLibrary();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l.cascadeSavedToLibrary),
-                  backgroundColor: t.accentCascade,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              showAppSnackBar(context, l.cascadeSavedToLibrary, color: t.accentCascade);
             },
             icon: const Icon(Icons.save, size: 14),
             label: Text(l.commonSave),
@@ -196,13 +191,7 @@ class _CascadeEditorState extends State<CascadeEditor> {
           ElevatedButton.icon(
             onPressed: () {
               notifier.saveActiveToLibrary();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l.cascadeSavedToLibrary),
-                  backgroundColor: t.accentCascade,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              showAppSnackBar(context, l.cascadeSavedToLibrary, color: t.accentCascade);
               Navigator.pop(context);
             },
             icon: Icon(Icons.play_arrow, size: mobile ? 18 : 14),

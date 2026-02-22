@@ -14,7 +14,7 @@ import '../../../generation/models/nai_character.dart';
 import '../../../generation/providers/generation_notifier.dart';
 import '../../../generation/widgets/settings_panel.dart';
 import '../../../../core/widgets/custom_resolution_dialog.dart';
-import '../../../../tag_service.dart';
+import '../../../../core/services/tag_service.dart';
 
 class DirectorView extends StatefulWidget {
   const DirectorView({super.key});

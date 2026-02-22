@@ -8,7 +8,7 @@ import '../../../../core/widgets/tag_suggestion_overlay.dart';
 import '../providers/cascade_notifier.dart';
 import '../services/cascade_stitching_service.dart';
 import '../../../generation/providers/generation_notifier.dart';
-import '../../../../tag_service.dart';
+import '../../../../core/services/tag_service.dart';
 
 class CascadePlaybackView extends StatefulWidget {
   const CascadePlaybackView({super.key});

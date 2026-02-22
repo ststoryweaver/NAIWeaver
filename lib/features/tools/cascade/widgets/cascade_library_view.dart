@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
 import '../providers/cascade_notifier.dart';
 import '../models/prompt_cascade.dart';
 
@@ -290,31 +291,18 @@ class CascadeLibraryView extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, PromptCascade cascade, CascadeNotifier notifier) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final t = context.t;
-        final l = context.l;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(l.cascadeDeleteTitle, style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(12), fontWeight: FontWeight.bold)),
-          content: Text(l.cascadeDeleteConfirm(cascade.name), style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(11))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
-            ),
-            TextButton(
-              onPressed: () {
-                notifier.deleteCascade(cascade.name);
-                Navigator.pop(context);
-              },
-              child: Text(l.commonDelete, style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(10), fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
+  Future<void> _confirmDelete(BuildContext context, PromptCascade cascade, CascadeNotifier notifier) async {
+    final t = context.t;
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.cascadeDeleteTitle,
+      message: l.cascadeDeleteConfirm(cascade.name),
+      confirmLabel: l.commonDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.deleteCascade(cascade.name);
+    }
   }
 }
