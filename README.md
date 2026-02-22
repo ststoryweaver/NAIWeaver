@@ -31,14 +31,34 @@ Apply the aesthetic "vibe" of reference images to generations. Each vibe has ind
 ### Cascade System
 Sequential scene generation. Define setting, placement, actions, emotion, and state for each scene. Once your story is made, use the Cast button to return to the main editor, add your characters, and watch them play out the scenes. Includes unsaved-changes detection with save/discard confirmation.
 
+### On-Device ML Processing
+- Background removal, image upscaling, and interactive segmentation via ONNX Runtime
+- 8 downloadable ML models with SHA-256 integrity verification and device-aware recommendations
+- Batch processing for gallery-wide BG removal and upscaling
+- Before/after comparison slider with zoom and pan
+
+### Director Tools
+- 6 NovelAI augment-image tools: Remove BG, Line Art, Sketch, Colorize, Emotion, Declutter
+- Emotion supports 24 mood presets; Colorize supports defry and prompt input
+
+### Enhance
+- Quick img2img refinement with strength, noise, and scale controls
+
+### Quick Action Overlay
+- Floating action buttons on generated images (Save, Edit, Remove BG, Upscale, Enhance, Director Tools)
+- Each button individually toggleable; context-aware based on downloaded models
+
 ### Gallery
+- Full-screen image detail view with swipe navigation, zoom, and metadata display
+- Bottom action bar with integrated ML, Director Tools, Enhance, and reference actions
+- Gallery import preserves original creation dates from EXIF metadata
 - Favorites, search, multi-select with drag-to-select
 - Virtual albums (folder-like organization without moving files)
 - Sort by date, name, or file size
 - Image info overlay on hover
 - Demo mode with PIN lock and biometric unlock for privacy
 
-### Tools Hub (11 Tools)
+### Tools Hub (14 Tools)
 
 | Tool | Description |
 |---|---|
@@ -49,16 +69,19 @@ Sequential scene generation. Define setting, placement, actions, emotion, and st
 | **Reference Manager** | Director Reference management with type, strength, and fidelity controls |
 | **Cascade Editor** | Multi-beat sequential scene generation with character slots and prompt stitching |
 | **Img2Img Editor** | Source image loading, canvas editor, custom resolutions, brush-based mask painting, and inpainting |
+| **Director Tools** | 6 server-side image augmentation tools (Remove BG, Line Art, Sketch, Colorize, Emotion, Declutter) |
+| **Enhance** | Quick img2img refinement with strength, noise, and scale controls |
+| **ML Models** | Download and manage on-device ML models for BG removal, upscaling, and segmentation |
 | **Slideshow** | Configurable image slideshow with transitions and Ken Burns effect from gallery or album sources |
 | **Packs** | Export/import presets, styles, wildcards, and director refs as `.vpack` files |
-| **Theme Builder** | 8 built-in themes + full custom theme editor with 15 configurable colors |
-| **Settings** | API key, auto-save, shelf visibility, character editor mode, and locale configuration |
+| **Theme Builder** | 8 built-in themes + full custom theme editor with 17 configurable colors |
+| **Settings** | API key, auto-save, shelf visibility, quick action buttons, upscale backend, tooltips, and locale |
 
 ### Localization
 English and Japanese out of the box. Extensible via `.arb` files — see [Contributing](#localization-1) for adding new languages.
 
 ### Theme System
-Token-based theming with 8 built-in themes (OLED Dark, Soft Dark, Midnight, Pastel Purple, Rose Quartz, Emerald, Amber Terminal, Cyberpunk) and unlimited custom themes. All colors and fonts flow through semantic design tokens.
+Token-based theming with 8 built-in themes (OLED Dark, Soft Dark, Midnight, Pastel Purple, Rose Quartz, Emerald, Amber Terminal, Cyberpunk) and unlimited custom themes. 17 configurable color tokens including `bgRemoval` and `upscale`. All colors and fonts flow through semantic design tokens.
 
 ## Requirements
 
@@ -103,23 +126,26 @@ flutter build web         # Web build
 ```
 lib/
   main.dart                    # Entry point, provider setup
-  novel_ai_service.dart        # NovelAI API client
   core/
+    ml/                        # On-device ML inference pipeline (ONNX Runtime)
     theme/                     # Token-based theme system
     l10n/                      # Locale state management
-    services/                  # Preferences, paths, pack service
-    utils/                     # Image utils, responsive helpers
-    widgets/                   # Shared widgets (custom resolution dialog, color picker, etc.)
+    services/                  # NovelAI API, preferences, paths, pack service, presets, styles, tags, wildcards
+    utils/                     # Image utils, responsive helpers, snackbar, timestamps
+    widgets/                   # Shared widgets (comparison slider, quick actions, dialogs, etc.)
   l10n/                        # ARB translation files (en, ja)
   features/
-    generation/                # Main generation UI, character editor, presets
-    gallery/                   # Image gallery with albums
+    generation/                # Main generation UI, character editor, services
+    gallery/                   # Image gallery with albums, detail view, services
     director_ref/              # Director Reference system
     vibe_transfer/             # Vibe Transfer system
-    tools/                     # Tools Hub (11 tools)
+    tools/                     # Tools Hub (14 tools)
       canvas/                  # Multi-layer canvas editor with text/font tools
       cascade/                 # Multi-beat sequential generation
+      director_tools/          # Director Tools (6 augmentation tools)
+      enhance/                 # Enhance (quick img2img refinement)
       img2img/                 # Img2Img with inpainting
+      ml/                      # ML model manager UI
       slideshow/               # Configurable slideshow player
 ```
 
@@ -136,7 +162,7 @@ Share your presets, styles, wildcards, and director references with others using
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for development principles, completed milestones, and planned features including Director Tools integration and NAI v4 Vibe Bundle support.
+See [ROADMAP.md](ROADMAP.md) for development principles, completed milestones, and planned features.
 
 ## Contributing
 

@@ -306,36 +306,96 @@ Content-Type: application/x-zip-compressed
 
 ---
 
-## Planned — Not Yet Implemented in NAIWeaver
-
-The following API capabilities are planned for future integration. They are documented here for reference.
-
-### Director Tools API
+## Director Tools API
 
 NovelAI provides image transformation tools via a separate endpoint. These tools operate on existing images rather than generating from text prompts.
 
 **Endpoint:** `POST https://image.novelai.net/ai/augment-image`
 
-**Planned tools:**
-| Tool | Description |
+**Headers:**
+| Header | Value |
+|---|---|
+| `Authorization` | `Bearer <API_KEY>` |
+| `Content-Type` | `application/json` |
+
+### Available Tools
+
+| Tool (`req_type`) | Description |
 |---|---|
 | `bg-removal` | Remove background from an image, isolating the subject |
 | `lineart` | Extract clean line art from an image |
 | `sketch` | Convert an image to sketch-style rendering |
-| `colorize` | Add color to grayscale or line art images |
-| `emotion` | Modify character facial expressions |
+| `colorize` | Add color to grayscale or line art images (supports `defry` and `prompt`) |
+| `emotion` | Modify character facial expressions (requires `prompt` with mood) |
 | `declutter` | Clean up and simplify image compositions |
 
-**Request format** (expected):
+### Request Format
+
 ```json
 {
+  "req_type": "bg-removal",
   "image": "<base64-encoded source image>",
-  "req_type": "bg-removal | lineart | sketch | colorize | emotion | declutter",
-  "parameters": { ... }
+  "width": 832,
+  "height": 1216
 }
 ```
 
-Exact parameter structure may vary per tool. Refer to NovelAI's official documentation for current details.
+### Tool-Specific Parameters
+
+**Colorize** supports additional parameters:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `defry` | int (0–5) | Defringe strength — controls how aggressively color bleeding at edges is reduced |
+| `prompt` | string | Optional prompt to guide colorization (e.g., "red hair, blue eyes") |
+
+```json
+{
+  "req_type": "colorize",
+  "image": "<base64>",
+  "width": 832,
+  "height": 1216,
+  "defry": 0,
+  "prompt": "blonde hair, green eyes"
+}
+```
+
+**Emotion** requires a mood in the `prompt` field:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `prompt` | string | Mood keyword from the supported list below |
+
+```json
+{
+  "req_type": "emotion",
+  "image": "<base64>",
+  "width": 832,
+  "height": 1216,
+  "prompt": "happy;;"
+}
+```
+
+### Supported Emotion Moods (24)
+
+| Mood | Mood | Mood | Mood |
+|---|---|---|---|
+| neutral | happy | sad | angry |
+| scared | surprised | tired | excited |
+| nervous | thinking | confused | smug |
+| amused | embarrassed | aroused | annoyed |
+| proud | panicked | crying | determined |
+| shy | disgusted | bored | relieved |
+
+### Response Format
+
+The API returns a **ZIP archive** containing the processed PNG image, identical to the generation endpoint response format.
+
+---
+
+## Planned — Not Yet Implemented in NAIWeaver
+
+The following API capabilities are planned for future integration.
 
 ### NAI v4 Vibe File Formats
 

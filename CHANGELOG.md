@@ -1,5 +1,80 @@
 # Changelog
 
+## v0.5.0 — The Tools Update
+
+### On-Device ML Processing
+- On-device ML inference via ONNX Runtime with downloadable model system
+- Background removal: 3 models (ISNet Anime, RMBG-2.0 Q4F16, RMBG-2.0 FP16) with binary mask and alpha matte output
+- Image upscaling: 3 models (SPAN 2x DC, Compact 2x, RealPLKSR 2x DC) with tiled processing for large images
+- Interactive segmentation: SAM 2.1-Tiny with point-based selection (encoder + decoder pair)
+- ML model download manager with SHA-256 integrity verification and progress tracking
+- Device capability detection (GPU acceleration via DirectML/CUDA/TensorRT/CoreML/NNAPI, RAM-aware recommendations)
+- Batch processing for BG removal and upscaling across multiple gallery images
+- Sprite sheet generation from processed images
+- Before/after comparison slider with zoom and pan for upscale results
+
+### Director Tools
+- 6 NovelAI augment-image tools: Remove BG, Line Art, Sketch, Colorize, Emotion, Declutter
+- Colorize supports defry control and prompt input
+- Emotion supports 24 mood presets (happy, sad, angry, smug, aroused, etc.)
+- Accessible from Tools Hub, image viewer quick actions, and gallery detail view
+
+### Enhance Tool
+- Quick img2img refinement with strength, noise, and scale controls
+- Accessible from Tools Hub, image viewer quick actions, and gallery detail view
+
+### NovelAI API Upscaling
+- Server-side 4x upscaling via NovelAI API as alternative to local ML
+- Configurable backend toggle (ML Local vs NovelAI API) in Settings
+
+### Quick Action Overlay
+- Floating action buttons on generated image: Save, Edit, Remove BG, Upscale, Enhance, Director Tools
+- Each button individually toggleable in Settings
+- Context-aware: BG Removal and Upscale only appear when a model is downloaded
+
+### Gallery Rework
+- Full-screen image detail view with PageView swipe navigation and keyboard support
+- Per-page zoom with double-tap zoom animation (2.5x) and pinch-to-zoom
+- Auto-hiding controls with tap/hover to reveal
+- Bottom action bar: Prompt import, Img2Img, Enhance, Director Tools, Remove BG, Upscale, NAI Upscale, Char Ref, Vibe, Slideshow
+- Metadata display with prompt text, resolution, scale, steps, sampler, and seed chips
+- Post-processing badge detection from filename prefixes
+- Gallery import now preserves original creation dates from EXIF metadata (fixes Android date clustering)
+- OriginalDate PNG chunk injection for refresh-resilient date recovery
+
+### Architecture
+- Gallery refactored into separate services (album service, import service)
+- Generation logic extracted into services (session snapshot, character manager, preset service, metadata import)
+- Preferences split into domain-specific modules (gallery, security, ML)
+- Core service files consolidated from root into `lib/core/services/`
+- `GenerationNotifier` upgraded to `ChangeNotifierProxyProvider5` (adds DirectorTools, Enhance dependencies)
+- New providers: `DirectorToolsNotifier`, `EnhanceNotifier`, `MLNotifier`
+- Reusable widget library expanded (comparison slider, confirm dialog, progress dialog, vision slider, section title, color swatch row)
+- Generic download manager shared across ML and other download features
+
+### Other
+- Tooltip visibility toggle in Settings
+- New theme color tokens: `bgRemoval`, `upscale`
+- Full EN and JA localization for all new features (~70 new keys)
+- Tools Hub expanded from 11 to 14 tools
+
+### Bug Fixes
+- Fixed upscale producing black rectangles
+- Fixed metadata preservation during upscale operations
+- Fixed BG removal crashes
+
+### New Files
+- `lib/core/ml/` — Full ML inference pipeline (14 files)
+- `lib/features/tools/ml/` — ML model manager UI
+- `lib/features/tools/director_tools/` — Director Tools feature (4 files)
+- `lib/features/tools/enhance/` — Enhance feature (3 files)
+- `lib/core/widgets/quick_action_overlay.dart`
+- `lib/core/widgets/comparison_slider.dart`
+- `lib/features/gallery/ui/image_detail_view.dart`
+- `lib/features/gallery/services/gallery_import_service.dart`
+
+---
+
 ## v0.4.0 — The Character Update
 
 ### Character System

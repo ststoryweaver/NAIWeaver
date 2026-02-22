@@ -31,7 +31,7 @@
 - **Style Reordering**: Drag-to-reorder active styles with expandable style chips layout
 - **Artist Tag Category**: `artist:` prefix filtering in tag autocomplete for targeted artist searches
 
-## Tools Hub (11 Tools)
+## Tools Hub (14 Tools)
 - **Wildcard Manager**: Browse, create, edit, and delete wildcard files with live preview, favorites, per-file randomization modes, and drag-to-reorder
 - **Tag Library Manager**: Search, browse, favorite, and preview tags with inline image generation and visual examples
 - **Preset Manager**: Full preset editor with inline sliders, character/interaction editing, and reference management
@@ -39,10 +39,13 @@
 - **Reference Manager**: Add, configure, and manage Director Reference images with type/strength/fidelity controls
 - **Cascade Editor**: Multi-beat sequential scene generation with character slots, environment tags, prompt stitching, custom resolutions per beat, and Cast button for quick save-and-return
 - **Img2Img Editor**: Source image loading, multi-layer canvas editor integration, blank canvas option with custom resolutions, brush-based mask painting, strength/noise controls, client-side inpainting
+- **Director Tools**: 6 server-side image augmentation tools (Remove BG, Line Art, Sketch, Colorize, Emotion, Declutter) via NovelAI's augment-image API
+- **Enhance**: Quick img2img refinement with strength, noise, and scale controls — accessible from Tools Hub, image viewer, and gallery detail view
+- **ML Models**: Download and manage on-device ML models for background removal, upscaling, and segmentation with device capability detection
 - **Slideshow**: Configurable image slideshow player with transition timing, Ken Burns (pan/zoom) effect, and source selection from gallery or specific albums
 - **Packs**: Export and import NAIWeaver Packs (`.vpack` files) containing presets, styles, wildcards, and director reference images as portable ZIP archives
 - **Theme Builder**: Full theme customization with 8 built-in themes, custom user themes, color picker, font selector, text scale slider, bright mode toggle, and live preview
-- **Settings**: API key management, auto-save toggle, shelf visibility toggle (Director Reference, Vibe Transfer), character editor mode toggle, custom output folder (desktop), locale selection
+- **Settings**: API key management, auto-save toggle, shelf visibility, quick action button toggles, upscale backend (ML Local vs NovelAI API), tooltip visibility, character editor mode, custom output folder (desktop), locale selection
 
 ## Cascade System
 - **Multi-Beat Scenes**: Define sequential beats with character slots, environment tags, per-beat prompts, and custom resolutions per beat
@@ -86,6 +89,12 @@
 
 ## Gallery
 - **Image Vault**: Browse all generated images with search and filtering
+- **Full-Screen Detail View**: PageView swipe navigation with keyboard support, per-page zoom with double-tap (2.5x) and pinch-to-zoom, auto-hiding controls with tap/hover to reveal
+- **Detail View Action Bar**: Bottom action bar with Prompt Import, Img2Img, Enhance, Director Tools, Remove BG, Upscale, NAI Upscale, Char Ref, Vibe, and Slideshow actions
+- **Metadata Display**: Prompt text, resolution, scale, steps, sampler, and seed shown as chips in the detail view
+- **Post-Processing Badge Detection**: Filename prefix-based badges for processed images
+- **EXIF Date Preservation**: Gallery import preserves original creation dates from EXIF metadata, fixing Android date clustering issues
+- **OriginalDate PNG Chunk**: Refresh-resilient date recovery via injected PNG text chunk
 - **Auto-Save**: Automatically saves all generated images to the output folder (configurable)
 - **Export Button**: Save images from the gallery detail view with platform-branched behavior (Downloads folder on mobile, save-as dialog on desktop) and filename collision handling
 - **Favorites**: Star/pin images in the gallery with a favorites-only filter toggle, persisted via SharedPreferences
@@ -130,7 +139,7 @@
 - **Token-Based Theming**: All UI colors and fonts flow through `VisionTokens` semantic design tokens, accessed via `context.t` extension
 - **8 Built-In Themes**: OLED Dark (default), Soft Dark, Midnight, Pastel Purple, Rose Quartz, Emerald, Amber Terminal, Cyberpunk
 - **Custom User Themes**: Create, edit, and delete custom themes based on any existing theme, persisted via SharedPreferences
-- **15 Configurable Colors**: Background, surface (high/mid), text (primary/secondary/tertiary/disabled/minimal), border (strong/medium/subtle), accent (main/edit/success/danger)
+- **17 Configurable Colors**: Background, surface (high/mid), text (primary/secondary/tertiary/disabled/minimal), border (strong/medium/subtle), accent (main/edit/success/danger), bgRemoval, upscale
 - **Font Selection**: 7 font options (JetBrains Mono, Fira Code, IBM Plex Mono, Space Mono, Roboto Mono, Inter, Space Grotesk) via Google Fonts
 - **Text Scale**: Adjustable font scale slider (75%–150%) applied globally through `t.fontSize()`
 - **Bright Mode Toggle**: Per-theme toggle for brighter or dimmer text rendering
@@ -154,7 +163,43 @@
 - **Director Reference Shelf**: Horizontal shelf with type-colored chips for reference images (toggleable via Settings)
 - **Vibe Transfer Shelf**: Horizontal shelf with green-accented chips for vibe references (toggleable via Settings)
 - **Quick Edit Button**: One-tap access to send the current generation into the Img2Img editor
+- **Quick Action Overlay**: Floating action buttons on the image viewer for Save, Edit, Remove BG, Upscale, Enhance, and Director Tools (individually configurable)
+
+## On-Device ML Processing
+- **ML Model Registry**: 8 downloadable models across 3 categories (background removal, upscaling, segmentation)
+- **Device Capability Detection**: Automatic GPU acceleration detection (DirectML, CUDA, TensorRT, CoreML, NNAPI) with RAM-aware model recommendations
+- **Background Removal**: 3 models (ISNet Anime, RMBG-2.0 Q4F16, RMBG-2.0 FP16) with binary mask and alpha matte output modes
+- **Image Upscaling**: 3 models (SPAN 2x DC, Compact 2x, RealPLKSR 2x DC) with tiled processing for large images to avoid memory issues
+- **Interactive Segmentation**: SAM 2.1-Tiny with point-based selection using separate encoder and decoder model pair
+- **Batch Processing**: Apply BG removal or upscaling across multiple gallery images in one operation
+- **Sprite Sheet Generation**: Generate sprite sheets from batch-processed images
+- **ML Models Manager**: Tools Hub interface for browsing, downloading, and managing ML models with progress tracking
+- **SHA-256 Verification**: All model downloads verified with SHA-256 integrity checks
+- **Comparison Slider**: Reusable before/after widget with synchronized zoom and pan for comparing upscale results
+
+## Director Tools
+- **6 Augmentation Tools**: Remove BG, Line Art, Sketch, Colorize, Emotion, and Declutter via NovelAI's `augment-image` API
+- **Emotion Mood Picker**: 24 mood presets (happy, sad, angry, smug, aroused, scared, surprised, tired, etc.)
+- **Colorize Controls**: Defry (defringe) strength parameter and optional prompt input for guided colorization
+- **Multi-Access Points**: Accessible from Tools Hub, image viewer quick actions, and gallery detail view action bar
+
+## Enhance
+- **Quick Img2Img Refinement**: One-tap image enhancement with configurable strength, noise, and scale controls
+- **Multi-Access Points**: Accessible from Tools Hub, image viewer quick actions, and gallery detail view action bar
+
+## Quick Action Overlay
+- **Floating Action Buttons**: 6 buttons on the generated image viewer — Save, Edit, Remove BG, Upscale, Enhance, Director Tools
+- **Individually Configurable**: Each button can be shown or hidden via Settings
+- **Context-Aware**: BG Removal and Upscale buttons only appear when at least one corresponding ML model is downloaded
+
+## NovelAI API Upscaling
+- **Server-Side 4x Upscale**: High-quality image upscaling via NovelAI's API as an alternative to local ML models
+- **Backend Toggle**: Configurable upscale backend selection (ML Local vs NovelAI API) in Settings
 
 ## Post-Processing
 - **SMEA / SMEA DYN**: Toggleable SMEA post-processing
 - **Decrisper**: Dynamic thresholding toggle for sharper outputs
+- **On-Device Upscaling**: Local ML-powered 2x upscaling (see On-Device ML Processing)
+- **NovelAI API Upscaling**: Server-side 4x upscaling (see NovelAI API Upscaling)
+- **Background Removal**: On-device BG removal with multiple model options (see On-Device ML Processing)
+- **Director Tools**: Server-side image augmentation (see Director Tools)

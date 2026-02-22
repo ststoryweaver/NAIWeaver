@@ -15,8 +15,10 @@ Thanks for your interest in contributing! Here's how to get started.
 - Use `flutter analyze` before submitting — no new warnings
 - Format with `dart format lib/`
 - State management uses Provider + ChangeNotifier — keep that pattern
-- Feature code goes in `lib/features/{name}/`
-- Shared utilities go in `lib/core/`
+- Feature code goes in `lib/features/{name}/` with `models/`, `providers/`, `services/`, `widgets/` sub-folders
+- ML processing code goes in `lib/core/ml/`
+- Tools Hub features go in `lib/features/tools/{tool_name}/` (e.g., `director_tools/`, `enhance/`, `ml/`)
+- Shared utilities go in `lib/core/` (services, utils, widgets)
 
 ## Pull Request Process
 

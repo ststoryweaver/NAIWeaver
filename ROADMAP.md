@@ -66,7 +66,7 @@
 - Japanese web build with separate `/ja/` deployment
 - Save original source image alongside img2img generation result with matching timestamps
 
-### Phase 6: Character System, Custom Resolutions & Canvas Text (post-v0.3.0)
+### Phase 6: Character System, Custom Resolutions & Canvas Text (v0.4.0)
 - Expanded inline character editor with tag suggestions, UC editing, position grid, and character presets (save/load)
 - Character editor mode toggle (expanded vs compact) in Settings
 - Multi-participant interactions: source and target now support multiple characters per interaction
@@ -81,6 +81,21 @@
 - Characters section in theme builder panel ordering
 - Full EN and JA localization for all new features
 
+### Phase 7: ML Processing, Director Tools & Gallery Rework (v0.5.0)
+- On-device ML inference via ONNX Runtime (BG removal, upscaling, segmentation)
+- Downloadable ML model system with 8 models, SHA-256 verification, and device-aware recommendations
+- Director Tools integration (6 server-side augmentation tools via augment-image API)
+- Enhance tool for quick img2img refinement
+- NovelAI API upscaling with backend toggle (local ML vs server)
+- Quick action overlay on generated images (Save, Edit, Remove BG, Upscale, Enhance, Director Tools)
+- Full-screen gallery image detail view with swipe, zoom, metadata, and integrated ML/tool actions
+- Gallery import EXIF date preservation for correct sort ordering
+- Batch processing and sprite sheet generation
+- Before/after comparison slider for upscale results
+- Gallery, generation, and preferences refactored into domain-specific services
+- Core files consolidated into lib/core/services/
+- Tools Hub expanded from 11 to 14 tools
+
 ## Architecture
 - **Language/Framework**: Dart 3.10.7+ / Flutter (stable channel)
 - **Primary Target**: Windows desktop (also supports Android, iOS, Linux, macOS, Web)
@@ -89,23 +104,6 @@
 - **Theme**: Token-based system via `VisionTokens` with 8 built-in themes + custom themes
 
 ## Planned Features
-
-### Director Tools Integration
-NovelAI's Director Tools API provides image transformation capabilities beyond generation. Planned tools:
-- **Remove Background** — Isolate subjects from their backgrounds
-- **Line Art** — Extract clean line art from images
-- **Sketch** — Convert images to sketch-style renderings
-- **Colorize** — Add color to grayscale or line art images
-- **Emotion** — Modify character facial expressions
-- **Declutter** — Clean up and simplify image compositions
-
-These will be integrated as additional tools in the Tools Hub or as post-processing options accessible from the image viewer.
-
-### Enhance (Upscale)
-Image enhancement/upscale via NovelAI's API. Planned capabilities:
-- **Upscale**: Increase image resolution while preserving detail
-- Integration as a post-generation action in the image viewer and gallery detail view
-- Configurable enhancement parameters (strength, scale factor)
 
 ### Cascade Editor Revamp
 Major overhaul of the Cascade Editor to improve usability and creative control:
