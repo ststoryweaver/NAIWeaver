@@ -23,6 +23,32 @@ lib/
 │   │       ├── bg_removal_overlay.dart    # BG removal result overlay
 │   │       ├── ml_processing_overlay.dart # ML processing progress overlay
 │   │       └── upscale_comparison_view.dart # Before/after comparison for upscale results
+│   ├── jukebox/                           # Easter egg: hidden media player
+│   │   ├── jukebox_registry.dart          # Song catalog and registration
+│   │   ├── midi_sequencer.dart            # MIDI file playback sequencer
+│   │   ├── models/
+│   │   │   ├── jukebox_song.dart          # Song model (title, artist, file path)
+│   │   │   ├── jukebox_soundfont.dart     # Soundfont model
+│   │   │   ├── karaoke_style_config.dart  # Karaoke display styling config
+│   │   │   └── visualizer_config.dart     # Audio visualizer configuration
+│   │   ├── native/
+│   │   │   └── fluidsynth_bindings.dart   # FFI bindings for FluidSynth library
+│   │   ├── providers/
+│   │   │   └── jukebox_notifier.dart      # Jukebox state management (ChangeNotifier)
+│   │   ├── services/
+│   │   │   ├── custom_song_service.dart   # User-added song management
+│   │   │   ├── jukebox_audio_handler.dart # Audio session and media controls
+│   │   │   ├── soundfont_download_service.dart # Soundfont download with progress
+│   │   │   ├── soundfont_manager.dart     # Soundfont lifecycle management
+│   │   │   └── soundfont_storage_service.dart # Soundfont file storage
+│   │   ├── synth/
+│   │   │   ├── fluidsynth_synthesizer.dart # Desktop synthesizer via FluidSynth FFI
+│   │   │   ├── midi_synthesizer.dart      # Synthesizer interface
+│   │   │   └── mobile_synthesizer.dart    # Mobile synthesizer via flutter_midi_pro
+│   │   └── widgets/
+│   │       ├── fullscreen_visualizer.dart # Full-screen audio visualizer
+│   │       ├── karaoke_overlay.dart       # Karaoke lyrics overlay
+│   │       └── karaoke_visualizer.dart    # Combined karaoke + visualizer widget
 │   ├── theme/
 │   │   ├── app_theme_config.dart          # Theme config model (17 colors, font, scale, bright mode, JSON serialization)
 │   │   ├── vision_tokens.dart             # Semantic design tokens derived from config
@@ -38,7 +64,8 @@ lib/
 │   │   ├── preferences/
 │   │   │   ├── gallery_preferences.dart   # Gallery-specific preferences
 │   │   │   ├── security_preferences.dart  # Security/PIN preferences
-│   │   │   └── ml_preferences.dart        # ML model and processing preferences
+│   │   │   ├── ml_preferences.dart        # ML model and processing preferences
+│   │   │   └── jukebox_preferences.dart   # Easter egg preferences
 │   │   ├── path_service.dart              # Platform-aware directory resolution
 │   │   ├── pack_service.dart              # ZIP-based .vpack export/import for presets, styles, wildcards, director refs
 │   │   ├── wildcard_service.dart          # Wildcard file I/O and indexing
@@ -179,6 +206,13 @@ lib/
         │   ├── models/                    # Enhance config model
         │   ├── providers/                 # EnhanceNotifier state management
         │   └── widgets/                   # Enhance controls UI
+        ├── jukebox/                       # Easter egg: media player UI
+        │   └── widgets/
+        │       ├── jukebox_panel.dart      # Main jukebox panel
+        │       ├── jukebox_now_playing.dart # Now-playing display
+        │       ├── jukebox_song_list.dart   # Song browser list
+        │       ├── jukebox_soundfont_picker.dart # Soundfont selection
+        │       └── jukebox_style_section.dart   # Karaoke style settings
         ├── img2img/                       # Img2Img editor
         │   ├── providers/
         │   │   └── img2img_notifier.dart   # Source/mask state management
@@ -216,6 +250,7 @@ VibeTransferNotifier         (standalone)
 DirectorToolsNotifier        (standalone)
 EnhanceNotifier              (standalone)
 MLNotifier                   (standalone)
+JukeboxNotifier              (standalone — easter egg media player)
 SlideshowNotifier            (standalone — manages slideshow configs)
 CascadeNotifier              (standalone)
 CanvasNotifier               (standalone — manages canvas layers, tools, drawing state)

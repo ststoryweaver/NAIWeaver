@@ -69,3 +69,18 @@ session_snapshot.json
 
 # Windows reserved device names
 nul
+
+# ML model directories and files (downloaded at runtime)
+ml_models/
+RMBG-2.0/
+ani-sd/
+isnet-anime/
+sam 2.1-tiny/
+*.onnx
+
+# Soundfont files (downloaded at runtime)
+soundfonts/
+
+# Dev/test files
+*.mid
+*.sf2
