@@ -476,6 +476,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get gallerySeed => 'シード';
 
   @override
+  String get galleryResolution => '解像度';
+
+  @override
+  String get galleryEnhance => 'エンハンス';
+
+  @override
+  String get galleryDirectorTools => 'ディレクター';
+
+  @override
   String get galleryImport => '画像をインポート';
 
   @override
@@ -1432,6 +1441,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeColorRefCharStyle => 'リファレンス（キャラ+スタイル）';
 
   @override
+  String get themeColorFavorite => 'お気に入り';
+
+  @override
+  String get themeColorCharacter => 'キャラクター';
+
+  @override
+  String get themeColorPositive => 'ポジティブ';
+
+  @override
+  String get themeColorNegative => 'ネガティブ';
+
+  @override
   String get themeFont => 'フォント';
 
   @override
@@ -2116,6 +2137,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get canvasEyedropper => 'スポイト';
 
   @override
+  String get canvasTransform => '移動';
+
+  @override
+  String get canvasImportImage => '画像を読み込む';
+
+  @override
   String get canvasSmooth => 'スムーズ';
 
   @override
@@ -2300,4 +2327,379 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get charEditorMutual => '相互';
+
+  @override
+  String get jukeboxTitle => 'ジュークボックス';
+
+  @override
+  String get jukeboxShuffleAll => 'すべてシャッフル';
+
+  @override
+  String get jukeboxPlayAll => 'すべて再生';
+
+  @override
+  String get jukeboxNoSongPlaying => '再生中の曲なし';
+
+  @override
+  String get jukeboxNowPlaying => '再生中';
+
+  @override
+  String get jukeboxSoundFont => 'サウンドフォント';
+
+  @override
+  String get jukeboxSettings => '設定';
+
+  @override
+  String get jukeboxQueue => 'キュー';
+
+  @override
+  String get jukeboxQueueEmpty => 'キューは空です';
+
+  @override
+  String get jukeboxRepeat => 'リピート';
+
+  @override
+  String get jukeboxShuffle => 'シャッフル';
+
+  @override
+  String get jukeboxOn => 'オン';
+
+  @override
+  String get jukeboxOff => 'オフ';
+
+  @override
+  String get jukeboxAddToQueue => 'キューに追加';
+
+  @override
+  String get jukeboxMusicUnavailable => '音楽再生は利用できません';
+
+  @override
+  String get jukeboxDllMissing => 'FluidSynth DLLが見つかりません';
+
+  @override
+  String get jukeboxCategoryAll => 'すべて';
+
+  @override
+  String get jukeboxCategoryClassical => 'クラシック';
+
+  @override
+  String get jukeboxCategoryAnime => 'アニメ';
+
+  @override
+  String get jukeboxCategoryGame => 'ゲーム';
+
+  @override
+  String get jukeboxCategoryJazz => 'ジャズ';
+
+  @override
+  String get jukeboxCategoryAmbient => 'アンビエント';
+
+  @override
+  String get jukeboxCategoryHoliday => 'ホリデー';
+
+  @override
+  String get jukeboxCategoryMeme => 'ミーム';
+
+  @override
+  String get jukeboxCategoryRock => 'ロック';
+
+  @override
+  String get jukeboxEnableMusic => '音楽を有効化';
+
+  @override
+  String get jukeboxMusicVolume => '音楽の音量';
+
+  @override
+  String get jukeboxKaraokeLyrics => 'カラオケ歌詞';
+
+  @override
+  String get mlModels => 'MLモデル';
+
+  @override
+  String get mlBgRemoval => '背景除去';
+
+  @override
+  String get mlUpscaling => 'アップスケーリング';
+
+  @override
+  String get mlSegmentation => 'セグメンテーション';
+
+  @override
+  String get mlDownload => 'ダウンロード';
+
+  @override
+  String get mlDownloaded => 'ダウンロード済み';
+
+  @override
+  String get mlRetry => '再試行';
+
+  @override
+  String get mlCancel => 'キャンセル';
+
+  @override
+  String get mlDelete => '削除';
+
+  @override
+  String get mlRemoveBg => '背景除去';
+
+  @override
+  String get mlUpscale => 'アップスケール';
+
+  @override
+  String get mlSegment => 'セグメント';
+
+  @override
+  String get mlCanvas => 'キャンバス';
+
+  @override
+  String get mlSave => '保存';
+
+  @override
+  String get mlDiscard => '破棄';
+
+  @override
+  String get mlAddPoint => '追加';
+
+  @override
+  String get mlRemovePoint => '除去';
+
+  @override
+  String get mlTierFast => '高速';
+
+  @override
+  String get mlTierBalanced => 'バランス';
+
+  @override
+  String get mlTierBalancedShort => 'バランス';
+
+  @override
+  String get mlTierQuality => '高品質';
+
+  @override
+  String get mlRemovingBg => '背景を除去中';
+
+  @override
+  String get mlUpscalingImages => '画像をアップスケール中';
+
+  @override
+  String get mlBgRemovalFailed => '背景除去に失敗';
+
+  @override
+  String get mlUpscaleFailed => 'アップスケールに失敗';
+
+  @override
+  String get mlRecommended => '推奨';
+
+  @override
+  String get mlMayBeSlow => '動作が遅い可能性';
+
+  @override
+  String get mlNotRecommended => '非推奨';
+
+  @override
+  String get mlNotAvailableOnPlatform => 'このプラットフォームでは利用不可';
+
+  @override
+  String get mlLowRamWarning => 'メモリ不足 — クラッシュの恐れ';
+
+  @override
+  String get mlBgRemovedAndSaved => '背景除去して保存しました';
+
+  @override
+  String mlBgRemovedCount(int completed, int total) {
+    return '背景除去: $completed/$total 画像';
+  }
+
+  @override
+  String mlUpscaledCount(int completed, int total) {
+    return 'アップスケール: $completed/$total 画像';
+  }
+
+  @override
+  String mlBgRemovedSavedAs(String name) {
+    return '背景除去: $name に保存しました';
+  }
+
+  @override
+  String get toolsDirectorTools => 'ディレクターツール';
+
+  @override
+  String get toolsEnhance => 'エンハンス';
+
+  @override
+  String get directorToolsTitle => 'ディレクターツール';
+
+  @override
+  String get directorToolsDesc => 'サーバーサイド画像操作：背景除去、線画抽出、着色など';
+
+  @override
+  String get directorToolsUseCurrent => '現在の生成画像を使用';
+
+  @override
+  String get directorToolsUseCurrentDesc => '最後に生成した画像をソースとして使用';
+
+  @override
+  String get directorToolsSelectTool => 'ツールを選択';
+
+  @override
+  String get directorToolsProcess => '処理';
+
+  @override
+  String get directorToolsProcessing => '処理中...';
+
+  @override
+  String get directorToolsDefry => 'DEFRY（ツール強度）';
+
+  @override
+  String get directorToolsMood => 'ムード';
+
+  @override
+  String get directorToolsPrompt => 'プロンプト';
+
+  @override
+  String get directorToolsPromptHint => '着色/感情用のオプションプロンプト...';
+
+  @override
+  String get directorToolsSaved => '結果をギャラリーに保存しました';
+
+  @override
+  String get enhanceTitle => 'エンハンス';
+
+  @override
+  String get enhanceDesc => 'IMG2IMGエンハンスで画像を再処理';
+
+  @override
+  String get enhanceUseCurrent => '現在の生成画像を使用';
+
+  @override
+  String get enhanceUseCurrentDesc => '最後に生成した画像をソースとして使用';
+
+  @override
+  String get enhanceProcess => 'エンハンス';
+
+  @override
+  String get enhanceProcessing => 'エンハンス中...';
+
+  @override
+  String get enhancePrompt => 'プロンプト';
+
+  @override
+  String get enhanceNegative => 'ネガティブ';
+
+  @override
+  String get enhanceStrength => '強度';
+
+  @override
+  String get enhanceNoise => 'ノイズ';
+
+  @override
+  String get enhanceSaved => 'エンハンス画像をギャラリーに保存しました';
+
+  @override
+  String get settingsShowTooltips => 'ツールチップ表示';
+
+  @override
+  String get settingsShowTooltipsDesc => 'ボタンにカーソルを合わせたり長押しした時にツールチップを表示';
+
+  @override
+  String get commonMenu => 'メニュー';
+
+  @override
+  String get presetDuplicate => '複製';
+
+  @override
+  String get presetLoad => 'プリセット読み込み';
+
+  @override
+  String get settingsStylesToggle => 'スタイル切り替え';
+
+  @override
+  String get canvasLayerToggleVisibility => '表示切り替え';
+
+  @override
+  String get mainRefreshAnlas => 'Anlasを更新';
+
+  @override
+  String get enhanceSettingsTooltip => '設定';
+
+  @override
+  String get directorToolsSettingsTooltip => '設定';
+
+  @override
+  String get sidebarCollapse => '折りたたむ';
+
+  @override
+  String get sidebarExpand => '展開';
+
+  @override
+  String get naiUpscale => 'NAIアップスケール';
+
+  @override
+  String get naiUpscaling => 'APIでアップスケール中...';
+
+  @override
+  String get naiUpscaleFailed => 'APIアップスケールに失敗';
+
+  @override
+  String naiUpscaledCount(int completed, int total) {
+    return 'APIアップスケール: $completed/$total 画像';
+  }
+
+  @override
+  String get naiApiKeyRequired => 'APIキーが必要です';
+
+  @override
+  String get comparisonBefore => 'ビフォー';
+
+  @override
+  String get comparisonAfter => 'アフター';
+
+  @override
+  String get settingsBgRemovalButton => '背景除去ボタン';
+
+  @override
+  String get settingsBgRemovalButtonDesc => '画像ビューアに背景除去ボタンを表示します';
+
+  @override
+  String get settingsUpscaleButton => 'アップスケールボタン';
+
+  @override
+  String get settingsUpscaleButtonDesc => '画像ビューアにアップスケールボタンを表示します';
+
+  @override
+  String get settingsEnhanceButton => 'エンハンスボタン';
+
+  @override
+  String get settingsEnhanceButtonDesc => '画像ビューアにエンハンスボタンを表示します';
+
+  @override
+  String get settingsDirectorToolsButton => 'ディレクターツールボタン';
+
+  @override
+  String get settingsDirectorToolsButtonDesc => '画像ビューアにディレクターツールボタンを表示します';
+
+  @override
+  String get settingsUpscaleBackend => 'アップスケールバックエンド';
+
+  @override
+  String get settingsUpscaleBackendDesc =>
+      'ローカルMLモデルまたはNovelAI APIからアップスケール方法を選択';
+
+  @override
+  String get settingsUpscaleBackendMl => 'ML（ローカル）';
+
+  @override
+  String get settingsUpscaleBackendNovelai => 'NovelAI（API）';
+
+  @override
+  String get quickActionEnhance => 'エンハンス';
+
+  @override
+  String get quickActionDirectorTools => 'ディレクターツール';
+
+  @override
+  String get themeColorBgRemoval => '背景除去';
+
+  @override
+  String get themeColorUpscale => 'アップスケール';
 }

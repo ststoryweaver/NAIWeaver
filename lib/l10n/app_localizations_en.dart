@@ -488,6 +488,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gallerySeed => 'Seed';
 
   @override
+  String get galleryResolution => 'Res';
+
+  @override
+  String get galleryEnhance => 'Enhance';
+
+  @override
+  String get galleryDirectorTools => 'Director';
+
+  @override
   String get galleryImport => 'Import Images';
 
   @override
@@ -1463,6 +1472,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeColorRefCharStyle => 'Ref Char+Style';
 
   @override
+  String get themeColorFavorite => 'Favorite';
+
+  @override
+  String get themeColorCharacter => 'Character';
+
+  @override
+  String get themeColorPositive => 'Positive';
+
+  @override
+  String get themeColorNegative => 'Negative';
+
+  @override
   String get themeFont => 'FONT';
 
   @override
@@ -2159,6 +2180,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get canvasEyedropper => 'PICK';
 
   @override
+  String get canvasTransform => 'MOVE';
+
+  @override
+  String get canvasImportImage => 'Import Image';
+
+  @override
   String get canvasSmooth => 'SMOOTH';
 
   @override
@@ -2344,4 +2371,387 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get charEditorMutual => 'MUTUAL';
+
+  @override
+  String get jukeboxTitle => 'JUKEBOX';
+
+  @override
+  String get jukeboxShuffleAll => 'SHUFFLE ALL';
+
+  @override
+  String get jukeboxPlayAll => 'PLAY ALL';
+
+  @override
+  String get jukeboxNoSongPlaying => 'NO SONG PLAYING';
+
+  @override
+  String get jukeboxNowPlaying => 'NOW PLAYING';
+
+  @override
+  String get jukeboxSoundFont => 'SOUNDFONT';
+
+  @override
+  String get jukeboxSettings => 'SETTINGS';
+
+  @override
+  String get jukeboxQueue => 'QUEUE';
+
+  @override
+  String get jukeboxQueueEmpty => 'QUEUE IS EMPTY';
+
+  @override
+  String get jukeboxRepeat => 'REPEAT';
+
+  @override
+  String get jukeboxShuffle => 'SHUFFLE';
+
+  @override
+  String get jukeboxOn => 'ON';
+
+  @override
+  String get jukeboxOff => 'OFF';
+
+  @override
+  String get jukeboxAddToQueue => 'Add to queue';
+
+  @override
+  String get jukeboxMusicUnavailable => 'MUSIC PLAYBACK UNAVAILABLE';
+
+  @override
+  String get jukeboxDllMissing => 'FluidSynth DLL not found';
+
+  @override
+  String get jukeboxCategoryAll => 'ALL';
+
+  @override
+  String get jukeboxCategoryClassical => 'CLASSICAL';
+
+  @override
+  String get jukeboxCategoryAnime => 'ANIME';
+
+  @override
+  String get jukeboxCategoryGame => 'GAME';
+
+  @override
+  String get jukeboxCategoryJazz => 'JAZZ';
+
+  @override
+  String get jukeboxCategoryAmbient => 'AMBIENT';
+
+  @override
+  String get jukeboxCategoryHoliday => 'HOLIDAY';
+
+  @override
+  String get jukeboxCategoryMeme => 'MEME';
+
+  @override
+  String get jukeboxCategoryRock => 'ROCK';
+
+  @override
+  String get jukeboxEnableMusic => 'ENABLE MUSIC';
+
+  @override
+  String get jukeboxMusicVolume => 'MUSIC VOLUME';
+
+  @override
+  String get jukeboxKaraokeLyrics => 'KARAOKE LYRICS';
+
+  @override
+  String get mlModels => 'ML MODELS';
+
+  @override
+  String get mlBgRemoval => 'BACKGROUND REMOVAL';
+
+  @override
+  String get mlUpscaling => 'UPSCALING';
+
+  @override
+  String get mlSegmentation => 'SEGMENTATION';
+
+  @override
+  String get mlDownload => 'DOWNLOAD';
+
+  @override
+  String get mlDownloaded => 'DOWNLOADED';
+
+  @override
+  String get mlRetry => 'RETRY';
+
+  @override
+  String get mlCancel => 'CANCEL';
+
+  @override
+  String get mlDelete => 'DELETE';
+
+  @override
+  String get mlRemoveBg => 'REMOVE BG';
+
+  @override
+  String get mlUpscale => 'UPSCALE';
+
+  @override
+  String get mlSegment => 'SEGMENT';
+
+  @override
+  String get mlCanvas => 'CANVAS';
+
+  @override
+  String get mlSave => 'SAVE';
+
+  @override
+  String get mlDiscard => 'DISCARD';
+
+  @override
+  String get mlAddPoint => 'ADD';
+
+  @override
+  String get mlRemovePoint => 'REMOVE';
+
+  @override
+  String get mlTierFast => 'FAST';
+
+  @override
+  String get mlTierBalanced => 'BALANCED';
+
+  @override
+  String get mlTierBalancedShort => 'BAL';
+
+  @override
+  String get mlTierQuality => 'QUALITY';
+
+  @override
+  String get mlRemovingBg => 'REMOVING BACKGROUNDS';
+
+  @override
+  String get mlUpscalingImages => 'UPSCALING IMAGES';
+
+  @override
+  String get mlBgRemovalFailed => 'BG REMOVAL FAILED';
+
+  @override
+  String get mlUpscaleFailed => 'UPSCALE FAILED';
+
+  @override
+  String get mlRecommended => 'RECOMMENDED';
+
+  @override
+  String get mlMayBeSlow => 'MAY BE SLOW';
+
+  @override
+  String get mlNotRecommended => 'NOT RECOMMENDED';
+
+  @override
+  String get mlNotAvailableOnPlatform => 'NOT AVAILABLE ON THIS PLATFORM';
+
+  @override
+  String get mlLowRamWarning => 'LOW RAM — MAY CRASH';
+
+  @override
+  String get mlBgRemovedAndSaved => 'BG REMOVED & SAVED';
+
+  @override
+  String mlBgRemovedCount(int completed, int total) {
+    return 'BG REMOVED: $completed/$total IMAGES';
+  }
+
+  @override
+  String mlUpscaledCount(int completed, int total) {
+    return 'UPSCALED: $completed/$total IMAGES';
+  }
+
+  @override
+  String mlBgRemovedSavedAs(String name) {
+    return 'BG REMOVED: SAVED AS $name';
+  }
+
+  @override
+  String get toolsDirectorTools => 'Director Tools';
+
+  @override
+  String get toolsEnhance => 'Enhance';
+
+  @override
+  String get directorToolsTitle => 'DIRECTOR TOOLS';
+
+  @override
+  String get directorToolsDesc =>
+      'Server-side image manipulation: remove backgrounds, extract line art, colorize, and more';
+
+  @override
+  String get directorToolsUseCurrent => 'USE CURRENT GENERATION';
+
+  @override
+  String get directorToolsUseCurrentDesc =>
+      'Use the last generated image as source';
+
+  @override
+  String get directorToolsSelectTool => 'SELECT TOOL';
+
+  @override
+  String get directorToolsProcess => 'PROCESS';
+
+  @override
+  String get directorToolsProcessing => 'PROCESSING...';
+
+  @override
+  String get directorToolsDefry => 'DEFRY (TOOL STRENGTH)';
+
+  @override
+  String get directorToolsMood => 'MOOD';
+
+  @override
+  String get directorToolsPrompt => 'PROMPT';
+
+  @override
+  String get directorToolsPromptHint =>
+      'Optional prompt for colorize/emotion...';
+
+  @override
+  String get directorToolsSaved => 'RESULT SAVED TO GALLERY';
+
+  @override
+  String get enhanceTitle => 'ENHANCE';
+
+  @override
+  String get enhanceDesc => 'Re-process an image with img2img enhancement';
+
+  @override
+  String get enhanceUseCurrent => 'USE CURRENT GENERATION';
+
+  @override
+  String get enhanceUseCurrentDesc => 'Use the last generated image as source';
+
+  @override
+  String get enhanceProcess => 'ENHANCE';
+
+  @override
+  String get enhanceProcessing => 'ENHANCING...';
+
+  @override
+  String get enhancePrompt => 'PROMPT';
+
+  @override
+  String get enhanceNegative => 'NEGATIVE';
+
+  @override
+  String get enhanceStrength => 'STRENGTH';
+
+  @override
+  String get enhanceNoise => 'NOISE';
+
+  @override
+  String get enhanceSaved => 'ENHANCED IMAGE SAVED TO GALLERY';
+
+  @override
+  String get settingsShowTooltips => 'Show Tooltips';
+
+  @override
+  String get settingsShowTooltipsDesc =>
+      'Display helpful tooltips when hovering or long-pressing buttons';
+
+  @override
+  String get commonMenu => 'Menu';
+
+  @override
+  String get presetDuplicate => 'Duplicate';
+
+  @override
+  String get presetLoad => 'Load Preset';
+
+  @override
+  String get settingsStylesToggle => 'Toggle Styles';
+
+  @override
+  String get canvasLayerToggleVisibility => 'Toggle Visibility';
+
+  @override
+  String get mainRefreshAnlas => 'Refresh Anlas';
+
+  @override
+  String get enhanceSettingsTooltip => 'Settings';
+
+  @override
+  String get directorToolsSettingsTooltip => 'Settings';
+
+  @override
+  String get sidebarCollapse => 'Collapse';
+
+  @override
+  String get sidebarExpand => 'Expand';
+
+  @override
+  String get naiUpscale => 'NAI UPSCALE';
+
+  @override
+  String get naiUpscaling => 'UPSCALING VIA API...';
+
+  @override
+  String get naiUpscaleFailed => 'API upscale failed';
+
+  @override
+  String naiUpscaledCount(int completed, int total) {
+    return 'API UPSCALED: $completed/$total IMAGES';
+  }
+
+  @override
+  String get naiApiKeyRequired => 'API key required';
+
+  @override
+  String get comparisonBefore => 'Before';
+
+  @override
+  String get comparisonAfter => 'After';
+
+  @override
+  String get settingsBgRemovalButton => 'BG Removal Button';
+
+  @override
+  String get settingsBgRemovalButtonDesc =>
+      'Show the background removal button on the image viewer';
+
+  @override
+  String get settingsUpscaleButton => 'Upscale Button';
+
+  @override
+  String get settingsUpscaleButtonDesc =>
+      'Show the upscale button on the image viewer';
+
+  @override
+  String get settingsEnhanceButton => 'Enhance Button';
+
+  @override
+  String get settingsEnhanceButtonDesc =>
+      'Show the enhance button on the image viewer';
+
+  @override
+  String get settingsDirectorToolsButton => 'Director Tools Button';
+
+  @override
+  String get settingsDirectorToolsButtonDesc =>
+      'Show the director tools button on the image viewer';
+
+  @override
+  String get settingsUpscaleBackend => 'Upscale Backend';
+
+  @override
+  String get settingsUpscaleBackendDesc =>
+      'Choose between local ML model or NovelAI API for upscaling';
+
+  @override
+  String get settingsUpscaleBackendMl => 'ML (Local)';
+
+  @override
+  String get settingsUpscaleBackendNovelai => 'NovelAI (API)';
+
+  @override
+  String get quickActionEnhance => 'Enhance';
+
+  @override
+  String get quickActionDirectorTools => 'Director Tools';
+
+  @override
+  String get themeColorBgRemoval => 'BG Removal';
+
+  @override
+  String get themeColorUpscale => 'Upscale';
 }

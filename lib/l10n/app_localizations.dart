@@ -962,6 +962,24 @@ abstract class AppLocalizations {
   /// **'Seed'**
   String get gallerySeed;
 
+  /// No description provided for @galleryResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Res'**
+  String get galleryResolution;
+
+  /// No description provided for @galleryEnhance.
+  ///
+  /// In en, this message translates to:
+  /// **'Enhance'**
+  String get galleryEnhance;
+
+  /// No description provided for @galleryDirectorTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Director'**
+  String get galleryDirectorTools;
+
   /// No description provided for @galleryImport.
   ///
   /// In en, this message translates to:
@@ -2750,6 +2768,30 @@ abstract class AppLocalizations {
   /// **'Ref Char+Style'**
   String get themeColorRefCharStyle;
 
+  /// No description provided for @themeColorFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite'**
+  String get themeColorFavorite;
+
+  /// No description provided for @themeColorCharacter.
+  ///
+  /// In en, this message translates to:
+  /// **'Character'**
+  String get themeColorCharacter;
+
+  /// No description provided for @themeColorPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive'**
+  String get themeColorPositive;
+
+  /// No description provided for @themeColorNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative'**
+  String get themeColorNegative;
+
   /// No description provided for @themeFont.
   ///
   /// In en, this message translates to:
@@ -4022,6 +4064,18 @@ abstract class AppLocalizations {
   /// **'PICK'**
   String get canvasEyedropper;
 
+  /// No description provided for @canvasTransform.
+  ///
+  /// In en, this message translates to:
+  /// **'MOVE'**
+  String get canvasTransform;
+
+  /// No description provided for @canvasImportImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Image'**
+  String get canvasImportImage;
+
   /// No description provided for @canvasSmooth.
   ///
   /// In en, this message translates to:
@@ -4373,6 +4427,738 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'MUTUAL'**
   String get charEditorMutual;
+
+  /// No description provided for @jukeboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'JUKEBOX'**
+  String get jukeboxTitle;
+
+  /// No description provided for @jukeboxShuffleAll.
+  ///
+  /// In en, this message translates to:
+  /// **'SHUFFLE ALL'**
+  String get jukeboxShuffleAll;
+
+  /// No description provided for @jukeboxPlayAll.
+  ///
+  /// In en, this message translates to:
+  /// **'PLAY ALL'**
+  String get jukeboxPlayAll;
+
+  /// No description provided for @jukeboxNoSongPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'NO SONG PLAYING'**
+  String get jukeboxNoSongPlaying;
+
+  /// No description provided for @jukeboxNowPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'NOW PLAYING'**
+  String get jukeboxNowPlaying;
+
+  /// No description provided for @jukeboxSoundFont.
+  ///
+  /// In en, this message translates to:
+  /// **'SOUNDFONT'**
+  String get jukeboxSoundFont;
+
+  /// No description provided for @jukeboxSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'SETTINGS'**
+  String get jukeboxSettings;
+
+  /// No description provided for @jukeboxQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'QUEUE'**
+  String get jukeboxQueue;
+
+  /// No description provided for @jukeboxQueueEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'QUEUE IS EMPTY'**
+  String get jukeboxQueueEmpty;
+
+  /// No description provided for @jukeboxRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'REPEAT'**
+  String get jukeboxRepeat;
+
+  /// No description provided for @jukeboxShuffle.
+  ///
+  /// In en, this message translates to:
+  /// **'SHUFFLE'**
+  String get jukeboxShuffle;
+
+  /// No description provided for @jukeboxOn.
+  ///
+  /// In en, this message translates to:
+  /// **'ON'**
+  String get jukeboxOn;
+
+  /// No description provided for @jukeboxOff.
+  ///
+  /// In en, this message translates to:
+  /// **'OFF'**
+  String get jukeboxOff;
+
+  /// No description provided for @jukeboxAddToQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to queue'**
+  String get jukeboxAddToQueue;
+
+  /// No description provided for @jukeboxMusicUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'MUSIC PLAYBACK UNAVAILABLE'**
+  String get jukeboxMusicUnavailable;
+
+  /// No description provided for @jukeboxDllMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'FluidSynth DLL not found'**
+  String get jukeboxDllMissing;
+
+  /// No description provided for @jukeboxCategoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'ALL'**
+  String get jukeboxCategoryAll;
+
+  /// No description provided for @jukeboxCategoryClassical.
+  ///
+  /// In en, this message translates to:
+  /// **'CLASSICAL'**
+  String get jukeboxCategoryClassical;
+
+  /// No description provided for @jukeboxCategoryAnime.
+  ///
+  /// In en, this message translates to:
+  /// **'ANIME'**
+  String get jukeboxCategoryAnime;
+
+  /// No description provided for @jukeboxCategoryGame.
+  ///
+  /// In en, this message translates to:
+  /// **'GAME'**
+  String get jukeboxCategoryGame;
+
+  /// No description provided for @jukeboxCategoryJazz.
+  ///
+  /// In en, this message translates to:
+  /// **'JAZZ'**
+  String get jukeboxCategoryJazz;
+
+  /// No description provided for @jukeboxCategoryAmbient.
+  ///
+  /// In en, this message translates to:
+  /// **'AMBIENT'**
+  String get jukeboxCategoryAmbient;
+
+  /// No description provided for @jukeboxCategoryHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'HOLIDAY'**
+  String get jukeboxCategoryHoliday;
+
+  /// No description provided for @jukeboxCategoryMeme.
+  ///
+  /// In en, this message translates to:
+  /// **'MEME'**
+  String get jukeboxCategoryMeme;
+
+  /// No description provided for @jukeboxCategoryRock.
+  ///
+  /// In en, this message translates to:
+  /// **'ROCK'**
+  String get jukeboxCategoryRock;
+
+  /// No description provided for @jukeboxEnableMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'ENABLE MUSIC'**
+  String get jukeboxEnableMusic;
+
+  /// No description provided for @jukeboxMusicVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'MUSIC VOLUME'**
+  String get jukeboxMusicVolume;
+
+  /// No description provided for @jukeboxKaraokeLyrics.
+  ///
+  /// In en, this message translates to:
+  /// **'KARAOKE LYRICS'**
+  String get jukeboxKaraokeLyrics;
+
+  /// No description provided for @mlModels.
+  ///
+  /// In en, this message translates to:
+  /// **'ML MODELS'**
+  String get mlModels;
+
+  /// No description provided for @mlBgRemoval.
+  ///
+  /// In en, this message translates to:
+  /// **'BACKGROUND REMOVAL'**
+  String get mlBgRemoval;
+
+  /// No description provided for @mlUpscaling.
+  ///
+  /// In en, this message translates to:
+  /// **'UPSCALING'**
+  String get mlUpscaling;
+
+  /// No description provided for @mlSegmentation.
+  ///
+  /// In en, this message translates to:
+  /// **'SEGMENTATION'**
+  String get mlSegmentation;
+
+  /// No description provided for @mlDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'DOWNLOAD'**
+  String get mlDownload;
+
+  /// No description provided for @mlDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'DOWNLOADED'**
+  String get mlDownloaded;
+
+  /// No description provided for @mlRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'RETRY'**
+  String get mlRetry;
+
+  /// No description provided for @mlCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'CANCEL'**
+  String get mlCancel;
+
+  /// No description provided for @mlDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE'**
+  String get mlDelete;
+
+  /// No description provided for @mlRemoveBg.
+  ///
+  /// In en, this message translates to:
+  /// **'REMOVE BG'**
+  String get mlRemoveBg;
+
+  /// No description provided for @mlUpscale.
+  ///
+  /// In en, this message translates to:
+  /// **'UPSCALE'**
+  String get mlUpscale;
+
+  /// No description provided for @mlSegment.
+  ///
+  /// In en, this message translates to:
+  /// **'SEGMENT'**
+  String get mlSegment;
+
+  /// No description provided for @mlCanvas.
+  ///
+  /// In en, this message translates to:
+  /// **'CANVAS'**
+  String get mlCanvas;
+
+  /// No description provided for @mlSave.
+  ///
+  /// In en, this message translates to:
+  /// **'SAVE'**
+  String get mlSave;
+
+  /// No description provided for @mlDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'DISCARD'**
+  String get mlDiscard;
+
+  /// No description provided for @mlAddPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD'**
+  String get mlAddPoint;
+
+  /// No description provided for @mlRemovePoint.
+  ///
+  /// In en, this message translates to:
+  /// **'REMOVE'**
+  String get mlRemovePoint;
+
+  /// No description provided for @mlTierFast.
+  ///
+  /// In en, this message translates to:
+  /// **'FAST'**
+  String get mlTierFast;
+
+  /// No description provided for @mlTierBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'BALANCED'**
+  String get mlTierBalanced;
+
+  /// No description provided for @mlTierBalancedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'BAL'**
+  String get mlTierBalancedShort;
+
+  /// No description provided for @mlTierQuality.
+  ///
+  /// In en, this message translates to:
+  /// **'QUALITY'**
+  String get mlTierQuality;
+
+  /// No description provided for @mlRemovingBg.
+  ///
+  /// In en, this message translates to:
+  /// **'REMOVING BACKGROUNDS'**
+  String get mlRemovingBg;
+
+  /// No description provided for @mlUpscalingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'UPSCALING IMAGES'**
+  String get mlUpscalingImages;
+
+  /// No description provided for @mlBgRemovalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'BG REMOVAL FAILED'**
+  String get mlBgRemovalFailed;
+
+  /// No description provided for @mlUpscaleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'UPSCALE FAILED'**
+  String get mlUpscaleFailed;
+
+  /// No description provided for @mlRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'RECOMMENDED'**
+  String get mlRecommended;
+
+  /// No description provided for @mlMayBeSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'MAY BE SLOW'**
+  String get mlMayBeSlow;
+
+  /// No description provided for @mlNotRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'NOT RECOMMENDED'**
+  String get mlNotRecommended;
+
+  /// No description provided for @mlNotAvailableOnPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'NOT AVAILABLE ON THIS PLATFORM'**
+  String get mlNotAvailableOnPlatform;
+
+  /// No description provided for @mlLowRamWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'LOW RAM — MAY CRASH'**
+  String get mlLowRamWarning;
+
+  /// No description provided for @mlBgRemovedAndSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'BG REMOVED & SAVED'**
+  String get mlBgRemovedAndSaved;
+
+  /// No description provided for @mlBgRemovedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'BG REMOVED: {completed}/{total} IMAGES'**
+  String mlBgRemovedCount(int completed, int total);
+
+  /// No description provided for @mlUpscaledCount.
+  ///
+  /// In en, this message translates to:
+  /// **'UPSCALED: {completed}/{total} IMAGES'**
+  String mlUpscaledCount(int completed, int total);
+
+  /// No description provided for @mlBgRemovedSavedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'BG REMOVED: SAVED AS {name}'**
+  String mlBgRemovedSavedAs(String name);
+
+  /// No description provided for @toolsDirectorTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Director Tools'**
+  String get toolsDirectorTools;
+
+  /// No description provided for @toolsEnhance.
+  ///
+  /// In en, this message translates to:
+  /// **'Enhance'**
+  String get toolsEnhance;
+
+  /// No description provided for @directorToolsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'DIRECTOR TOOLS'**
+  String get directorToolsTitle;
+
+  /// No description provided for @directorToolsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Server-side image manipulation: remove backgrounds, extract line art, colorize, and more'**
+  String get directorToolsDesc;
+
+  /// No description provided for @directorToolsUseCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'USE CURRENT GENERATION'**
+  String get directorToolsUseCurrent;
+
+  /// No description provided for @directorToolsUseCurrentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the last generated image as source'**
+  String get directorToolsUseCurrentDesc;
+
+  /// No description provided for @directorToolsSelectTool.
+  ///
+  /// In en, this message translates to:
+  /// **'SELECT TOOL'**
+  String get directorToolsSelectTool;
+
+  /// No description provided for @directorToolsProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'PROCESS'**
+  String get directorToolsProcess;
+
+  /// No description provided for @directorToolsProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'PROCESSING...'**
+  String get directorToolsProcessing;
+
+  /// No description provided for @directorToolsDefry.
+  ///
+  /// In en, this message translates to:
+  /// **'DEFRY (TOOL STRENGTH)'**
+  String get directorToolsDefry;
+
+  /// No description provided for @directorToolsMood.
+  ///
+  /// In en, this message translates to:
+  /// **'MOOD'**
+  String get directorToolsMood;
+
+  /// No description provided for @directorToolsPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'PROMPT'**
+  String get directorToolsPrompt;
+
+  /// No description provided for @directorToolsPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional prompt for colorize/emotion...'**
+  String get directorToolsPromptHint;
+
+  /// No description provided for @directorToolsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'RESULT SAVED TO GALLERY'**
+  String get directorToolsSaved;
+
+  /// No description provided for @enhanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ENHANCE'**
+  String get enhanceTitle;
+
+  /// No description provided for @enhanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-process an image with img2img enhancement'**
+  String get enhanceDesc;
+
+  /// No description provided for @enhanceUseCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'USE CURRENT GENERATION'**
+  String get enhanceUseCurrent;
+
+  /// No description provided for @enhanceUseCurrentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the last generated image as source'**
+  String get enhanceUseCurrentDesc;
+
+  /// No description provided for @enhanceProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'ENHANCE'**
+  String get enhanceProcess;
+
+  /// No description provided for @enhanceProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'ENHANCING...'**
+  String get enhanceProcessing;
+
+  /// No description provided for @enhancePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'PROMPT'**
+  String get enhancePrompt;
+
+  /// No description provided for @enhanceNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'NEGATIVE'**
+  String get enhanceNegative;
+
+  /// No description provided for @enhanceStrength.
+  ///
+  /// In en, this message translates to:
+  /// **'STRENGTH'**
+  String get enhanceStrength;
+
+  /// No description provided for @enhanceNoise.
+  ///
+  /// In en, this message translates to:
+  /// **'NOISE'**
+  String get enhanceNoise;
+
+  /// No description provided for @enhanceSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'ENHANCED IMAGE SAVED TO GALLERY'**
+  String get enhanceSaved;
+
+  /// No description provided for @settingsShowTooltips.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Tooltips'**
+  String get settingsShowTooltips;
+
+  /// No description provided for @settingsShowTooltipsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Display helpful tooltips when hovering or long-pressing buttons'**
+  String get settingsShowTooltipsDesc;
+
+  /// No description provided for @commonMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get commonMenu;
+
+  /// No description provided for @presetDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get presetDuplicate;
+
+  /// No description provided for @presetLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Load Preset'**
+  String get presetLoad;
+
+  /// No description provided for @settingsStylesToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Styles'**
+  String get settingsStylesToggle;
+
+  /// No description provided for @canvasLayerToggleVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Visibility'**
+  String get canvasLayerToggleVisibility;
+
+  /// No description provided for @mainRefreshAnlas.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Anlas'**
+  String get mainRefreshAnlas;
+
+  /// No description provided for @enhanceSettingsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get enhanceSettingsTooltip;
+
+  /// No description provided for @directorToolsSettingsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get directorToolsSettingsTooltip;
+
+  /// No description provided for @sidebarCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get sidebarCollapse;
+
+  /// No description provided for @sidebarExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get sidebarExpand;
+
+  /// No description provided for @naiUpscale.
+  ///
+  /// In en, this message translates to:
+  /// **'NAI UPSCALE'**
+  String get naiUpscale;
+
+  /// No description provided for @naiUpscaling.
+  ///
+  /// In en, this message translates to:
+  /// **'UPSCALING VIA API...'**
+  String get naiUpscaling;
+
+  /// No description provided for @naiUpscaleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'API upscale failed'**
+  String get naiUpscaleFailed;
+
+  /// No description provided for @naiUpscaledCount.
+  ///
+  /// In en, this message translates to:
+  /// **'API UPSCALED: {completed}/{total} IMAGES'**
+  String naiUpscaledCount(int completed, int total);
+
+  /// No description provided for @naiApiKeyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'API key required'**
+  String get naiApiKeyRequired;
+
+  /// No description provided for @comparisonBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Before'**
+  String get comparisonBefore;
+
+  /// No description provided for @comparisonAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get comparisonAfter;
+
+  /// No description provided for @settingsBgRemovalButton.
+  ///
+  /// In en, this message translates to:
+  /// **'BG Removal Button'**
+  String get settingsBgRemovalButton;
+
+  /// No description provided for @settingsBgRemovalButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the background removal button on the image viewer'**
+  String get settingsBgRemovalButtonDesc;
+
+  /// No description provided for @settingsUpscaleButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Upscale Button'**
+  String get settingsUpscaleButton;
+
+  /// No description provided for @settingsUpscaleButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the upscale button on the image viewer'**
+  String get settingsUpscaleButtonDesc;
+
+  /// No description provided for @settingsEnhanceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Enhance Button'**
+  String get settingsEnhanceButton;
+
+  /// No description provided for @settingsEnhanceButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the enhance button on the image viewer'**
+  String get settingsEnhanceButtonDesc;
+
+  /// No description provided for @settingsDirectorToolsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Director Tools Button'**
+  String get settingsDirectorToolsButton;
+
+  /// No description provided for @settingsDirectorToolsButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the director tools button on the image viewer'**
+  String get settingsDirectorToolsButtonDesc;
+
+  /// No description provided for @settingsUpscaleBackend.
+  ///
+  /// In en, this message translates to:
+  /// **'Upscale Backend'**
+  String get settingsUpscaleBackend;
+
+  /// No description provided for @settingsUpscaleBackendDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose between local ML model or NovelAI API for upscaling'**
+  String get settingsUpscaleBackendDesc;
+
+  /// No description provided for @settingsUpscaleBackendMl.
+  ///
+  /// In en, this message translates to:
+  /// **'ML (Local)'**
+  String get settingsUpscaleBackendMl;
+
+  /// No description provided for @settingsUpscaleBackendNovelai.
+  ///
+  /// In en, this message translates to:
+  /// **'NovelAI (API)'**
+  String get settingsUpscaleBackendNovelai;
+
+  /// No description provided for @quickActionEnhance.
+  ///
+  /// In en, this message translates to:
+  /// **'Enhance'**
+  String get quickActionEnhance;
+
+  /// No description provided for @quickActionDirectorTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Director Tools'**
+  String get quickActionDirectorTools;
+
+  /// No description provided for @themeColorBgRemoval.
+  ///
+  /// In en, this message translates to:
+  /// **'BG Removal'**
+  String get themeColorBgRemoval;
+
+  /// No description provided for @themeColorUpscale.
+  ///
+  /// In en, this message translates to:
+  /// **'Upscale'**
+  String get themeColorUpscale;
 }
 
 class _AppLocalizationsDelegate
