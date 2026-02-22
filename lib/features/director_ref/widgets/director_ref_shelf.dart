@@ -88,22 +88,19 @@ class _AddRefButton extends StatelessWidget {
       child: GestureDetector(
         onTap: isProcessing ? null : onTap,
         child: Container(
-          width: mobile ? 44 : 36,
           height: mobile ? 44 : 36,
+          width: mobile ? 52 : 42,
           decoration: BoxDecoration(
-            color: t.textMinimal,
+            color: t.accentRefCharacter.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: t.textMinimal, width: 0.5),
           ),
-          child: Center(
-            child: isProcessing
-                ? SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 1.5, color: t.textDisabled),
-                  )
-                : Icon(Icons.add_photo_alternate, size: 14, color: t.textDisabled),
-          ),
+          alignment: Alignment.center,
+          child: Text('REF', style: TextStyle(
+            fontSize: t.fontSize(mobile ? 9 : 7),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+            color: t.accentRefCharacter,
+          )),
         ),
       ),
     );

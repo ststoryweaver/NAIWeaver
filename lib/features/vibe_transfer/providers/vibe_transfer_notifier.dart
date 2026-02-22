@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import '../../../novel_ai_service.dart';
+import '../../../core/services/novel_ai_service.dart';
 import '../../director_ref/services/reference_image_processor.dart';
 import '../models/vibe_transfer.dart';
 

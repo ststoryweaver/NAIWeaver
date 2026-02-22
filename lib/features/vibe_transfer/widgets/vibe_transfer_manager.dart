@@ -6,8 +6,10 @@ import '../../../core/services/path_service.dart';
 import '../../../core/services/reference_library_service.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/widgets/vision_slider.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../novel_ai_service.dart';
+import '../../../core/services/novel_ai_service.dart';
 import '../models/vibe_transfer.dart';
 import '../providers/vibe_transfer_notifier.dart';
 
@@ -128,16 +130,12 @@ class _VibeTransferManagerState extends State<VibeTransferManager> {
             await notifier.addVibe(bytes);
           } on UnauthorizedException {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.l.refApiKeyMissing)),
-              );
+              showErrorSnackBar(context, context.l.refApiKeyMissing);
             }
             return;
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.l.refVibeEncodeFailed(e.toString()))),
-              );
+              showErrorSnackBar(context, context.l.refVibeEncodeFailed(e.toString()));
             }
             return;
           }
@@ -568,22 +566,15 @@ class _InlineSlider extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: color.withValues(alpha: 0.5),
-              inactiveTrackColor: t.textMinimal,
-              thumbColor: color,
-              overlayColor: color.withValues(alpha: 0.1),
-              trackHeight: 2,
-              thumbShape: RoundSliderThumbShape(
-                  enabledThumbRadius: mobile ? 8 : 5),
-            ),
-            child: Slider(
-              value: value,
-              min: 0.0,
-              max: 1.0,
-              onChanged: onChanged,
-            ),
+          child: VisionSlider(
+            value: value,
+            onChanged: onChanged,
+            min: 0.0,
+            max: 1.0,
+            activeColor: color.withValues(alpha: 0.5),
+            inactiveColor: t.textMinimal,
+            thumbColor: color,
+            thumbRadius: mobile ? 8 : 5,
           ),
         ),
         SizedBox(

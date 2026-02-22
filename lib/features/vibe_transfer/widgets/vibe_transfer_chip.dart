@@ -32,6 +32,7 @@ class VibeTransferChip extends StatelessWidget {
             image: DecorationImage(
               image: MemoryImage(vibe.processedPreview),
               fit: BoxFit.cover,
+              filterQuality: FilterQuality.medium,
             ),
           ),
           child: Align(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/widgets/vision_slider.dart';
 import '../models/vibe_transfer.dart';
 
 class VibeTransferEditorSheet extends StatefulWidget {
@@ -148,21 +149,15 @@ class _VibeTransferEditorSheetState extends State<VibeTransferEditorSheet> {
           ],
         ),
         const SizedBox(height: 4),
-        SliderTheme(
-          data: SliderThemeData(
-            activeTrackColor: t.accentVibeTransfer.withValues(alpha: 0.5),
-            inactiveTrackColor: t.textMinimal,
-            thumbColor: t.accentVibeTransfer,
-            overlayColor: t.accentVibeTransfer.withValues(alpha: 0.1),
-            trackHeight: 2,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-          ),
-          child: Slider(
-            value: value,
-            min: 0.0,
-            max: 1.0,
-            onChanged: onChanged,
-          ),
+        VisionSlider(
+          value: value,
+          onChanged: onChanged,
+          min: 0.0,
+          max: 1.0,
+          activeColor: t.accentVibeTransfer.withValues(alpha: 0.5),
+          inactiveColor: t.textMinimal,
+          thumbColor: t.accentVibeTransfer,
+          thumbRadius: 6,
         ),
       ],
     );

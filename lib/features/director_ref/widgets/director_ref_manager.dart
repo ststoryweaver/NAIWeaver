@@ -6,6 +6,7 @@ import '../../../core/services/path_service.dart';
 import '../../../core/services/reference_library_service.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/widgets/vision_slider.dart';
 import '../../../core/utils/responsive.dart';
 import '../models/director_reference.dart';
 import '../providers/director_ref_notifier.dart';
@@ -399,6 +400,7 @@ class _ReferenceCard extends StatelessWidget {
               image: DecorationImage(
                 image: MemoryImage(reference.originalImageBytes),
                 fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
               ),
             ),
           ),
@@ -528,6 +530,7 @@ class _SavedRefCard extends StatelessWidget {
               image: DecorationImage(
                 image: MemoryImage(saved.reference.originalImageBytes),
                 fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
               ),
             ),
           ),
@@ -607,22 +610,15 @@ class _InlineSlider extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: color.withValues(alpha: 0.5),
-              inactiveTrackColor: t.textMinimal,
-              thumbColor: color,
-              overlayColor: color.withValues(alpha: 0.1),
-              trackHeight: 2,
-              thumbShape: RoundSliderThumbShape(
-                  enabledThumbRadius: mobile ? 8 : 5),
-            ),
-            child: Slider(
-              value: value,
-              min: 0.0,
-              max: 1.0,
-              onChanged: onChanged,
-            ),
+          child: VisionSlider(
+            value: value,
+            onChanged: onChanged,
+            min: 0.0,
+            max: 1.0,
+            activeColor: color.withValues(alpha: 0.5),
+            inactiveColor: t.textMinimal,
+            thumbColor: color,
+            thumbRadius: mobile ? 8 : 5,
           ),
         ),
         SizedBox(

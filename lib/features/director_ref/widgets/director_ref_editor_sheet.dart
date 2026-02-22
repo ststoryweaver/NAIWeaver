@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/widgets/vision_slider.dart';
 import '../models/director_reference.dart';
 
 String _localizedRefType(BuildContext context, DirectorReferenceType type) {
@@ -228,21 +229,12 @@ class _DirectorRefEditorSheetState extends State<DirectorRefEditorSheet> {
           ],
         ),
         const SizedBox(height: 4),
-        SliderTheme(
-          data: SliderThemeData(
-            activeTrackColor: t.textDisabled,
-            inactiveTrackColor: t.textMinimal,
-            thumbColor: t.textPrimary,
-            overlayColor: t.textPrimary.withValues(alpha: 0.1),
-            trackHeight: 2,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-          ),
-          child: Slider(
-            value: value,
-            min: 0.0,
-            max: 1.0,
-            onChanged: onChanged,
-          ),
+        VisionSlider.subtle(
+          value: value,
+          onChanged: onChanged,
+          t: t,
+          min: 0.0,
+          max: 1.0,
         ),
       ],
     );

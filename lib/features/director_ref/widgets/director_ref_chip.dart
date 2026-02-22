@@ -56,6 +56,7 @@ class DirectorRefChip extends StatelessWidget {
             image: DecorationImage(
               image: MemoryImage(reference.originalImageBytes),
               fit: BoxFit.cover,
+              filterQuality: FilterQuality.medium,
             ),
           ),
           child: Align(
