@@ -1,6 +1,5 @@
-import 'dart:io';
-import 'fluidsynth_synthesizer.dart';
-import 'mobile_synthesizer.dart';
+import 'web_synthesizer.dart' if (dart.library.io) 'native_synthesizer.dart'
+    as platform;
 
 /// Abstract interface for platform MIDI synthesis.
 abstract class MidiSynthesizer {
@@ -17,10 +16,5 @@ abstract class MidiSynthesizer {
   Future<void> dispose();
 
   /// Factory to create the appropriate synthesizer for the current platform.
-  static MidiSynthesizer create() {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      return FluidSynthSynthesizer();
-    }
-    return MobileSynthesizer();
-  }
+  static MidiSynthesizer create() => platform.createSynthesizer();
 }
