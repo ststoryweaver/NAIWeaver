@@ -16,6 +16,7 @@ import 'core/services/preferences_service.dart';
 import 'core/utils/responsive.dart';
 import 'core/widgets/help_dialog.dart';
 import 'core/widgets/pin_lock_gate.dart';
+import 'core/widgets/quick_action_overlay.dart';
 import 'core/theme/theme_notifier.dart';
 import 'core/theme/theme_extensions.dart';
 import 'features/generation/providers/generation_notifier.dart';
@@ -28,7 +29,6 @@ import 'features/gallery/providers/gallery_notifier.dart';
 import 'features/gallery/ui/gallery_screen.dart';
 import 'features/generation/widgets/character_shelf.dart';
 import 'core/ml/ml_notifier.dart';
-import 'core/ml/widgets/upscale_comparison_view.dart';
 import 'features/tools/cascade/providers/cascade_notifier.dart';
 import 'features/tools/canvas/providers/canvas_notifier.dart';
 import 'features/tools/img2img/providers/img2img_notifier.dart';
@@ -38,8 +38,14 @@ import 'features/director_ref/widgets/director_ref_shelf.dart';
 import 'features/vibe_transfer/providers/vibe_transfer_notifier.dart';
 import 'features/generation/widgets/vibe_transfer_shelf.dart';
 import 'features/tools/slideshow/providers/slideshow_notifier.dart';
+import 'features/tools/director_tools/providers/director_tools_notifier.dart';
+import 'features/tools/enhance/providers/enhance_notifier.dart';
 import 'core/widgets/tag_suggestion_overlay.dart';
 import 'core/jukebox/providers/jukebox_notifier.dart';
+import 'core/jukebox/services/jukebox_audio_handler.dart';
+import 'core/services/tag_service.dart';
+import 'core/services/wildcard_service.dart';
+import 'package:audio_service/audio_service.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -54,6 +60,27 @@ void main() {
 
   final customOut = preferencesService.customOutputDir;
   if (customOut.isNotEmpty) paths.outputDirOverride = customOut;
+
+  final tagService = TagService(filePath: paths.tagFilePath);
+  final wildcardService = WildcardService(wildcardDir: paths.wildcardDir);
+
+  JukeboxAudioHandler? audioHandler;
+  if (Platform.isAndroid || Platform.isIOS) {
+    try {
+      audioHandler = await AudioService.init(
+        builder: () => JukeboxAudioHandler(),
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: 'dev.naiweaver.app.jukebox',
+          androidNotificationChannelName: 'NAIWeaver Jukebox',
+          androidNotificationOngoing: true,
+          androidStopForegroundOnPause: true,
+          androidNotificationIcon: 'mipmap/ic_launcher',
+        ),
+      );
+    } catch (e) {
+      debugPrint('AudioService init failed: $e');
+    }
+  }
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
@@ -82,42 +109,45 @@ void main() {
         ChangeNotifierProvider(
           create: (_) => VibeTransferNotifier(),
         ),
-        ChangeNotifierProxyProvider3<GalleryNotifier, DirectorRefNotifier, VibeTransferNotifier, GenerationNotifier>(
+        ChangeNotifierProvider(
+          create: (_) => DirectorToolsNotifier(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => EnhanceNotifier(),
+        ),
+        Provider<TagService>.value(value: tagService),
+        Provider<WildcardService>.value(value: wildcardService),
+        ChangeNotifierProxyProvider5<GalleryNotifier, DirectorRefNotifier, VibeTransferNotifier, DirectorToolsNotifier, EnhanceNotifier, GenerationNotifier>(
           create: (context) => GenerationNotifier(
             preferences: preferencesService,
-            wildcardDir: paths.wildcardDir,
-            tagFilePath: paths.tagFilePath,
+            tagService: tagService,
+            wildcardService: wildcardService,
             outputDir: paths.outputDir,
             presetsFilePath: paths.presetsFilePath,
             stylesFilePath: paths.stylesFilePath,
             galleryNotifier: Provider.of<GalleryNotifier>(context, listen: false),
           ),
-          update: (context, gallery, directorRef, vibeTransfer, previous) {
+          update: (context, gallery, directorRef, vibeTransfer, directorTools, enhance, previous) {
             previous?.updateGalleryNotifier(gallery);
             previous?.updateDirectorRefNotifier(directorRef);
             previous?.updateVibeTransferNotifier(vibeTransfer);
+            previous?.updateDirectorToolsNotifier(directorTools);
+            previous?.updateEnhanceNotifier(enhance);
             return previous!;
           },
         ),
-        ChangeNotifierProxyProvider<GenerationNotifier, WildcardNotifier>(
-          create: (context) {
-            final genNotifier = Provider.of<GenerationNotifier>(context, listen: false);
-            return WildcardNotifier(
-              wildcardDir: paths.wildcardDir,
-              tagService: genNotifier.tagService,
-              wildcardService: genNotifier.wildcardService,
-            );
-          },
-          update: (context, generationNotifier, wildcardNotifier) =>
-              wildcardNotifier!,
+        ChangeNotifierProvider(
+          create: (_) => WildcardNotifier(
+            wildcardDir: paths.wildcardDir,
+            tagService: tagService,
+            wildcardService: wildcardService,
+          ),
         ),
-        ChangeNotifierProxyProvider<GenerationNotifier, TagLibraryNotifier>(
-          create: (context) => TagLibraryNotifier(
-            tagService: Provider.of<GenerationNotifier>(context, listen: false).tagService,
+        ChangeNotifierProvider(
+          create: (_) => TagLibraryNotifier(
+            tagService: tagService,
             examplesDir: paths.examplesDir,
           ),
-          update: (context, generationNotifier, tagLibraryNotifier) =>
-              tagLibraryNotifier!,
         ),
         ChangeNotifierProvider(
           create: (_) => MLNotifier(
@@ -135,20 +165,19 @@ void main() {
           create: (_) => CanvasNotifier(),
         ),
         ChangeNotifierProvider(
-          create: (_) {
-            final n = SlideshowNotifier();
-            n.loadFromJson(preferencesService.slideshowConfigs);
-            n.setDefaultConfigId(preferencesService.defaultSlideshowId);
-            return n;
-          },
+          create: (_) => SlideshowNotifier()
+            ..loadFromJson(preferencesService.slideshowConfigs)
+            ..setDefaultConfigId(preferencesService.defaultSlideshowId),
         ),
         ChangeNotifierProvider(
           create: (_) {
             final n = JukeboxNotifier(
               soundfontsDir: paths.soundfontsDir,
+              customSongsDir: paths.customSongsDir,
+              customSongsJsonPath: paths.customSongsJsonPath,
               prefs: preferencesService,
-            );
-            n.initialize();
+            )..initialize();
+            audioHandler?.attachNotifier(n);
             return n;
           },
         ),
@@ -157,27 +186,34 @@ void main() {
         builder: (context) {
           final themeNotifier = context.watch<ThemeNotifier>();
           final localeNotifier = context.watch<LocaleNotifier>();
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            scrollBehavior: const MaterialScrollBehavior().copyWith(
-              dragDevices: {
-                PointerDeviceKind.touch,
-                PointerDeviceKind.stylus,
-                PointerDeviceKind.mouse,
-              },
+          return ValueListenableBuilder<bool>(
+            valueListenable: preferencesService.tooltipVisibilityNotifier,
+            builder: (context, visible, child) => TooltipVisibility(
+              visible: visible,
+              child: child!,
             ),
-            theme: themeNotifier.themeData,
-            locale: localeNotifier.locale,
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: PinLockGate(
-              prefs: preferencesService,
-              child: const SimpleGeneratorApp(),
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              scrollBehavior: const MaterialScrollBehavior().copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.mouse,
+                },
+              ),
+              theme: themeNotifier.themeData,
+              locale: localeNotifier.locale,
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: PinLockGate(
+                prefs: preferencesService,
+                child: const SimpleGeneratorApp(),
+              ),
             ),
           );
         },
@@ -210,6 +246,34 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
       duration: const Duration(milliseconds: 1000),
     );
     _pulseAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(_pulseController);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = context.read<GenerationNotifier>();
+      notifier.addListener(() => _onGenerationStateChanged(notifier));
+    });
+  }
+
+  void _onGenerationStateChanged(GenerationNotifier notifier) {
+    if (!mounted) return;
+    final state = notifier.state;
+
+    // Control pulse animation
+    if (state.isLoading) {
+      if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
+    } else {
+      if (_pulseController.isAnimating) _pulseController.stop();
+    }
+
+    // Show auth error
+    if (state.hasAuthError) {
+      _showAuthError(context);
+      notifier.clearAuthError();
+    }
+
+    // Show generation error
+    if (state.errorMessage != null) {
+      _showError(context, state.errorMessage!);
+      notifier.clearError();
+    }
   }
 
   void _showError(BuildContext context, String message) {
@@ -308,28 +372,6 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
     final cascadeNotifier = context.watch<CascadeNotifier>();
     final state = notifier.state;
 
-    // Control pulse animation based on loading state
-    if (state.isLoading) {
-      if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
-    } else {
-      if (_pulseController.isAnimating) _pulseController.stop();
-    }
-
-    // Show auth error after build completes
-    if (state.hasAuthError) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showAuthError(context);
-        notifier.clearAuthError();
-      });
-    }
-
-    // Show generation error after build completes
-    if (state.errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showError(context, state.errorMessage!);
-        notifier.clearError();
-      });
-    }
     final isCascadeMode = cascadeNotifier.state.activeCascade != null;
 
     final mobile = isMobile(context);
@@ -354,7 +396,9 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
               if (state.anlas != null && context.read<PreferencesService>().showAnlasTracker)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: InkWell(
+                  child: Tooltip(
+                    message: context.l.mainRefreshAnlas,
+                    child: InkWell(
                     onTap: () => notifier.fetchAnlas(),
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -381,6 +425,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                         ],
                       ),
                     ),
+                  ),
                   ),
                 ),
               IconButton(
@@ -440,228 +485,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                 pulseAnimation: _pulseAnimation,
               ),
 
-              // SAVE button (when auto-save is off and image hasn't been saved yet)
-              if (!state.autoSaveImages && state.generatedImage != null && !state.isLoading && !notifier.imageSaved)
-                Positioned(
-                  top: 12,
-                  right: 20,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => notifier.saveCurrentImage(),
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 10, vertical: mobile ? 10 : 6),
-                        decoration: BoxDecoration(
-                          color: t.background.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: t.accentSuccess.withValues(alpha: 0.4)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.save_alt, size: mobile ? 16 : 12, color: t.accentSuccess),
-                            const SizedBox(width: 6),
-                            Text(
-                              context.l.mainSave.toUpperCase(),
-                              style: TextStyle(
-                                color: t.accentSuccess,
-                                fontSize: t.fontSize(mobile ? 12 : 9),
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // EDIT quick-access button
-              if (state.showEditButton && state.generatedImage != null && !state.isLoading)
-                Positioned(
-                  top: !state.autoSaveImages && !notifier.imageSaved ? 52 : 12,
-                  right: 20,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        context.read<Img2ImgNotifier>().loadSourceImage(state.generatedImage!);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ToolsHubScreen(initialToolId: 'img2img')),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 10, vertical: mobile ? 10 : 6),
-                        decoration: BoxDecoration(
-                          color: t.background.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: t.accentEdit.withValues(alpha: 0.4)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.brush, size: mobile ? 16 : 12, color: t.accentEdit),
-                            const SizedBox(width: 6),
-                            Text(
-                              context.l.mainEdit.toUpperCase(),
-                              style: TextStyle(
-                                color: t.accentEdit,
-                                fontSize: t.fontSize(mobile ? 12 : 9),
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              
-              // REMOVE BG quick-access button
-              Builder(builder: (context) {
-                final ml = context.watch<MLNotifier>();
-                if (!ml.hasBgRemovalModel || state.generatedImage == null || state.isLoading) {
-                  return const Positioned(top: 0, child: SizedBox.shrink());
-                }
-                // Calculate top offset based on visible buttons above
-                double topOffset = 12;
-                if (!state.autoSaveImages && !notifier.imageSaved) topOffset += 40;
-                if (state.showEditButton) topOffset += 40;
-                return Positioned(
-                  top: topOffset,
-                  right: 20,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: ml.isProcessing ? null : () async {
-                        final result = await ml.removeBackground(state.generatedImage!);
-                        if (result != null && context.mounted) {
-                          final gallery = context.read<GalleryNotifier>();
-                          final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
-                          await gallery.saveMLResult(result, 'BG_gen_$timestamp.png');
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('BG REMOVED & SAVED',
-                                  style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
-                              backgroundColor: const Color(0xFF0A1A0A),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                                side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-                              ),
-                            ));
-                          }
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 10, vertical: mobile ? 10 : 6),
-                        decoration: BoxDecoration(
-                          color: t.background.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: t.accent.withValues(alpha: 0.4)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (ml.isProcessing)
-                              SizedBox(width: mobile ? 16 : 12, height: mobile ? 16 : 12, child: CircularProgressIndicator(strokeWidth: 2, color: t.accent))
-                            else
-                              Icon(Icons.content_cut, size: mobile ? 16 : 12, color: t.accent),
-                            const SizedBox(width: 6),
-                            Text(
-                              'REMOVE BG',
-                              style: TextStyle(
-                                color: t.accent,
-                                fontSize: t.fontSize(mobile ? 12 : 9),
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-
-              // UPSCALE quick-access button
-              Builder(builder: (context) {
-                final ml = context.watch<MLNotifier>();
-                if (!ml.hasUpscaleModel || state.generatedImage == null || state.isLoading) {
-                  return const Positioned(top: 0, child: SizedBox.shrink());
-                }
-                double topOffset = 12;
-                if (!state.autoSaveImages && !notifier.imageSaved) topOffset += 40;
-                if (state.showEditButton) topOffset += 40;
-                if (ml.hasBgRemovalModel) topOffset += 40;
-                return Positioned(
-                  top: topOffset,
-                  right: 20,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: ml.isProcessing ? null : () async {
-                        final sourceBytes = state.generatedImage!;
-                        final result = await ml.upscaleImage(sourceBytes);
-                        if (result != null && context.mounted) {
-                          final gallery = context.read<GalleryNotifier>();
-                          final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
-                          final outputName = 'UP_gen_$timestamp.png';
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => UpscaleComparisonView(
-                                originalBytes: sourceBytes,
-                                upscaledBytes: result,
-                                outputName: outputName,
-                                onSave: () {
-                                  gallery.saveMLResultWithMetadata(result, outputName,
-                                      sourceBytes: sourceBytes);
-                                },
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 10, vertical: mobile ? 10 : 6),
-                        decoration: BoxDecoration(
-                          color: t.background.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: t.accent.withValues(alpha: 0.4)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (ml.isProcessing)
-                              SizedBox(width: mobile ? 16 : 12, height: mobile ? 16 : 12, child: CircularProgressIndicator(strokeWidth: 2, color: t.accent))
-                            else
-                              Icon(Icons.zoom_out_map, size: mobile ? 16 : 12, color: t.accent),
-                            const SizedBox(width: 6),
-                            Text(
-                              'UPSCALE',
-                              style: TextStyle(
-                                color: t.accent,
-                                fontSize: t.fontSize(mobile ? 12 : 9),
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
+              const Positioned.fill(child: QuickActionOverlay()),
 
               // Cascade Mode Overlay
               if (isCascadeMode)

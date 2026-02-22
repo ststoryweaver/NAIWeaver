@@ -30,6 +30,12 @@ class VisionTokens {
   Color get accentRefCharacter => _config.accentRefCharacter;
   Color get accentRefStyle => _config.accentRefStyle;
   Color get accentRefCharStyle => _config.accentRefCharStyle;
+  Color get accentBgRemoval => _config.accentBgRemoval;
+  Color get accentUpscale => _config.accentUpscale;
+  Color get accentFavorite => _config.accentFavorite;
+  Color get accentCharacter => _config.accentCharacter;
+  Color get positiveIndicator => _config.positiveIndicator;
+  Color get negativeIndicator => _config.negativeIndicator;
 
   // — Backward-compatible aliases (replaces UiColors) —
   Color get headerText => textPrimary;

@@ -28,6 +28,12 @@ class AppThemeConfig {
   final Color accentRefCharacter;
   final Color accentRefStyle;
   final Color accentRefCharStyle;
+  final Color accentBgRemoval;
+  final Color accentUpscale;
+  final Color accentFavorite;
+  final Color accentCharacter;
+  final Color positiveIndicator;
+  final Color negativeIndicator;
 
   // Font
   final String fontFamily;
@@ -65,6 +71,12 @@ class AppThemeConfig {
     this.accentRefCharacter = const Color(0xFF18FFFF),
     this.accentRefStyle = const Color(0xFFFF00FF),
     this.accentRefCharStyle = const Color(0xFFFFD700),
+    this.accentBgRemoval = const Color(0xFF26C6DA), // cyan 400
+    this.accentUpscale = const Color(0xFFFFAB40), // amber A200
+    this.accentFavorite = const Color(0xFFFFD740), // amber
+    this.accentCharacter = const Color(0xFFFF9800), // orange
+    this.positiveIndicator = const Color(0xFF4CAF50), // green
+    this.negativeIndicator = const Color(0xFFFF5252), // red
     this.fontFamily = 'JetBrains Mono',
     this.fontScale = 1.0,
     this.promptFontSize = 13.0,
@@ -97,6 +109,12 @@ class AppThemeConfig {
     Color? accentRefCharacter,
     Color? accentRefStyle,
     Color? accentRefCharStyle,
+    Color? accentBgRemoval,
+    Color? accentUpscale,
+    Color? accentFavorite,
+    Color? accentCharacter,
+    Color? positiveIndicator,
+    Color? negativeIndicator,
     String? fontFamily,
     double? fontScale,
     double? promptFontSize,
@@ -128,6 +146,12 @@ class AppThemeConfig {
       accentRefCharacter: accentRefCharacter ?? this.accentRefCharacter,
       accentRefStyle: accentRefStyle ?? this.accentRefStyle,
       accentRefCharStyle: accentRefCharStyle ?? this.accentRefCharStyle,
+      accentBgRemoval: accentBgRemoval ?? this.accentBgRemoval,
+      accentUpscale: accentUpscale ?? this.accentUpscale,
+      accentFavorite: accentFavorite ?? this.accentFavorite,
+      accentCharacter: accentCharacter ?? this.accentCharacter,
+      positiveIndicator: positiveIndicator ?? this.positiveIndicator,
+      negativeIndicator: negativeIndicator ?? this.negativeIndicator,
       fontFamily: fontFamily ?? this.fontFamily,
       fontScale: fontScale ?? this.fontScale,
       promptFontSize: promptFontSize ?? this.promptFontSize,
@@ -161,6 +185,12 @@ class AppThemeConfig {
     'accentRefCharacter': accentRefCharacter.toARGB32(),
     'accentRefStyle': accentRefStyle.toARGB32(),
     'accentRefCharStyle': accentRefCharStyle.toARGB32(),
+    'accentBgRemoval': accentBgRemoval.toARGB32(),
+    'accentUpscale': accentUpscale.toARGB32(),
+    'accentFavorite': accentFavorite.toARGB32(),
+    'accentCharacter': accentCharacter.toARGB32(),
+    'positiveIndicator': positiveIndicator.toARGB32(),
+    'negativeIndicator': negativeIndicator.toARGB32(),
     'fontFamily': fontFamily,
     'fontScale': fontScale,
     'promptFontSize': promptFontSize,
@@ -194,6 +224,12 @@ class AppThemeConfig {
       accentRefCharacter: Color(json['accentRefCharacter'] as int? ?? 0xFF18FFFF),
       accentRefStyle: Color(json['accentRefStyle'] as int? ?? 0xFFFF00FF),
       accentRefCharStyle: Color(json['accentRefCharStyle'] as int? ?? 0xFFFFD700),
+      accentBgRemoval: Color(json['accentBgRemoval'] as int? ?? 0xFF26C6DA),
+      accentUpscale: Color(json['accentUpscale'] as int? ?? 0xFFFFAB40),
+      accentFavorite: Color(json['accentFavorite'] as int? ?? 0xFFFFD740),
+      accentCharacter: Color(json['accentCharacter'] as int? ?? 0xFFFF9800),
+      positiveIndicator: Color(json['positiveIndicator'] as int? ?? 0xFF4CAF50),
+      negativeIndicator: Color(json['negativeIndicator'] as int? ?? 0xFFFF5252),
       fontFamily: json['fontFamily'] as String? ?? 'JetBrains Mono',
       fontScale: (json['fontScale'] as num?)?.toDouble() ?? 1.0,
       promptFontSize: (json['promptFontSize'] as num?)?.toDouble() ?? 13.0,
