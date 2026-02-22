@@ -52,14 +52,14 @@ class SoundFontDownloadService {
         await sink.close();
       }
 
-      // SHA-256 verification (skip if hash is null / placeholder)
-      if (sf.sha256 != null) {
-        final hash = await _computeSha256(partFile);
-        if (hash != sf.sha256) {
-          debugPrint('SoundFont hash mismatch: expected ${sf.sha256}, got $hash');
-          await partFile.delete();
-          return SoundFontDownloadResult.hashMismatch;
-        }
+      // SHA-256 verification
+      final hash = await _computeSha256(partFile);
+      if (sf.sha256 == null) {
+        debugPrint('WARNING: SoundFont ${sf.id} has no SHA-256 hash — accepting download without verification');
+      } else if (hash != sf.sha256) {
+        debugPrint('SoundFont hash mismatch: expected ${sf.sha256}, got $hash');
+        await partFile.delete();
+        return SoundFontDownloadResult.hashMismatch;
       }
 
       await partFile.rename(finalFile.path);

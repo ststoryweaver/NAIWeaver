@@ -338,7 +338,7 @@ class JukeboxMobileNowPlaying extends StatelessWidget {
         children: [
           _buildDragHandle(),
           if (!expanded) ...[
-            _buildCompactBar(song),
+            _buildCompactBar(context, song),
             const SizedBox(height: 4),
           ],
           if (expanded)
@@ -379,14 +379,14 @@ class JukeboxMobileNowPlaying extends StatelessWidget {
                 Icon(
                   expanded ? Icons.expand_more : Icons.expand_less,
                   size: 12,
-                  color: t.textMinimal,
+                  color: t.textDisabled,
                 ),
                 const SizedBox(width: 2),
                 Text(
                   expanded ? 'LESS' : 'MORE',
                   style: TextStyle(
-                    color: t.textMinimal,
-                    fontSize: t.fontSize(7),
+                    color: t.textDisabled,
+                    fontSize: t.fontSize(8),
                     letterSpacing: 1,
                   ),
                 ),
@@ -398,7 +398,7 @@ class JukeboxMobileNowPlaying extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactBar(JukeboxSong song) {
+  Widget _buildCompactBar(BuildContext context, JukeboxSong song) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -438,6 +438,13 @@ class JukeboxMobileNowPlaying extends StatelessWidget {
             constraints: const BoxConstraints(),
             padding: const EdgeInsets.all(4),
           ),
+          if (jukebox.isPlaying)
+            IconButton(
+              icon: Icon(Icons.fullscreen, size: 20, color: t.accent),
+              onPressed: () => JukeboxNowPlaying.openFullscreenVisualizer(context),
+              constraints: const BoxConstraints(),
+              padding: const EdgeInsets.all(4),
+            ),
           Icon(
             Icons.expand_less,
             size: 16,

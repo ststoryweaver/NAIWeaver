@@ -1,38 +1,24 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart' show Color;
-import 'package:path/path.dart' as p;
 import '../models/jukebox_song.dart';
 import '../models/jukebox_soundfont.dart';
+import '../models/karaoke_style_config.dart';
+import '../models/visualizer_config.dart';
 import '../jukebox_registry.dart';
 import '../midi_sequencer.dart';
 import '../synth/midi_synthesizer.dart';
-import '../services/soundfont_storage_service.dart';
-import '../services/soundfont_download_service.dart';
+import '../services/custom_song_service.dart';
+import '../services/soundfont_manager.dart';
+import '../../services/download_manager.dart';
 import '../../services/preferences_service.dart';
 
 enum RepeatMode { off, all, one }
 
-enum SoundFontDownloadStatus { idle, downloading, completed, error }
-
-class SoundFontDownloadState {
-  final SoundFontDownloadStatus status;
-  final double progress;
-  final String? errorMessage;
-
-  const SoundFontDownloadState({
-    this.status = SoundFontDownloadStatus.idle,
-    this.progress = 0.0,
-    this.errorMessage,
-  });
-}
-
 class JukeboxNotifier extends ChangeNotifier {
-  final String soundfontsDir;
   final PreferencesService _prefs;
 
   late MidiSynthesizer _synth;
@@ -40,6 +26,12 @@ class JukeboxNotifier extends ChangeNotifier {
   bool _synthReady = false;
   Timer? _positionTimer;
   Timer? _idleTimer;
+
+  // Delegates
+  late final KaraokeStyleConfig karaokeStyle;
+  late final VisualizerConfig visualizer;
+  late final CustomSongService _customSongService;
+  late final SoundFontManager _sfManager;
 
   // Playback state
   JukeboxSong? _currentSong;
@@ -54,7 +46,7 @@ class JukeboxNotifier extends ChangeNotifier {
   Duration _duration = Duration.zero;
   Duration get duration => _duration;
 
-  double _volume = 0.7;
+  double _volume = 0.4;
   double get volume => _volume;
   bool _muted = false;
   bool get isMuted => _muted;
@@ -70,48 +62,60 @@ class JukeboxNotifier extends ChangeNotifier {
   RepeatMode _repeatMode = RepeatMode.off;
   RepeatMode get repeatMode => _repeatMode;
 
-  // SoundFont
-  JukeboxSoundFont _activeSoundFont = JukeboxRegistry.defaultSoundFont;
-  JukeboxSoundFont get activeSoundFont => _activeSoundFont;
-
-  // SoundFont download state
-  final Map<String, SoundFontDownloadState> _sfDownloadStates = {};
-  final Map<String, CancelToken> _sfCancelTokens = {};
-  final Set<String> _downloadedSoundFonts = {};
+  // SoundFont (delegated)
+  JukeboxSoundFont get activeSoundFont => _sfManager.active;
 
   // Karaoke
   String? _currentLyric;
   String? get currentLyric => _currentLyric;
   List<LyricLine> get lyrics => _sequencer.lyrics;
 
-  // Karaoke style (nullable = use theme default)
-  Color? _karaokeHighlightColor;
-  Color? get karaokeHighlightColor => _karaokeHighlightColor;
-  Color? _karaokeUpcomingColor;
-  Color? get karaokeUpcomingColor => _karaokeUpcomingColor;
-  Color? _karaokeNextLineColor;
-  Color? get karaokeNextLineColor => _karaokeNextLineColor;
-  String? _karaokeFontFamily;
-  String? get karaokeFontFamily => _karaokeFontFamily;
-  double _karaokeFontScale = 1.0;
-  double get karaokeFontScale => _karaokeFontScale;
-  bool _showMiniLyric = true;
-  bool get showMiniLyric => _showMiniLyric;
-  bool _showKaraokeInPanel = true;
-  bool get showKaraokeInPanel => _showKaraokeInPanel;
+  // Karaoke style (delegated)
+  Color? get karaokeHighlightColor => karaokeStyle.highlightColor;
+  Color? get karaokeUpcomingColor => karaokeStyle.upcomingColor;
+  Color? get karaokeNextLineColor => karaokeStyle.nextLineColor;
+  String? get karaokeFontFamily => karaokeStyle.fontFamily;
+  double get karaokeFontScale => karaokeStyle.fontScale;
+  bool get showMiniLyric => karaokeStyle.showMiniLyric;
+  bool get showKaraokeInPanel => karaokeStyle.showKaraokeInPanel;
+
+  // Visualizer (delegated)
+  Color? get visualizerColor => visualizer.color;
+  VisualizerStyle get visualizerStyle => visualizer.style;
+  double get vizIntensity => visualizer.intensity;
+  double get vizSpeed => visualizer.speed;
+  double get vizDensity => visualizer.density;
 
   // Note activity for visualizer (0.0–1.0, decays over time)
   double _noteActivity = 0.0;
   double get noteActivity => _noteActivity;
 
+  // Custom imported songs (delegated)
+  List<JukeboxSong> get customSongs => _customSongService.songs;
+  List<JukeboxSong> get allSongs => [...JukeboxRegistry.allSongs, ..._customSongService.songs];
+
   bool get synthAvailable => _synthReady;
 
   JukeboxNotifier({
-    required this.soundfontsDir,
+    required String soundfontsDir,
+    required String customSongsDir,
+    required String customSongsJsonPath,
     required PreferencesService prefs,
-  }) : _prefs = prefs {
+  })  : _prefs = prefs {
     _synth = MidiSynthesizer.create();
     _sequencer = MidiSequencer(_synth);
+
+    // Initialize delegates
+    karaokeStyle = KaraokeStyleConfig(prefs: prefs);
+    visualizer = VisualizerConfig(prefs: prefs);
+    _customSongService = CustomSongService(
+      customSongsDir: customSongsDir,
+      customSongsJsonPath: customSongsJsonPath,
+    );
+    _sfManager = SoundFontManager(
+      soundfontsDir: soundfontsDir,
+      prefs: prefs,
+    );
 
     // Restore preferences
     _volume = _prefs.jukeboxVolume;
@@ -121,162 +125,54 @@ class JukeboxNotifier extends ChangeNotifier {
       (m) => m.name == repeatStr,
       orElse: () => RepeatMode.off,
     );
-    final sfId = _prefs.jukeboxSoundFontId;
-    if (sfId != null) {
-      _activeSoundFont = JukeboxRegistry.findSoundFontById(sfId) ?? JukeboxRegistry.defaultSoundFont;
-    }
 
     _sequencer.onLyric = _onLyricEvent;
     _sequencer.onNoteOn = _onNoteOnEvent;
-
-    // Restore karaoke preferences
-    final hlColor = _prefs.jukeboxKaraokeHighlightColor;
-    if (hlColor != null) _karaokeHighlightColor = Color(hlColor);
-    final upColor = _prefs.jukeboxKaraokeUpcomingColor;
-    if (upColor != null) _karaokeUpcomingColor = Color(upColor);
-    final nlColor = _prefs.jukeboxKaraokeNextLineColor;
-    if (nlColor != null) _karaokeNextLineColor = Color(nlColor);
-    _karaokeFontFamily = _prefs.jukeboxKaraokeFontFamily;
-    _karaokeFontScale = _prefs.jukeboxKaraokeFontScale;
-    _showMiniLyric = _prefs.jukeboxShowMiniLyric;
-    _showKaraokeInPanel = _prefs.jukeboxShowKaraokeInPanel;
   }
 
   Future<void> initialize() async {
-    await _scanDownloadedSoundFonts();
+    await _customSongService.load();
+    await _sfManager.scanDownloaded();
     await _synth.initialize();
     _synthReady = _synth.isAvailable;
     if (_synthReady) {
-      // If the persisted soundfont is no longer available, fall back to default
-      if (!isSoundFontAvailable(_activeSoundFont)) {
-        _activeSoundFont = JukeboxRegistry.defaultSoundFont;
-        _prefs.setJukeboxSoundFontId(_activeSoundFont.id);
+      // Apply saved volume (or mute) before loading soundfont to prevent boot pop
+      final intVol = (_muted ? 0 : _volume * 127).round();
+      for (int ch = 0; ch < 16; ch++) {
+        _synth.controlChange(ch, 7, intVol);
       }
-      await _ensureSoundFontLoaded();
+      // If the persisted soundfont is no longer available, fall back to default
+      _sfManager.ensureAvailable();
+      await _sfManager.loadInto(_synth);
     }
     notifyListeners();
   }
 
-  Future<void> _ensureSoundFontLoaded() async {
-    final sf = _activeSoundFont;
-    final diskFilename = sf.filename ?? p.basename(sf.assetPath ?? '');
-    if (diskFilename.isEmpty) return;
-
-    final sfPath = p.join(soundfontsDir, diskFilename);
-    final sfFile = File(sfPath);
-
-    if (!await sfFile.exists()) {
-      // Only bundled soundfonts can be extracted from assets
-      if (sf.isBundled) {
-        try {
-          final data = await rootBundle.load(sf.assetPath!);
-          await sfFile.writeAsBytes(data.buffer.asUint8List());
-          debugPrint('Jukebox: Extracted soundfont to $sfPath');
-        } catch (e) {
-          debugPrint('Jukebox: Failed to extract soundfont: $e');
-          return;
-        }
-      } else {
-        debugPrint('Jukebox: Downloaded soundfont not on disk: $sfPath');
-        return;
-      }
-    }
-
-    await _synth.loadSoundFont(sfPath);
-  }
-
   // ─────────────────────────────────────────
-  // SoundFont Download Management
+  // SoundFont Management (delegated)
   // ─────────────────────────────────────────
 
-  SoundFontDownloadState sfDownloadState(String id) {
-    return _sfDownloadStates[id] ?? const SoundFontDownloadState();
+  DownloadState sfDownloadState(String id) {
+    return _sfManager.downloadState(id);
   }
 
   bool isSoundFontAvailable(JukeboxSoundFont sf) {
-    return sf.isBundled || _downloadedSoundFonts.contains(sf.id);
-  }
-
-  Set<String> get downloadedSoundFontIds => Set.unmodifiable(_downloadedSoundFonts);
-
-  Future<void> _scanDownloadedSoundFonts() async {
-    for (final sf in JukeboxRegistry.allSoundFonts) {
-      if (sf.filename != null &&
-          await SoundFontStorageService.isDownloaded(soundfontsDir, sf)) {
-        _downloadedSoundFonts.add(sf.id);
-      }
-    }
+    return _sfManager.isAvailable(sf);
   }
 
   Future<void> downloadSoundFont(JukeboxSoundFont sf) async {
-    if (!sf.isDownloadable) return;
-    if (_sfCancelTokens.containsKey(sf.id)) return; // already downloading
-
-    final cancelToken = CancelToken();
-    _sfCancelTokens[sf.id] = cancelToken;
-    _sfDownloadStates[sf.id] = const SoundFontDownloadState(
-      status: SoundFontDownloadStatus.downloading,
-    );
-    notifyListeners();
-
-    final result = await SoundFontDownloadService.download(
-      soundfontsDir: soundfontsDir,
-      sf: sf,
-      cancelToken: cancelToken,
-      onProgress: (received, total) {
-        _sfDownloadStates[sf.id] = SoundFontDownloadState(
-          status: SoundFontDownloadStatus.downloading,
-          progress: total > 0 ? received / total : 0.0,
-        );
-        notifyListeners();
-      },
-    );
-
-    _sfCancelTokens.remove(sf.id);
-
-    switch (result) {
-      case SoundFontDownloadResult.success:
-        _downloadedSoundFonts.add(sf.id);
-        _sfDownloadStates[sf.id] = const SoundFontDownloadState(
-          status: SoundFontDownloadStatus.completed,
-        );
-      case SoundFontDownloadResult.cancelled:
-        _sfDownloadStates[sf.id] = const SoundFontDownloadState(
-          status: SoundFontDownloadStatus.idle,
-        );
-      case SoundFontDownloadResult.hashMismatch:
-        _sfDownloadStates[sf.id] = const SoundFontDownloadState(
-          status: SoundFontDownloadStatus.error,
-          errorMessage: 'Hash verification failed',
-        );
-      case SoundFontDownloadResult.error:
-        _sfDownloadStates[sf.id] = const SoundFontDownloadState(
-          status: SoundFontDownloadStatus.error,
-          errorMessage: 'Download failed',
-        );
-    }
-
-    notifyListeners();
+    await _sfManager.download(sf, onNotify: notifyListeners);
   }
 
   void cancelSoundFontDownload(String id) {
-    _sfCancelTokens[id]?.cancel();
-    _sfCancelTokens.remove(id);
+    _sfManager.cancelDownload(id);
   }
 
   Future<void> deleteSoundFont(JukeboxSoundFont sf) async {
-    await SoundFontStorageService.delete(soundfontsDir, sf);
-    await SoundFontStorageService.deletePartial(soundfontsDir, sf);
-    _downloadedSoundFonts.remove(sf.id);
-    _sfDownloadStates.remove(sf.id);
-
-    // Fall back to default if the active soundfont was deleted
-    if (_activeSoundFont.id == sf.id) {
-      _activeSoundFont = JukeboxRegistry.defaultSoundFont;
-      _prefs.setJukeboxSoundFontId(_activeSoundFont.id);
-      if (_synthReady) await _ensureSoundFontLoaded();
+    final needsReload = await _sfManager.delete(sf);
+    if (needsReload && _synthReady) {
+      await _sfManager.loadInto(_synth);
     }
-
     notifyListeners();
   }
 
@@ -288,8 +184,14 @@ class JukeboxNotifier extends ChangeNotifier {
     _cancelIdleTimer();
 
     try {
-      final data = await rootBundle.load(song.assetPath);
-      await _sequencer.load(data.buffer.asUint8List());
+      final Uint8List bytes;
+      if (song.filePath != null) {
+        bytes = await File(song.filePath!).readAsBytes();
+      } else {
+        final data = await rootBundle.load(song.assetPath!);
+        bytes = data.buffer.asUint8List();
+      }
+      await _sequencer.load(bytes);
     } catch (e) {
       debugPrint('Jukebox: Failed to load song ${song.id}: $e');
       return;
@@ -415,10 +317,47 @@ class JukeboxNotifier extends ChangeNotifier {
   }
 
   Future<void> setSoundFont(JukeboxSoundFont sf) async {
-    if (!isSoundFontAvailable(sf)) return;
-    _activeSoundFont = sf;
-    _prefs.setJukeboxSoundFontId(sf.id);
-    await _ensureSoundFontLoaded();
+    if (!_sfManager.isAvailable(sf)) return;
+    _sfManager.setActive(sf);
+
+    final wasPlaying = _isPlaying;
+
+    // 1. Pause sequencer to stop MIDI event dispatch during the swap.
+    //    pause() cancels the 2ms timer AND calls allNotesOff().
+    if (_sequencer.isPlaying) {
+      _sequencer.pause();
+    } else {
+      _synth.allNotesOff();
+    }
+    _stopPositionUpdates();
+
+    // 2. Capture position while paused (sequencer returns pauseOffset).
+    final pos = _sequencer.position;
+
+    // 3. Load the new soundfont (async — no events fire because timer is cancelled).
+    await _sfManager.loadInto(_synth);
+
+    // 4. Seek to current position — replays program changes & CCs so all
+    //    channels have correct instruments for the new soundfont.
+    if (_currentSong != null) {
+      _sequencer.seek(pos);
+    }
+
+    // 5. Restore user volume (must come AFTER seek, which replays CC 7 from the MIDI).
+    final intVol = (_muted ? 0 : _volume * 127).round();
+    for (int ch = 0; ch < 16; ch++) {
+      _synth.controlChange(ch, 7, intVol);
+    }
+
+    // 6. Resume if was playing.
+    if (wasPlaying && _currentSong != null) {
+      _sequencer.play();
+      _isPlaying = true;
+      _startPositionUpdates();
+    } else {
+      _isPlaying = false;
+    }
+
     notifyListeners();
   }
 
@@ -540,62 +479,99 @@ class JukeboxNotifier extends ChangeNotifier {
   }
 
   // ─────────────────────────────────────────
-  // Karaoke Style
+  // Karaoke Style (delegated)
   // ─────────────────────────────────────────
 
   void setKaraokeHighlightColor(Color? color) {
-    _karaokeHighlightColor = color;
-    _prefs.setJukeboxKaraokeHighlightColor(color?.toARGB32());
+    karaokeStyle.setHighlightColor(color);
     notifyListeners();
   }
 
   void setKaraokeUpcomingColor(Color? color) {
-    _karaokeUpcomingColor = color;
-    _prefs.setJukeboxKaraokeUpcomingColor(color?.toARGB32());
+    karaokeStyle.setUpcomingColor(color);
     notifyListeners();
   }
 
   void setKaraokeNextLineColor(Color? color) {
-    _karaokeNextLineColor = color;
-    _prefs.setJukeboxKaraokeNextLineColor(color?.toARGB32());
+    karaokeStyle.setNextLineColor(color);
     notifyListeners();
   }
 
   void setKaraokeFontFamily(String? family) {
-    _karaokeFontFamily = family;
-    _prefs.setJukeboxKaraokeFontFamily(family);
+    karaokeStyle.setFontFamily(family);
     notifyListeners();
   }
 
   void setKaraokeFontScale(double scale) {
-    _karaokeFontScale = scale.clamp(0.5, 2.0);
-    _prefs.setJukeboxKaraokeFontScale(_karaokeFontScale);
+    karaokeStyle.setFontScale(scale);
     notifyListeners();
   }
 
   void toggleMiniLyric() {
-    _showMiniLyric = !_showMiniLyric;
-    _prefs.setJukeboxShowMiniLyric(_showMiniLyric);
+    karaokeStyle.toggleMiniLyric();
+    notifyListeners();
+  }
+
+  void setVisualizerColor(Color? color) {
+    visualizer.setColor(color);
     notifyListeners();
   }
 
   void toggleKaraokeInPanel() {
-    _showKaraokeInPanel = !_showKaraokeInPanel;
-    _prefs.setJukeboxShowKaraokeInPanel(_showKaraokeInPanel);
+    karaokeStyle.toggleKaraokeInPanel();
+    notifyListeners();
+  }
+
+  // ─────────────────────────────────────────
+  // Visualizer Style (delegated)
+  // ─────────────────────────────────────────
+
+  void setVisualizerStyle(VisualizerStyle style) {
+    visualizer.setStyle(style);
+    notifyListeners();
+  }
+
+  void setVizIntensity(double value) {
+    visualizer.setIntensity(value);
+    notifyListeners();
+  }
+
+  void setVizSpeed(double value) {
+    visualizer.setSpeed(value);
+    notifyListeners();
+  }
+
+  void setVizDensity(double value) {
+    visualizer.setDensity(value);
+    notifyListeners();
+  }
+
+  // ─────────────────────────────────────────
+  // Custom Song Import / Delete (delegated)
+  // ─────────────────────────────────────────
+
+  Future<JukeboxSong> importSong(String pickedFilePath) async {
+    final song = await _customSongService.importSong(pickedFilePath);
+    notifyListeners();
+    return song;
+  }
+
+  Future<void> deleteCustomSong(String songId) async {
+    // Stop if currently playing
+    if (_currentSong?.id == songId) {
+      stop();
+    }
+
+    // Remove from queue
+    _queue.removeWhere((s) => s.id == songId);
+
+    await _customSongService.deleteSong(songId);
     notifyListeners();
   }
 
   void resetKaraokeStyle() {
-    _karaokeHighlightColor = null;
-    _karaokeUpcomingColor = null;
-    _karaokeNextLineColor = null;
-    _karaokeFontFamily = null;
-    _karaokeFontScale = 1.0;
-    _prefs.setJukeboxKaraokeHighlightColor(null);
-    _prefs.setJukeboxKaraokeUpcomingColor(null);
-    _prefs.setJukeboxKaraokeNextLineColor(null);
-    _prefs.setJukeboxKaraokeFontFamily(null);
-    _prefs.setJukeboxKaraokeFontScale(1.0);
+    karaokeStyle.reset();
+    visualizer.setColor(null);
     notifyListeners();
   }
 
@@ -603,10 +579,7 @@ class JukeboxNotifier extends ChangeNotifier {
   void dispose() {
     _positionTimer?.cancel();
     _idleTimer?.cancel();
-    for (final token in _sfCancelTokens.values) {
-      token.cancel();
-    }
-    _sfCancelTokens.clear();
+    _sfManager.disposeDownloads();
     _sequencer.dispose();
     _synth.dispose();
     super.dispose();
