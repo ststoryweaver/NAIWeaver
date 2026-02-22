@@ -84,3 +84,5 @@ soundfonts/
 # Dev/test files
 *.mid
 *.sf2
+test_itxt.dart
+EXAMPLEINPAINTED.png
