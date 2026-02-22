@@ -3,8 +3,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../novel_ai_service.dart';
+import '../../../core/services/novel_ai_service.dart';
 import '../../vibe_transfer/providers/vibe_transfer_notifier.dart';
 import '../../vibe_transfer/widgets/vibe_transfer_chip.dart';
 import '../../vibe_transfer/widgets/vibe_transfer_editor_sheet.dart';
@@ -27,16 +28,12 @@ class VibeTransferShelf extends StatelessWidget {
             await notifier.addVibe(bytes);
           } on UnauthorizedException {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('API key missing or invalid')),
-              );
+              showErrorSnackBar(context, 'API key missing or invalid');
             }
             return;
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Failed to encode vibe image')),
-              );
+              showErrorSnackBar(context, 'Failed to encode vibe image');
             }
             return;
           }
@@ -107,28 +104,19 @@ class _AddVibeButton extends StatelessWidget {
       child: GestureDetector(
         onTap: isProcessing ? null : onTap,
         child: Container(
-          width: mobile ? 44 : 36,
           height: mobile ? 44 : 36,
+          width: mobile ? 52 : 42,
           decoration: BoxDecoration(
-            color: t.textMinimal,
+            color: t.accentVibeTransfer.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-                color: t.accentVibeTransfer.withValues(alpha: 0.3),
-                width: 0.5),
           ),
-          child: Center(
-            child: isProcessing
-                ? SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                      color: t.accentVibeTransfer.withValues(alpha: 0.5),
-                    ),
-                  )
-                : Icon(Icons.add_photo_alternate,
-                    size: 14, color: t.accentVibeTransfer.withValues(alpha: 0.5)),
-          ),
+          alignment: Alignment.center,
+          child: Text('VIBE', style: TextStyle(
+            fontSize: t.fontSize(mobile ? 9 : 7),
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+            color: t.accentVibeTransfer,
+          )),
         ),
       ),
     );

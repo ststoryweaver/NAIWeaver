@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +10,9 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/theme_notifier.dart';
 import '../../../core/theme/vision_tokens.dart';
 import '../../../core/widgets/custom_resolution_dialog.dart';
-import '../../../styles.dart';
+import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/vision_slider.dart';
+import '../../../core/services/styles.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../providers/generation_notifier.dart';
 import 'inline_character_editor.dart';
@@ -111,8 +114,13 @@ class AdvancedSettingsPanel extends StatelessWidget {
         final notifier = context.read<GenerationNotifier>();
 
         final mobile = isMobile(context);
-        final collapsedH = mobile ? 48.0 : 40.0;
-        final expandedH = MediaQuery.of(context).size.height * (mobile ? 0.75 : 0.6);
+        final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+        final headerH = mobile ? 48.0 : 40.0;
+        final collapsedH = headerH + bottomInset;
+        final expandedH = math.max(
+          MediaQuery.of(context).size.height * (mobile ? 0.75 : 0.6),
+          collapsedH,
+        );
 
         return AnimatedPositioned(
           duration: const Duration(milliseconds: 300),
@@ -128,11 +136,11 @@ class AdvancedSettingsPanel extends StatelessWidget {
             },
             child: Container(
               decoration: BoxDecoration(
-                color: t.surfaceMid,
+                color: t.surfaceHigh,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                border: Border.all(color: t.borderSubtle),
+                border: Border.all(color: t.borderStrong),
                 boxShadow: [
-                  BoxShadow(color: t.background.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 5),
+                  BoxShadow(color: Colors.white.withValues(alpha: 0.05), blurRadius: 20, spreadRadius: 5),
                 ],
               ),
               child: OverflowBox(
@@ -146,23 +154,23 @@ class AdvancedSettingsPanel extends StatelessWidget {
                       onTap: notifier.toggleSettings,
                       child: Container(
                         width: double.infinity,
-                        height: collapsedH,
+                        height: headerH,
                         alignment: Alignment.center,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 32,
-                              height: 2,
+                              width: 48,
+                              height: 4,
                               decoration: BoxDecoration(
-                                color: t.borderMedium,
-                                borderRadius: BorderRadius.circular(1),
+                                color: t.textDisabled,
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
                             if (!isExpanded)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
-                                child: Text(context.l.panelAdvancedSettings.toUpperCase(), style: TextStyle(fontSize: t.fontSize(mobile ? 10 : 7), letterSpacing: 2, color: t.hintText, fontWeight: FontWeight.bold)),
+                                child: Text(context.l.panelAdvancedSettings.toUpperCase(), style: TextStyle(fontSize: t.fontSize(mobile ? 10 : 9), letterSpacing: 2, color: t.secondaryText, fontWeight: FontWeight.bold)),
                               ),
                           ],
                         ),
@@ -274,7 +282,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
     sections.add(const SizedBox(height: 20));
 
     return ListView(
-      padding: EdgeInsets.fromLTRB(24, 8, 24, mobile ? 40 + MediaQuery.of(context).padding.bottom + MediaQuery.of(context).viewInsets.bottom : 40),
+      padding: EdgeInsets.fromLTRB(24, 8, 24, 40 + MediaQuery.of(context).padding.bottom + MediaQuery.of(context).viewInsets.bottom),
       children: sections,
     );
   }
@@ -420,7 +428,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
   }
 
   Widget _buildStepsScale(GenerationNotifier notifier, GenerationState state, bool mobile, VisionTokens t) {
-    Widget stepsSlider = _buildCompactSlider(context, context.l.panelSteps.toUpperCase(), state.steps, 1, 50, 1, (v) => notifier.updateSettings(steps: v), t);
+    Widget stepsSlider = _buildCompactSlider(context, context.l.panelSteps.toUpperCase(), state.steps, 1, 50, 1, (v) => notifier.updateSettings(steps: v), t, warnAbove: 28);
     Widget scaleSlider = _buildCompactSlider(context, context.l.panelScale.toUpperCase(), state.scale, 1.0, 30.0, 0.5, (v) => notifier.updateSettings(scale: v), t);
 
     if (mobile) {
@@ -578,6 +586,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
                 if (state.styles.isNotEmpty)
                   IconButton(
                     icon: Icon(_stylesExpanded ? Icons.unfold_less : Icons.unfold_more, size: 14, color: t.textDisabled),
+                    tooltip: context.l.settingsStylesToggle,
                     onPressed: () => setState(() => _stylesExpanded = !_stylesExpanded),
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.only(right: 12),
@@ -640,6 +649,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
           focusNode: _negativePromptFocus,
           controller: notifier.negativePromptController,
           maxLines: 3,
+          onTap: _scrollToNegativePrompt,
           style: TextStyle(fontSize: t.fontSize(11), color: t.textSecondary, height: 1.4),
           decoration: InputDecoration(
             fillColor: t.borderSubtle.withValues(alpha: 0.5),
@@ -662,6 +672,7 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
             Text(context.l.panelPresets.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(mobile ? 12 : 9), letterSpacing: 2, color: t.secondaryText)),
             IconButton(
               icon: Icon(Icons.add_circle_outline, size: 14, color: t.secondaryText),
+              tooltip: context.l.mainSavePreset,
               onPressed: widget.onSavePreset,
               constraints: const BoxConstraints(),
               padding: EdgeInsets.zero,
@@ -693,10 +704,12 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
                     children: [
                       IconButton(
                         icon: Icon(Icons.download, size: 14, color: t.textTertiary),
+                        tooltip: context.l.presetLoad,
                         onPressed: () => notifier.applyPreset(preset),
                       ),
                       IconButton(
                         icon: Icon(Icons.delete_outline, size: 14, color: t.textMinimal),
+                        tooltip: context.l.commonDelete,
                         onPressed: () => _confirmDeletePreset(context, notifier, index, preset.name),
                       ),
                     ],
@@ -713,74 +726,78 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
     final gallery = context.watch<GalleryNotifier>();
     final prefs = context.read<PreferencesService>();
     final labelStyle = TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(mobile ? 12 : 9), letterSpacing: 2, color: t.secondaryText);
-    final currentId = prefs.defaultSaveAlbumId;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(context.l.panelSaveToAlbum.toUpperCase(), style: labelStyle),
         const SizedBox(height: 12),
-        SizedBox(
-          height: mobile ? 42 : 34,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: gallery.albums.length + 1,
-            itemBuilder: (context, index) {
-              // Last item is the "+" create-album chip
-              if (index == gallery.albums.length) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ActionChip(
-                    avatar: Icon(Icons.add, size: mobile ? 14 : 12, color: t.textTertiary),
-                    label: Text(
-                      context.l.panelNew.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: t.fontSize(mobile ? 9 : 8),
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                        color: t.textTertiary,
+        StatefulBuilder(
+          builder: (context, setChipState) {
+            final currentId = prefs.defaultSaveAlbumId;
+            return SizedBox(
+              height: mobile ? 42 : 34,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: gallery.albums.length + 1,
+                itemBuilder: (context, index) {
+                  // Last item is the "+" create-album chip
+                  if (index == gallery.albums.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        avatar: Icon(Icons.add, size: mobile ? 14 : 12, color: t.textTertiary),
+                        label: Text(
+                          context.l.panelNew.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: t.fontSize(mobile ? 9 : 8),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                            color: t.textTertiary,
+                          ),
+                        ),
+                        backgroundColor: t.borderSubtle,
+                        padding: EdgeInsets.symmetric(horizontal: mobile ? 8 : 6, vertical: 0),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                        side: BorderSide(color: t.textMinimal, width: 0.5),
+                        onPressed: () => _showCreateAlbumDialog(context, gallery, prefs),
                       ),
+                    );
+                  }
+                  final album = gallery.albums[index];
+                  final isActive = album.id == currentId;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(
+                        album.name.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: t.fontSize(mobile ? 9 : 8),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      selected: isActive,
+                      onSelected: (_) {
+                        prefs.setDefaultSaveAlbumId(isActive ? null : album.id);
+                        setChipState(() {});
+                      },
+                      backgroundColor: t.borderSubtle,
+                      selectedColor: t.accentSuccess,
+                      checkmarkColor: t.background,
+                      showCheckmark: false,
+                      labelStyle: TextStyle(color: isActive ? t.background : t.textTertiary),
+                      padding: EdgeInsets.symmetric(horizontal: mobile ? 8 : 6, vertical: 0),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                      side: BorderSide(color: isActive ? t.accentSuccess : t.textMinimal, width: 0.5),
                     ),
-                    backgroundColor: t.borderSubtle,
-                    padding: EdgeInsets.symmetric(horizontal: mobile ? 8 : 6, vertical: 0),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                    side: BorderSide(color: t.textMinimal, width: 0.5),
-                    onPressed: () => _showCreateAlbumDialog(context, gallery, prefs),
-                  ),
-                );
-              }
-              final album = gallery.albums[index];
-              final isActive = album.id == currentId;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Text(
-                    album.name.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: t.fontSize(mobile ? 9 : 8),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  selected: isActive,
-                  onSelected: (_) {
-                    prefs.setDefaultSaveAlbumId(isActive ? null : album.id);
-                    (context as Element).markNeedsBuild();
-                  },
-                  backgroundColor: t.borderSubtle,
-                  selectedColor: t.accentSuccess,
-                  checkmarkColor: t.background,
-                  showCheckmark: false,
-                  labelStyle: TextStyle(color: isActive ? t.background : t.textTertiary),
-                  padding: EdgeInsets.symmetric(horizontal: mobile ? 8 : 6, vertical: 0),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                  side: BorderSide(color: isActive ? t.accentSuccess : t.textMinimal, width: 0.5),
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ],
     );
@@ -825,33 +842,23 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
     );
   }
 
-  void _confirmDeletePreset(BuildContext context, GenerationNotifier notifier, int index, String name) {
+  Future<void> _confirmDeletePreset(BuildContext context, GenerationNotifier notifier, int index, String name) async {
     final t = context.t;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: t.surfaceHigh,
-        title: Text(context.l.panelDeletePreset.toUpperCase(), style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(12), fontWeight: FontWeight.bold)),
-        content: Text(context.l.panelDeletePresetConfirm(name), style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(11))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l.commonCancel.toUpperCase(), style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
-          ),
-          TextButton(
-            onPressed: () {
-              notifier.deletePreset(index);
-              Navigator.pop(context);
-            },
-            child: Text(context.l.commonDelete.toUpperCase(), style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(10), fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+    final confirm = await showConfirmDialog(
+      context,
+      title: context.l.panelDeletePreset,
+      message: context.l.panelDeletePresetConfirm(name),
+      confirmLabel: context.l.commonDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.deletePreset(index);
+    }
   }
 
-  Widget _buildCompactSlider(BuildContext context, String label, double value, double min, double max, double step, Function(double) onChanged, VisionTokens t) {
+  Widget _buildCompactSlider(BuildContext context, String label, double value, double min, double max, double step, Function(double) onChanged, VisionTokens t, {double? warnAbove}) {
     final mobile = isMobile(context);
+    final isWarning = warnAbove != null && value > warnAbove;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -860,26 +867,22 @@ class _ExpandedSettingsContentState extends State<_ExpandedSettingsContent> {
           children: [
             Text(label, style: TextStyle(fontSize: t.fontSize(mobile ? 12 : 9), fontWeight: FontWeight.bold, letterSpacing: 1, color: t.secondaryText)),
             Text(step >= 1 ? value.toInt().toString() : value.toStringAsFixed(1),
-              style: TextStyle(fontSize: t.fontSize(mobile ? 13 : 10), fontWeight: FontWeight.bold, color: t.textSecondary)),
+              style: TextStyle(fontSize: t.fontSize(mobile ? 13 : 10), fontWeight: FontWeight.bold, color: isWarning ? t.accentDanger : t.textSecondary)),
           ],
         ),
         const SizedBox(height: 4),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: 1,
-            activeTrackColor: t.accent,
-            inactiveTrackColor: t.textMinimal,
-            thumbColor: t.accent,
-            thumbShape: RoundSliderThumbShape(enabledThumbRadius: mobile ? 8 : 4),
-            overlayShape: RoundSliderOverlayShape(overlayRadius: mobile ? 16 : 0),
-          ),
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: ((max - min) / step).toInt(),
-            onChanged: onChanged,
-          ),
+        VisionSlider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: ((max - min) / step).toInt(),
+          activeColor: isWarning ? t.accentDanger : t.accent,
+          inactiveColor: t.textMinimal,
+          thumbColor: isWarning ? t.accentDanger : t.accent,
+          thumbRadius: mobile ? 8 : 4,
+          overlayRadius: mobile ? 16 : 0,
+          trackHeight: 1,
+          onChanged: (v) => onChanged(step >= 1 ? v.roundToDouble() : double.parse(v.toStringAsFixed(1))),
         ),
       ],
     );

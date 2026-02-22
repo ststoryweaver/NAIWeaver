@@ -119,7 +119,7 @@ class _ImagePreviewViewerState extends State<ImagePreviewViewer>
                       transformationController: _transformController,
                       minScale: 0.5,
                       maxScale: 4.0,
-                      child: Center(child: Image.memory(widget.generatedImage!, fit: BoxFit.contain)),
+                      child: Center(child: Image.memory(widget.generatedImage!, fit: BoxFit.contain, filterQuality: FilterQuality.medium)),
                     ),
                   )
                 else

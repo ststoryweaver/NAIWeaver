@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/widgets/tag_suggestion_overlay.dart';
-import '../../../tag_service.dart';
+import '../../../core/services/tag_service.dart';
 import '../providers/generation_notifier.dart';
 import '../models/nai_character.dart';
 import 'nai_grid_selector.dart';

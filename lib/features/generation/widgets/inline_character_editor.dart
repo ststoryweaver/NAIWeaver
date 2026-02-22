@@ -5,9 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/tag_suggestion_overlay.dart';
-import '../../../tag_service.dart';
+import '../../../core/services/tag_service.dart';
 import '../models/nai_character.dart';
 import '../models/character_preset.dart';
 import '../providers/generation_notifier.dart';
@@ -110,7 +111,7 @@ class InlineCharacterEditor extends StatelessWidget {
                     isSelected: editorState.autoPositioning,
                     onTap: () => notifier.setAutoPositioning(!editorState.autoPositioning),
                     t: t,
-                    accentColor: Colors.orange,
+                    accentColor: t.accentCharacter,
                     mobile: mobile,
                   ),
                 ],
@@ -302,6 +303,7 @@ class _CharacterCardState extends State<_CharacterCard> {
   Timer? _debounce;
   bool _syncing = false;
   bool _isCollapsed = false;
+  bool _showTitle = false;
   bool _showUc = false;
   bool _showPosition = false;
   bool _showPresets = false;
@@ -442,7 +444,7 @@ class _CharacterCardState extends State<_CharacterCard> {
     );
   }
 
-  void _confirmDelete(BuildContext context) {
+  Future<void> _confirmDelete(BuildContext context) async {
     final notifier = context.read<GenerationNotifier>();
     final t = context.tRead;
     final l = context.l;
@@ -450,33 +452,16 @@ class _CharacterCardState extends State<_CharacterCard> {
         ? widget.character.name
         : l.charEditorCharacterN(widget.index + 1);
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: t.surfaceHigh,
-        title: Text(
-          l.charEditorDeleteCharacter.toUpperCase(),
-          style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(12), fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          l.charEditorDeleteConfirm(name),
-          style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(11)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l.commonCancel.toUpperCase(), style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
-          ),
-          TextButton(
-            onPressed: () {
-              notifier.removeCharacter(widget.index);
-              Navigator.pop(ctx);
-            },
-            child: Text(l.commonDelete.toUpperCase(), style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(10), fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.charEditorDeleteCharacter,
+      message: l.charEditorDeleteConfirm(name),
+      confirmLabel: l.commonDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.removeCharacter(widget.index);
+    }
   }
 
   void _saveAsPreset(BuildContext context) {
@@ -611,30 +596,7 @@ class _CharacterCardState extends State<_CharacterCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Name field
-                        Text(l.charEditorCharacterName, style: subLabelStyle),
-                        const SizedBox(height: 6),
-                        SizedBox(
-                          width: mobile ? double.infinity : 400,
-                          child: TextField(
-                            controller: _nameController,
-                            maxLines: 1,
-                            style: TextStyle(fontSize: t.fontSize(9), color: t.textSecondary),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: l.charEditorCharacterN(widget.index + 1).toUpperCase(),
-                              hintStyle: TextStyle(fontSize: t.fontSize(9), color: t.textMinimal),
-                              fillColor: t.surfaceHigh,
-                              filled: true,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderMedium)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                            ),
-                          ),
-                        ),
-
                         // Prompt field
-                        const SizedBox(height: 10),
                         TextField(
                           controller: _promptController,
                           maxLines: 3,
@@ -663,6 +625,13 @@ class _CharacterCardState extends State<_CharacterCard> {
                           runSpacing: 4,
                           children: [
                             _SubChip(
+                              label: 'TITLE',
+                              isSelected: _showTitle,
+                              onTap: () => setState(() => _showTitle = !_showTitle),
+                              t: t,
+                              mobile: mobile,
+                            ),
+                            _SubChip(
                               label: l.charEditorShowUc,
                               isSelected: _showUc,
                               onTap: () => setState(() => _showUc = !_showUc),
@@ -685,6 +654,31 @@ class _CharacterCardState extends State<_CharacterCard> {
                             ),
                           ],
                         ),
+
+                        // Title/name section
+                        if (_showTitle) ...[
+                          const SizedBox(height: 10),
+                          Text(l.charEditorCharacterName, style: subLabelStyle),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            width: mobile ? double.infinity : 400,
+                            child: TextField(
+                              controller: _nameController,
+                              maxLines: 1,
+                              style: TextStyle(fontSize: t.fontSize(9), color: t.textSecondary),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: l.charEditorCharacterN(widget.index + 1).toUpperCase(),
+                                hintStyle: TextStyle(fontSize: t.fontSize(9), color: t.textMinimal),
+                                fillColor: t.surfaceHigh,
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: t.borderMedium)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ],
 
                         // UC section
                         if (_showUc) ...[
@@ -721,7 +715,7 @@ class _CharacterCardState extends State<_CharacterCard> {
                               child: Text(
                                 l.charEditorAiDecidesPosition.toUpperCase(),
                                 style: TextStyle(
-                                  color: Colors.orange,
+                                  color: t.accentCharacter,
                                   fontSize: t.fontSize(10),
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 2,

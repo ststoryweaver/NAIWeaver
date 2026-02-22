@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
@@ -7,25 +6,29 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:intl/intl.dart';
 import '../../../core/services/preferences_service.dart';
-import '../../../novel_ai_service.dart';
-import '../../../wildcard_processor.dart';
-import '../../../presets.dart';
-import '../../../tag_service.dart';
+import '../../../core/services/novel_ai_service.dart';
+import '../../../core/services/wildcard_processor.dart';
+import '../../../core/services/presets.dart';
+import '../../../core/services/tag_service.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/services/wildcard_service.dart';
 import '../../../core/utils/tag_suggestion_helper.dart';
-import '../../../styles.dart';
+import '../../../core/services/styles.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../../tools/providers/tag_library_notifier.dart';
 import '../models/nai_character.dart';
 import '../models/character_preset.dart';
 import '../../tools/cascade/services/cascade_stitching_service.dart';
 import '../../tools/img2img/services/img2img_request_builder.dart';
-import '../../director_ref/models/director_reference.dart';
 import '../../director_ref/providers/director_ref_notifier.dart';
-import '../../vibe_transfer/models/vibe_transfer.dart';
 import '../../vibe_transfer/providers/vibe_transfer_notifier.dart';
+import '../../tools/director_tools/providers/director_tools_notifier.dart';
+import '../../tools/enhance/providers/enhance_notifier.dart';
 import 'package:dio/dio.dart';
+import '../services/metadata_import_service.dart';
+import '../services/session_snapshot_service.dart';
+import '../services/character_manager.dart';
+import '../services/preset_service.dart';
 
 class GenerationState {
   final Uint8List? generatedImage;
@@ -59,6 +62,10 @@ class GenerationState {
   final bool brightTheme;
   final bool autoPositioning;
   final bool showEditButton;
+  final bool showBgRemovalButton;
+  final bool showUpscaleButton;
+  final bool showEnhanceButton;
+  final bool showDirectorToolsButton;
   final bool furryMode;
   final String? errorMessage;
   final int? anlas;
@@ -95,6 +102,10 @@ class GenerationState {
     this.brightTheme = true,
     this.autoPositioning = false,
     this.showEditButton = true,
+    this.showBgRemovalButton = true,
+    this.showUpscaleButton = true,
+    this.showEnhanceButton = false,
+    this.showDirectorToolsButton = false,
     this.furryMode = false,
     this.errorMessage,
     this.anlas,
@@ -132,6 +143,10 @@ class GenerationState {
     bool? brightTheme,
     bool? autoPositioning,
     bool? showEditButton,
+    bool? showBgRemovalButton,
+    bool? showUpscaleButton,
+    bool? showEnhanceButton,
+    bool? showDirectorToolsButton,
     bool? furryMode,
     String? errorMessage,
     bool clearErrorMessage = false,
@@ -170,6 +185,10 @@ class GenerationState {
       brightTheme: brightTheme ?? this.brightTheme,
       autoPositioning: autoPositioning ?? this.autoPositioning,
       showEditButton: showEditButton ?? this.showEditButton,
+      showBgRemovalButton: showBgRemovalButton ?? this.showBgRemovalButton,
+      showUpscaleButton: showUpscaleButton ?? this.showUpscaleButton,
+      showEnhanceButton: showEnhanceButton ?? this.showEnhanceButton,
+      showDirectorToolsButton: showDirectorToolsButton ?? this.showDirectorToolsButton,
       furryMode: furryMode ?? this.furryMode,
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       anlas: clearAnlas ? null : (anlas ?? this.anlas),
@@ -184,28 +203,34 @@ class GenerationNotifier extends ChangeNotifier {
   GenerationState get state => _state;
 
   late NovelAIService _service;
+  NovelAIService get service => _service;
   late final WildcardProcessor _wildcardProcessor;
-  late final TagService _tagService;
-  late final WildcardService _wildcardService;
+  final TagService _tagService;
+  final WildcardService _wildcardService;
   final PreferencesService _prefs;
   String _outputDir;
-  final String _presetsFilePath;
-  final String _stylesFilePath;
   GalleryNotifier? _galleryNotifier;
   DirectorRefNotifier? _directorRefNotifier;
   VibeTransferNotifier? _vibeTransferNotifier;
+  DirectorToolsNotifier? _directorToolsNotifier;
+  EnhanceNotifier? _enhanceNotifier;
+
+  // Extracted services
+  final MetadataImportService _metadataImportService = MetadataImportService();
+  late final SessionSnapshotService _sessionService;
+  late final CharacterManager _characterManager;
+  late final PresetFileService _presetService;
 
   TagService get tagService => _tagService;
   WildcardService get wildcardService => _wildcardService;
-  String get presetsFilePath => _presetsFilePath;
-  String get stylesFilePath => _stylesFilePath;
+  String get presetsFilePath => _presetService.presetsFilePath;
+  String get stylesFilePath => _presetService.stylesFilePath;
 
   Map<String, dynamic>? _lastMetadata;
   bool _imageSaved = false;
   bool get imageSaved => _imageSaved;
 
   Timer? _tagDebounce;
-  late final String _sessionFilePath;
   Timer? _sessionSaveDebounce;
   bool _sessionReady = false;
   final TextEditingController promptController = TextEditingController();
@@ -218,23 +243,24 @@ class GenerationNotifier extends ChangeNotifier {
 
   GenerationNotifier({
     required PreferencesService preferences,
-    required String wildcardDir,
-    required String tagFilePath,
+    required TagService tagService,
+    required WildcardService wildcardService,
     required String outputDir,
     required String presetsFilePath,
     required String stylesFilePath,
     GalleryNotifier? galleryNotifier,
   }) : _prefs = preferences,
+       _tagService = tagService,
+       _wildcardService = wildcardService,
        _outputDir = outputDir,
-       _presetsFilePath = presetsFilePath,
-       _stylesFilePath = stylesFilePath,
        _galleryNotifier = galleryNotifier {
-    _service = NovelAIService(''); // initialized with empty key, loaded async
-    _tagService = TagService(filePath: tagFilePath);
-    _wildcardService = WildcardService(wildcardDir: wildcardDir);
-    _wildcardProcessor = WildcardProcessor(wildcardDir: wildcardDir, wildcardService: _wildcardService);
-    _sessionFilePath = p.join(p.dirname(presetsFilePath), 'session_snapshot.json');
-
+    _service = NovelAIService('');
+    _wildcardProcessor = WildcardProcessor(wildcardDir: wildcardService.wildcardDir, wildcardService: _wildcardService);
+    _presetService = PresetFileService(presetsFilePath: presetsFilePath, stylesFilePath: stylesFilePath);
+    _sessionService = SessionSnapshotService(
+      sessionFilePath: p.join(p.dirname(presetsFilePath), 'session_snapshot.json'),
+    );
+    _characterManager = CharacterManager(prefs: _prefs);
     negativePromptController.text = "";
     _loadInitialData();
   }
@@ -252,6 +278,16 @@ class GenerationNotifier extends ChangeNotifier {
     notifier.updateService(_service);
   }
 
+  void updateDirectorToolsNotifier(DirectorToolsNotifier notifier) {
+    _directorToolsNotifier = notifier;
+    notifier.updateService(_service);
+  }
+
+  void updateEnhanceNotifier(EnhanceNotifier notifier) {
+    _enhanceNotifier = notifier;
+    notifier.updateService(_service);
+  }
+
   void setOutputDir(String dir) {
     _outputDir = dir;
   }
@@ -259,8 +295,8 @@ class GenerationNotifier extends ChangeNotifier {
   Future<void> _loadInitialData() async {
     await _tagService.loadTags();
     await _wildcardService.refresh();
-    final presets = await PresetStorage.loadPresets(_presetsFilePath);
-    final styles = await StyleStorage.loadStyles(_stylesFilePath);
+    final presets = await _presetService.loadPresets();
+    final styles = await _presetService.loadStyles();
 
     // Default style selection: Light - NAI, or those marked as default, or first available
     List<String> initialActiveStyles = [];
@@ -276,6 +312,8 @@ class GenerationNotifier extends ChangeNotifier {
     final apiKey = await _prefs.getApiKey();
     _service = NovelAIService(apiKey);
     _vibeTransferNotifier?.updateService(_service);
+    _directorToolsNotifier?.updateService(_service);
+    _enhanceNotifier?.updateService(_service);
 
     _state = _state.copyWith(
       presets: presets,
@@ -287,6 +325,10 @@ class GenerationNotifier extends ChangeNotifier {
       showVibeTransferShelf: _prefs.showVibeTransferShelf,
       brightTheme: _prefs.brightTheme,
       showEditButton: _prefs.showEditButton,
+      showBgRemovalButton: _prefs.showBgRemovalButton,
+      showUpscaleButton: _prefs.showUpscaleButton,
+      showEnhanceButton: _prefs.showEnhanceButton,
+      showDirectorToolsButton: _prefs.showDirectorToolsButton,
       furryMode: _prefs.furryMode,
       characterEditorMode: _prefs.characterEditorMode,
     );
@@ -306,8 +348,8 @@ class GenerationNotifier extends ChangeNotifier {
   }
 
   Future<void> reloadPresetsAndStyles() async {
-    final presets = await PresetStorage.loadPresets(_presetsFilePath);
-    final styles = await StyleStorage.loadStyles(_stylesFilePath);
+    final presets = await _presetService.loadPresets();
+    final styles = await _presetService.loadStyles();
     _state = _state.copyWith(presets: presets, styles: styles);
     notifyListeners();
   }
@@ -316,6 +358,8 @@ class GenerationNotifier extends ChangeNotifier {
     await _prefs.setApiKey(key);
     _service = NovelAIService(key);
     _vibeTransferNotifier?.updateService(_service);
+    _directorToolsNotifier?.updateService(_service);
+    _enhanceNotifier?.updateService(_service);
     _state = _state.copyWith(apiKey: key, hasAuthError: false);
     notifyListeners();
   }
@@ -351,6 +395,34 @@ class GenerationNotifier extends ChangeNotifier {
     final newVal = !_state.showEditButton;
     await _prefs.setShowEditButton(newVal);
     _state = _state.copyWith(showEditButton: newVal);
+    notifyListeners();
+  }
+
+  Future<void> toggleShowBgRemovalButton() async {
+    final newVal = !_state.showBgRemovalButton;
+    await _prefs.setShowBgRemovalButton(newVal);
+    _state = _state.copyWith(showBgRemovalButton: newVal);
+    notifyListeners();
+  }
+
+  Future<void> toggleShowUpscaleButton() async {
+    final newVal = !_state.showUpscaleButton;
+    await _prefs.setShowUpscaleButton(newVal);
+    _state = _state.copyWith(showUpscaleButton: newVal);
+    notifyListeners();
+  }
+
+  Future<void> toggleShowEnhanceButton() async {
+    final newVal = !_state.showEnhanceButton;
+    await _prefs.setShowEnhanceButton(newVal);
+    _state = _state.copyWith(showEnhanceButton: newVal);
+    notifyListeners();
+  }
+
+  Future<void> toggleShowDirectorToolsButton() async {
+    final newVal = !_state.showDirectorToolsButton;
+    await _prefs.setShowDirectorToolsButton(newVal);
+    _state = _state.copyWith(showDirectorToolsButton: newVal);
     notifyListeners();
   }
 
@@ -419,72 +491,33 @@ class GenerationNotifier extends ChangeNotifier {
   }
 
   void addCharacter({String name = ''}) {
-    if (_state.characters.length >= 6) return;
-    final updated = List<NaiCharacter>.from(_state.characters)
-      ..add(NaiCharacter(
-        name: name,
-        prompt: "",
-        uc: "",
-        center: NaiCoordinate(x: 0.5, y: 0.5),
-      ));
-    _state = _state.copyWith(characters: updated);
+    final result = _characterManager.addCharacter(_state.characters, name: name);
+    if (result == null) return;
+    _state = _state.copyWith(characters: result);
     notifyListeners();
   }
 
   void updateCharacter(int index, NaiCharacter character) {
-    if (index < 0 || index >= _state.characters.length) return;
-    final updated = List<NaiCharacter>.from(_state.characters);
-    updated[index] = character;
-    _state = _state.copyWith(characters: updated);
+    final result = _characterManager.updateCharacter(_state.characters, index, character);
+    if (result == null) return;
+    _state = _state.copyWith(characters: result);
     notifyListeners();
   }
 
   void removeCharacter(int index) {
-    if (index < 0 || index >= _state.characters.length) return;
-
-    // Update characters
-    final updatedChars = List<NaiCharacter>.from(_state.characters)..removeAt(index);
-
-    // Cleanup interactions: remove the index from lists, decrement higher indices
-    final updatedInteractions = _state.interactions
-        .map((i) {
-          var sources = i.sourceCharacterIndices.where((s) => s != index).toList();
-          var targets = i.targetCharacterIndices.where((t) => t != index).toList();
-          sources = sources.map((s) => s > index ? s - 1 : s).toList();
-          targets = targets.map((t) => t > index ? t - 1 : t).toList();
-          return i.copyWith(sourceCharacterIndices: sources, targetCharacterIndices: targets);
-        })
-        .where((i) {
-          if (i.type == InteractionType.mutual) return i.sourceCharacterIndices.isNotEmpty;
-          return i.sourceCharacterIndices.isNotEmpty && i.targetCharacterIndices.isNotEmpty;
-        })
-        .toList();
-
+    final result = _characterManager.removeCharacter(
+      _state.characters, _state.interactions, index);
+    if (result == null) return;
     _state = _state.copyWith(
-      characters: updatedChars,
-      interactions: updatedInteractions,
+      characters: result.characters,
+      interactions: result.interactions,
     );
     notifyListeners();
   }
 
   void updateInteraction(NaiInteraction interaction, {NaiInteraction? replacing}) {
-    final updated = List<NaiInteraction>.from(_state.interactions);
-
-    // Find existing by identity match (same action + overlapping participants) or explicit replacing reference
-    final existingIndex = replacing != null
-        ? updated.indexWhere((i) => i.actionName == replacing.actionName && i.type == replacing.type)
-        : updated.indexWhere((i) => i.actionName == interaction.actionName);
-
-    if (existingIndex >= 0) {
-      if (interaction.actionName.isEmpty) {
-        updated.removeAt(existingIndex);
-      } else {
-        updated[existingIndex] = interaction;
-      }
-    } else if (interaction.actionName.isNotEmpty) {
-      updated.add(interaction);
-    }
-
+    final updated = _characterManager.updateInteraction(
+      _state.interactions, interaction, replacing: replacing);
     _state = _state.copyWith(interactions: updated);
     notifyListeners();
   }
@@ -505,8 +538,7 @@ class GenerationNotifier extends ChangeNotifier {
   }
 
   void removeInteraction(NaiInteraction interaction) {
-    final updated = List<NaiInteraction>.from(_state.interactions);
-    updated.removeWhere((i) => i.actionName == interaction.actionName && i.type == interaction.type);
+    final updated = _characterManager.removeInteraction(_state.interactions, interaction);
     _state = _state.copyWith(interactions: updated);
     notifyListeners();
   }
@@ -522,21 +554,9 @@ class GenerationNotifier extends ChangeNotifier {
   // — Character Presets —
 
   void loadCharacterPresets() {
-    final raw = _prefs.characterPresets;
-    if (raw.isEmpty) return;
-    try {
-      final list = jsonDecode(raw) as List;
-      final presets = list
-          .map((e) => CharacterPreset.fromJson(e as Map<String, dynamic>))
-          .toList();
-      _state = _state.copyWith(characterPresets: presets);
-    } catch (_) {}
-  }
-
-  Future<void> _persistCharacterPresets() async {
-    final json = jsonEncode(
-        _state.characterPresets.map((p) => p.toJson()).toList());
-    await _prefs.setCharacterPresets(json);
+    final presets = _characterManager.loadPresets();
+    if (presets.isEmpty) return;
+    _state = _state.copyWith(characterPresets: presets);
   }
 
   Future<void> saveCharacterPreset(CharacterPreset preset) async {
@@ -544,7 +564,7 @@ class GenerationNotifier extends ChangeNotifier {
       ..add(preset);
     _state = _state.copyWith(characterPresets: updated);
     notifyListeners();
-    await _persistCharacterPresets();
+    await _characterManager.persistPresets(updated);
   }
 
   Future<void> deleteCharacterPreset(String id) async {
@@ -552,18 +572,14 @@ class GenerationNotifier extends ChangeNotifier {
       ..removeWhere((p) => p.id == id);
     _state = _state.copyWith(characterPresets: updated);
     notifyListeners();
-    await _persistCharacterPresets();
+    await _characterManager.persistPresets(updated);
   }
 
   void applyCharacterPreset(int charIndex, CharacterPreset preset) {
-    if (charIndex < 0 || charIndex >= _state.characters.length) return;
-    final updated = List<NaiCharacter>.from(_state.characters);
-    updated[charIndex] = updated[charIndex].copyWith(
-      name: preset.name,
-      prompt: preset.prompt,
-      uc: preset.uc,
-    );
-    _state = _state.copyWith(characters: updated);
+    final result = _characterManager.applyCharacterPreset(
+      _state.characters, charIndex, preset);
+    if (result == null) return;
+    _state = _state.copyWith(characters: result);
     notifyListeners();
   }
 
@@ -618,7 +634,9 @@ class GenerationNotifier extends ChangeNotifier {
             if (style.prefix.isNotEmpty) prefixes.add(style.prefix);
             if (style.suffix.isNotEmpty) suffixes.add(style.suffix);
             if (style.negativeContent.isNotEmpty) negatives.add(style.negativeContent);
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('GenerationNotifier.generate: $e');
+          }
         }
 
         if (prefixes.isNotEmpty) combinedPrefix = prefixes.join("");
@@ -762,199 +780,36 @@ class GenerationNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final bytes = await file.readAsBytes();
-      final metadata = await compute(extractMetadata, bytes);
+      final result = await _metadataImportService.parseImageMetadata(
+        file, smartStyleImport: _prefs.smartStyleImport);
 
-      if (metadata == null || metadata.isEmpty) throw Exception("No metadata found");
+      promptController.value = TextEditingValue(
+        text: result.prompt,
+        selection: TextSelection.collapsed(offset: result.prompt.length),
+      );
+      negativePromptController.value = TextEditingValue(
+        text: result.negativePrompt,
+        selection: TextSelection.collapsed(offset: result.negativePrompt.length),
+      );
+      if (result.seed != null) seedController.text = result.seed!;
 
-      String? prompt;
-      String? negativePrompt;
-      Map<String, dynamic>? settings;
-
-      // NovelAI stores generation parameters in the 'Comment' field as JSON
-      final smartImport = _prefs.smartStyleImport;
-
-      if (metadata.containsKey('Comment')) {
-        settings = parseCommentJson(metadata['Comment']!);
-
-        if (settings != null) {
-          // Check if style metadata was saved with this image
-          final savedStyleNames = settings['active_style_names'];
-
-          if (smartImport && savedStyleNames is List && savedStyleNames.isNotEmpty) {
-            // Smart import: use original prompt (without style prefix/suffix)
-            prompt = settings['original_prompt'] ?? settings['prompt'];
-            negativePrompt = settings['original_negative_prompt'] ?? settings['uc'];
-          } else {
-            // Raw import or legacy: use composed prompt as-is
-            prompt = settings['prompt'];
-            prompt ??= settings['original_prompt'];
-            negativePrompt = settings['uc'];
-          }
-
-          negativePrompt ??= settings['undesired_content'];
-
-          // Deep extraction for V4.5 structure if direct keys are missing
-          if (negativePrompt == null || negativePrompt.isEmpty) {
-            negativePrompt = settings['v4_negative_prompt']?['caption']?['base_caption'];
-          }
-        }
-      }
-      
-      // If prompt is still missing, try Description (standard PNG chunk)
-      prompt ??= metadata['Description'];
-
-      if (prompt != null) {
-        promptController.value = TextEditingValue(
-          text: prompt,
-          selection: TextSelection.collapsed(offset: prompt.length),
-        );
-
-        if (negativePrompt != null) {
-          negativePromptController.value = TextEditingValue(
-            text: negativePrompt,
-            selection: TextSelection.collapsed(offset: negativePrompt.length),
-          );
-        }
-
-        if (settings != null) {
-          _state = _state.copyWith(
-            width: (settings['width'] as num?)?.toDouble(),
-            height: (settings['height'] as num?)?.toDouble(),
-            scale: (settings['scale'] as num?)?.toDouble(),
-            steps: (settings['steps'] as num?)?.toDouble(),
-            sampler: settings['sampler']?.toString(),
-            smea: settings['sm'] as bool?,
-            smeaDyn: settings['sm_dyn'] as bool?,
-            decrisper: settings['dynamic_thresholding'] as bool?,
-            randomizeSeed: false,
-            generatedImage: bytes,
-          );
-          if (settings['seed'] != null) seedController.text = settings['seed'].toString();
-
-          // Restore active styles based on smart import toggle
-          final savedStyleNames = settings['active_style_names'];
-          final savedStyleEnabled = settings['is_style_enabled'];
-          if (smartImport && savedStyleNames is List && savedStyleNames.isNotEmpty) {
-            // Smart: restore style selections so re-generation applies them
-            final styleNames = savedStyleNames.cast<String>().toList();
-            _state = _state.copyWith(
-              activeStyleNames: styleNames,
-              isStyleEnabled: savedStyleEnabled == true,
-            );
-          } else {
-            // Raw or legacy: styles are baked into the prompt, disable to avoid doubling
-            _state = _state.copyWith(
-              activeStyleNames: <String>[],
-              isStyleEnabled: false,
-            );
-          }
-
-          // Restore characters from V4 prompt metadata
-          final v4Prompt = settings['v4_prompt'];
-          final v4Negative = settings['v4_negative_prompt'];
-          if (v4Prompt is Map) {
-            final charCaptions = v4Prompt['caption']?['char_captions'];
-            if (charCaptions is List && charCaptions.isNotEmpty) {
-              final negCaption = (v4Negative is Map) ? v4Negative['caption'] : null;
-              final negCharCaptions = (negCaption is Map)
-                  ? negCaption['char_captions'] as List?
-                  : null;
-
-              final interactionPattern =
-                  RegExp(r'^(source|target|mutual)#([^,]+),\s*');
-              final characters = <NaiCharacter>[];
-              final rawTags =
-                  <({int charIndex, String type, String action})>[];
-
-              for (int i = 0; i < charCaptions.length; i++) {
-                final cc = charCaptions[i] as Map<String, dynamic>;
-                final centers = cc['centers'] as List?;
-                final center = (centers != null && centers.isNotEmpty)
-                    ? NaiCoordinate.fromJson(
-                        Map<String, dynamic>.from(centers.first as Map))
-                    : NaiCoordinate(x: 0.5, y: 0.5);
-
-                String uc = '';
-                if (negCharCaptions != null && i < negCharCaptions.length) {
-                  uc = (negCharCaptions[i]
-                          as Map<String, dynamic>)['char_caption'] ??
-                      '';
-                }
-
-                // Extract and strip interaction prefixes from char_caption
-                String caption = cc['char_caption'] ?? '';
-                while (true) {
-                  final match = interactionPattern.firstMatch(caption);
-                  if (match == null) break;
-                  rawTags.add((
-                    charIndex: i,
-                    type: match.group(1)!,
-                    action: match.group(2)!,
-                  ));
-                  caption = caption.substring(match.end);
-                }
-
-                characters.add(NaiCharacter(
-                  prompt: caption,
-                  uc: uc,
-                  center: center,
-                ));
-              }
-
-              // Build NaiInteraction objects by grouping chars with the same (type, action)
-              final interactions = <NaiInteraction>[];
-              final actionGroups = <String, ({List<int> sources, List<int> targets, List<int> mutuals})>{};
-
-              for (final tag in rawTags) {
-                final group = actionGroups.putIfAbsent(
-                  tag.action,
-                  () => (sources: <int>[], targets: <int>[], mutuals: <int>[]),
-                );
-                if (tag.type == 'source') {
-                  group.sources.add(tag.charIndex);
-                } else if (tag.type == 'target') {
-                  group.targets.add(tag.charIndex);
-                } else if (tag.type == 'mutual') {
-                  group.mutuals.add(tag.charIndex);
-                }
-              }
-
-              for (final entry in actionGroups.entries) {
-                final g = entry.value;
-                if (g.sources.isNotEmpty && g.targets.isNotEmpty) {
-                  interactions.add(NaiInteraction(
-                    sourceCharacterIndices: g.sources,
-                    targetCharacterIndices: g.targets,
-                    actionName: entry.key,
-                    type: InteractionType.sourceTarget,
-                  ));
-                }
-                if (g.mutuals.isNotEmpty) {
-                  interactions.add(NaiInteraction(
-                    sourceCharacterIndices: g.mutuals,
-                    targetCharacterIndices: [],
-                    actionName: entry.key,
-                    type: InteractionType.mutual,
-                  ));
-                }
-              }
-
-              final useCoords = v4Prompt['use_coords'] as bool? ?? false;
-              _state = _state.copyWith(
-                characters: characters,
-                interactions: interactions,
-                autoPositioning: !useCoords,
-              );
-            }
-          } else {
-            _state = _state.copyWith(
-              characters: [],
-              interactions: [],
-            );
-          }
-        }
-      }
+      _state = _state.copyWith(
+        width: result.width,
+        height: result.height,
+        scale: result.scale,
+        steps: result.steps,
+        sampler: result.sampler,
+        smea: result.smea,
+        smeaDyn: result.smeaDyn,
+        decrisper: result.decrisper,
+        randomizeSeed: false,
+        generatedImage: result.imageBytes,
+        activeStyleNames: result.activeStyleNames,
+        isStyleEnabled: result.isStyleEnabled,
+        characters: result.characters,
+        interactions: result.interactions,
+        autoPositioning: result.autoPositioning,
+      );
     } catch (e) {
       debugPrint("Metadata extraction error: $e");
       rethrow;
@@ -986,7 +841,7 @@ class GenerationNotifier extends ChangeNotifier {
     final updatedPresets = List<GenerationPreset>.from(_state.presets)..add(newPreset);
     _state = _state.copyWith(presets: updatedPresets);
     notifyListeners();
-    await PresetStorage.savePresets(_presetsFilePath, updatedPresets);
+    await _presetService.savePresets(updatedPresets);
   }
 
   void applyPreset(GenerationPreset preset) {
@@ -1018,13 +873,13 @@ class GenerationNotifier extends ChangeNotifier {
   }
 
   Future<void> refreshPresets() async {
-    final presets = await PresetStorage.loadPresets(_presetsFilePath);
+    final presets = await _presetService.loadPresets();
     _state = _state.copyWith(presets: presets);
     notifyListeners();
   }
 
   Future<void> refreshStyles() async {
-    final styles = await StyleStorage.loadStyles(_stylesFilePath);
+    final styles = await _presetService.loadStyles();
     _state = _state.copyWith(styles: styles);
     notifyListeners();
   }
@@ -1034,7 +889,7 @@ class GenerationNotifier extends ChangeNotifier {
         List<GenerationPreset>.from(_state.presets)..removeAt(index);
     _state = _state.copyWith(presets: updatedPresets);
     notifyListeners();
-    await PresetStorage.savePresets(_presetsFilePath, updatedPresets);
+    await _presetService.savePresets(updatedPresets);
   }
 
   Future<Uint8List?> generateQuickPreview(String tag,
@@ -1226,104 +1081,73 @@ class GenerationNotifier extends ChangeNotifier {
   }
 
   Future<void> _saveSessionSnapshot() async {
-    try {
-      final snapshot = <String, dynamic>{
-        'prompt': promptController.text,
-        'negative_prompt': negativePromptController.text,
-        'seed': seedController.text,
-        'width': _state.width,
-        'height': _state.height,
-        'scale': _state.scale,
-        'steps': _state.steps,
-        'sampler': _state.sampler,
-        'smea': _state.smea,
-        'smea_dyn': _state.smeaDyn,
-        'decrisper': _state.decrisper,
-        'randomize_seed': _state.randomizeSeed,
-        'auto_positioning': _state.autoPositioning,
-        'active_style_names': _state.activeStyleNames,
-        'is_style_enabled': _state.isStyleEnabled,
-        'furry_mode': _state.furryMode,
-        'characters': _state.characters.map((c) => c.toJson()).toList(),
-        'interactions': _state.interactions.map((i) => i.toJson()).toList(),
-        'director_references': _directorRefNotifier?.references
-            .map((r) => r.toJson()).toList() ?? [],
-        'vibe_transfers': _vibeTransferNotifier?.vibes
-            .map((v) => v.toJson()).toList() ?? [],
-      };
-      await File(_sessionFilePath).writeAsString(jsonEncode(snapshot));
-    } catch (e) {
-      debugPrint('Session save error: $e');
-    }
+    final snapshot = SessionSnapshot(
+      prompt: promptController.text,
+      negativePrompt: negativePromptController.text,
+      seed: seedController.text,
+      width: _state.width,
+      height: _state.height,
+      scale: _state.scale,
+      steps: _state.steps,
+      sampler: _state.sampler,
+      smea: _state.smea,
+      smeaDyn: _state.smeaDyn,
+      decrisper: _state.decrisper,
+      randomizeSeed: _state.randomizeSeed,
+      autoPositioning: _state.autoPositioning,
+      activeStyleNames: _state.activeStyleNames,
+      isStyleEnabled: _state.isStyleEnabled,
+      furryMode: _state.furryMode,
+      characters: _state.characters,
+      interactions: _state.interactions,
+      directorReferences: _directorRefNotifier?.references.toList() ?? [],
+      vibeTransfers: _vibeTransferNotifier?.vibes.toList() ?? [],
+    );
+    await _sessionService.save(snapshot);
   }
 
   Future<void> _restoreSessionSnapshot() async {
     if (!_prefs.rememberSession) return;
-    try {
-      final file = File(_sessionFilePath);
-      if (!await file.exists()) return;
+    final snapshot = await _sessionService.restore();
+    if (snapshot == null) return;
 
-      final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+    promptController.text = snapshot.prompt;
+    negativePromptController.text = snapshot.negativePrompt;
+    seedController.text = snapshot.seed;
 
-      promptController.text = json['prompt'] as String? ?? '';
-      negativePromptController.text = json['negative_prompt'] as String? ?? '';
-      seedController.text = json['seed'] as String? ?? '';
+    _state = _state.copyWith(
+      width: snapshot.width,
+      height: snapshot.height,
+      scale: snapshot.scale,
+      steps: snapshot.steps,
+      sampler: snapshot.sampler,
+      smea: snapshot.smea,
+      smeaDyn: snapshot.smeaDyn,
+      decrisper: snapshot.decrisper,
+      randomizeSeed: snapshot.randomizeSeed,
+      autoPositioning: snapshot.autoPositioning,
+      activeStyleNames: snapshot.activeStyleNames,
+      isStyleEnabled: snapshot.isStyleEnabled,
+      furryMode: snapshot.furryMode,
+      characters: snapshot.characters,
+      interactions: snapshot.interactions,
+    );
 
-      final characters = (json['characters'] as List<dynamic>?)
-          ?.map((c) => NaiCharacter.fromJson(c as Map<String, dynamic>))
-          .toList() ?? [];
-      final interactions = (json['interactions'] as List<dynamic>?)
-          ?.map((i) => NaiInteraction.fromJson(i as Map<String, dynamic>))
-          .toList() ?? [];
-
-      _state = _state.copyWith(
-        width: (json['width'] as num?)?.toDouble(),
-        height: (json['height'] as num?)?.toDouble(),
-        scale: (json['scale'] as num?)?.toDouble(),
-        steps: (json['steps'] as num?)?.toDouble(),
-        sampler: json['sampler'] as String?,
-        smea: json['smea'] as bool?,
-        smeaDyn: json['smea_dyn'] as bool?,
-        decrisper: json['decrisper'] as bool?,
-        randomizeSeed: json['randomize_seed'] as bool?,
-        autoPositioning: json['auto_positioning'] as bool?,
-        activeStyleNames: (json['active_style_names'] as List<dynamic>?)
-            ?.cast<String>().toList(),
-        isStyleEnabled: json['is_style_enabled'] as bool?,
-        furryMode: json['furry_mode'] as bool?,
-        characters: characters,
-        interactions: interactions,
-      );
-
-      // Restore director references
-      final dirRefs = (json['director_references'] as List<dynamic>?)
-          ?.map((r) => DirectorReference.fromJson(r as Map<String, dynamic>))
-          .toList();
-      if (dirRefs != null && dirRefs.isNotEmpty) {
-        _directorRefNotifier?.setReferences(dirRefs);
-      }
-
-      // Restore vibe transfers
-      final vibeTransfers = (json['vibe_transfers'] as List<dynamic>?)
-          ?.map((v) => VibeTransfer.fromJson(v as Map<String, dynamic>))
-          .toList();
-      if (vibeTransfers != null && vibeTransfers.isNotEmpty) {
-        _vibeTransferNotifier?.setVibes(vibeTransfers);
-      }
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Session restore error: $e');
+    // Restore director references
+    if (snapshot.directorReferences.isNotEmpty) {
+      _directorRefNotifier?.setReferences(snapshot.directorReferences);
     }
+
+    // Restore vibe transfers
+    if (snapshot.vibeTransfers.isNotEmpty) {
+      _vibeTransferNotifier?.setVibes(snapshot.vibeTransfers);
+    }
+
+    notifyListeners();
   }
 
   Future<void> deleteSessionSnapshot() async {
-    try {
-      final file = File(_sessionFilePath);
-      if (await file.exists()) await file.delete();
-    } catch (e) {
-      debugPrint('Session delete error: $e');
-    }
+    await _sessionService.delete();
   }
 
   @override
