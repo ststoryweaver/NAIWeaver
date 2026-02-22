@@ -1,12 +1,12 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/services/preferences_service.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../tools/canvas/services/canvas_gallery_service.dart';
 import '../models/gallery_album.dart';
+import '../services/album_service.dart';
+import '../services/gallery_import_service.dart';
 
 class ImportResult {
   final int total;
@@ -28,7 +28,8 @@ enum GallerySortMode { dateDesc, dateAsc, nameAsc, nameDesc, sizeDesc, sizeAsc }
 
 class GalleryItem {
   final File file;
-  final DateTime date;
+  DateTime date;
+  final int fileSize;
   Map<String, String>? metadata;
   String? prompt;
   bool isFavorite;
@@ -38,6 +39,7 @@ class GalleryItem {
   GalleryItem({
     required this.file,
     required this.date,
+    this.fileSize = 0,
     this.metadata,
     this.prompt,
     this.isFavorite = false,
@@ -51,6 +53,8 @@ class GalleryItem {
 class GalleryNotifier extends ChangeNotifier {
   String outputDir;
   final PreferencesService _prefs;
+  late final AlbumService _albumService;
+  final GalleryImportService _importService = GalleryImportService();
   List<GalleryItem> _items = [];
   bool _isLoading = false;
   String _searchQuery = "";
@@ -59,7 +63,6 @@ class GalleryNotifier extends ChangeNotifier {
   Set<String> _demoSafe = {};
   bool _demoMode = false;
   GallerySortMode _sortMode = GallerySortMode.dateDesc;
-  List<GalleryAlbum> _albums = [];
   String? _activeAlbumId;
   List<String> _clipboard = [];
 
@@ -69,7 +72,7 @@ class GalleryNotifier extends ChangeNotifier {
   bool get showFavoritesOnly => _showFavoritesOnly;
   bool get demoMode => _demoMode;
   GallerySortMode get sortMode => _sortMode;
-  List<GalleryAlbum> get albums => _albums;
+  List<GalleryAlbum> get albums => _albumService.albums;
   String? get activeAlbumId => _activeAlbumId;
   List<String> get clipboard => _clipboard;
   bool get hasClipboard => _clipboard.isNotEmpty;
@@ -103,7 +106,7 @@ class GalleryNotifier extends ChangeNotifier {
       list = list.where((item) => item.isFavorite).toList();
     }
     if (_activeAlbumId != null) {
-      final album = _albums.where((a) => a.id == _activeAlbumId).firstOrNull;
+      final album = _albumService.albums.where((a) => a.id == _activeAlbumId).firstOrNull;
       if (album != null) {
         list = list.where((item) => album.imageBasenames.contains(item.basename)).toList();
       }
@@ -123,9 +126,9 @@ class GalleryNotifier extends ChangeNotifier {
       case GallerySortMode.nameDesc:
         sorted.sort((a, b) => b.basename.compareTo(a.basename));
       case GallerySortMode.sizeDesc:
-        sorted.sort((a, b) => b.file.lengthSync().compareTo(a.file.lengthSync()));
+        sorted.sort((a, b) => b.fileSize.compareTo(a.fileSize));
       case GallerySortMode.sizeAsc:
-        sorted.sort((a, b) => a.file.lengthSync().compareTo(b.file.lengthSync()));
+        sorted.sort((a, b) => a.fileSize.compareTo(b.fileSize));
     }
     return sorted;
   }
@@ -140,10 +143,10 @@ class GalleryNotifier extends ChangeNotifier {
 
   GalleryNotifier({required this.outputDir, required PreferencesService prefs})
       : _prefs = prefs {
+    _albumService = AlbumService(prefs: _prefs);
     _favorites = _prefs.favorites;
     _demoSafe = _prefs.demoSafe;
     _demoMode = _prefs.demoMode;
-    _loadAlbums();
     refresh();
   }
 
@@ -173,6 +176,7 @@ class GalleryNotifier extends ChangeNotifier {
             newItems.add(GalleryItem(
               file: entity,
               date: stat.modified,
+              fileSize: stat.size,
             ));
           }
         }
@@ -184,8 +188,9 @@ class GalleryNotifier extends ChangeNotifier {
         _applyDemoSafe();
         _applyCanvasState();
 
-        // Start indexing metadata in background
+        // Start indexing metadata and recovering original dates in background
         _indexMetadata();
+        _recoverOriginalDates();
       }
     } catch (e) {
       debugPrint("Gallery refresh error: $e");
@@ -210,6 +215,26 @@ class GalleryNotifier extends ChangeNotifier {
         }
       }
     }
+  }
+
+  /// Recovers original creation dates from OriginalDate PNG text chunks.
+  /// This corrects dates that were lost due to setLastModified failures
+  /// (e.g., some Android versions) by reading the embedded chunk.
+  Future<void> _recoverOriginalDates() async {
+    bool changed = false;
+    for (final item in _items) {
+      try {
+        final metadata = await getMetadata(item);
+        if (metadata != null && metadata.containsKey('OriginalDate')) {
+          final origDate = DateTime.tryParse(metadata['OriginalDate']!);
+          if (origDate != null && origDate != item.date) {
+            item.date = origDate;
+            changed = true;
+          }
+        }
+      } catch (_) {}
+    }
+    if (changed) notifyListeners();
   }
 
   Future<Map<String, String>?> getMetadata(GalleryItem item) async {
@@ -249,12 +274,7 @@ class GalleryNotifier extends ChangeNotifier {
     // Auto-add to default save album if set
     final defaultAlbumId = _prefs.defaultSaveAlbumId;
     if (defaultAlbumId != null) {
-      final idx = _albums.indexWhere((a) => a.id == defaultAlbumId);
-      if (idx >= 0) {
-        final updated = Set<String>.from(_albums[idx].imageBasenames)..add(newItem.basename);
-        _albums[idx] = _albums[idx].copyWith(imageBasenames: updated);
-        _saveAlbums();
-      }
+      _albumService.addToAlbum(defaultAlbumId, [newItem.basename]);
     }
 
     notifyListeners();
@@ -290,79 +310,12 @@ class GalleryNotifier extends ChangeNotifier {
   Future<ImportResult> importFiles(
     List<String> filePaths, {
     void Function(int current, int total)? onProgress,
-  }) async {
-    final fmt = DateFormat('yyyyMMdd_HHmmssSSS');
-    int succeeded = 0;
-    int withMetadata = 0;
-    int converted = 0;
-    final errors = <String>[];
-
-    for (int i = 0; i < filePaths.length; i++) {
-      onProgress?.call(i + 1, filePaths.length);
-      try {
-        final srcFile = File(filePaths[i]);
-        final bytes = await srcFile.readAsBytes();
-        Uint8List pngBytes;
-
-        if (isPng(bytes)) {
-          pngBytes = bytes;
-        } else {
-          // Check if the original file had a .png extension — Android's photo
-          // picker may have transcoded it, losing PNG metadata chunks.
-          final ext = p.extension(filePaths[i]).toLowerCase();
-          if (ext == '.png') {
-            // Source claimed to be PNG but bytes aren't — likely transcoded.
-            // Try to recover metadata from original bytes and re-inject.
-            final result = await compute(convertToPngPreservingMetadata, {
-              'bytes': bytes,
-              'originalBytes': bytes,
-            });
-            if (result == null) {
-              errors.add(p.basename(filePaths[i]));
-              continue;
-            }
-            pngBytes = result;
-          } else {
-            final result = await compute(convertToPng, bytes);
-            if (result == null) {
-              errors.add(p.basename(filePaths[i]));
-              continue;
-            }
-            pngBytes = result;
-          }
-          converted++;
-        }
-
-        final srcStat = await srcFile.stat();
-        final sourceDate = srcStat.modified;
-
-        final now = DateTime.now();
-        final destName = 'Imp_${fmt.format(now)}.png';
-        final destPath = p.join(outputDir, destName);
-        final destFile = File(destPath);
-        await destFile.writeAsBytes(pngBytes);
-        await destFile.setLastModified(sourceDate);
-
-        addFile(destFile, sourceDate);
-
-        // Check for NovelAI metadata
-        final metadata = await compute(extractMetadata, pngBytes);
-        if (metadata != null && metadata.containsKey('Comment')) {
-          withMetadata++;
-        }
-
-        succeeded++;
-      } catch (e) {
-        errors.add(p.basename(filePaths[i]));
-      }
-    }
-
-    return ImportResult(
-      total: filePaths.length,
-      succeeded: succeeded,
-      withMetadata: withMetadata,
-      converted: converted,
-      errors: errors,
+  }) {
+    return _importService.importFiles(
+      filePaths,
+      outputDir: outputDir,
+      onFileImported: (file, date) => addFile(file, date),
+      onProgress: onProgress,
     );
   }
 
@@ -493,11 +446,8 @@ class GalleryNotifier extends ChangeNotifier {
   }
 
   void pasteToAlbum(String albumId) {
-    final idx = _albums.indexWhere((a) => a.id == albumId);
-    if (idx >= 0 && _clipboard.isNotEmpty) {
-      final updated = Set<String>.from(_albums[idx].imageBasenames)..addAll(_clipboard);
-      _albums[idx] = _albums[idx].copyWith(imageBasenames: updated);
-      _saveAlbums();
+    if (_clipboard.isNotEmpty) {
+      _albumService.addToAlbum(albumId, _clipboard);
       _clipboard = [];
       notifyListeners();
     }
@@ -510,82 +460,39 @@ class GalleryNotifier extends ChangeNotifier {
 
   // — Albums —
 
-  void _loadAlbums() {
-    final raw = _prefs.galleryAlbums;
-    if (raw.isNotEmpty) {
-      try {
-        final List<dynamic> list = json.decode(raw);
-        _albums = list.map((j) => GalleryAlbum.fromJson(j as Map<String, dynamic>)).toList();
-      } catch (e) {
-        debugPrint('Error loading albums: $e');
-      }
-    }
-  }
-
-  Future<void> _saveAlbums() async {
-    await _prefs.setGalleryAlbums(json.encode(_albums.map((a) => a.toJson()).toList()));
-  }
-
   void setActiveAlbum(String? albumId) {
     _activeAlbumId = albumId;
     notifyListeners();
   }
 
   void createAlbum(String name) {
-    final album = GalleryAlbum(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: name,
-    );
-    _albums.add(album);
-    _saveAlbums();
+    _albumService.createAlbum(name);
     notifyListeners();
   }
 
   void deleteAlbum(String id) {
-    _albums.removeWhere((a) => a.id == id);
+    _albumService.deleteAlbum(id);
     if (_activeAlbumId == id) _activeAlbumId = null;
-    _saveAlbums();
     notifyListeners();
   }
 
   void renameAlbum(String id, String newName) {
-    final idx = _albums.indexWhere((a) => a.id == id);
-    if (idx >= 0) {
-      _albums[idx] = _albums[idx].copyWith(name: newName);
-      _saveAlbums();
-      notifyListeners();
-    }
+    _albumService.renameAlbum(id, newName);
+    notifyListeners();
   }
 
   void addToAlbum(String albumId, List<GalleryItem> items) {
-    final idx = _albums.indexWhere((a) => a.id == albumId);
-    if (idx >= 0) {
-      final updated = Set<String>.from(_albums[idx].imageBasenames);
-      for (final item in items) {
-        updated.add(item.basename);
-      }
-      _albums[idx] = _albums[idx].copyWith(imageBasenames: updated);
-      _saveAlbums();
-      notifyListeners();
-    }
+    _albumService.addToAlbum(albumId, items.map((i) => i.basename).toList());
+    notifyListeners();
   }
 
   void removeFromAlbum(String albumId, List<GalleryItem> items) {
-    final idx = _albums.indexWhere((a) => a.id == albumId);
-    if (idx >= 0) {
-      final updated = Set<String>.from(_albums[idx].imageBasenames);
-      for (final item in items) {
-        updated.remove(item.basename);
-      }
-      _albums[idx] = _albums[idx].copyWith(imageBasenames: updated);
-      _saveAlbums();
-      notifyListeners();
-    }
+    _albumService.removeFromAlbum(albumId, items.map((i) => i.basename).toList());
+    notifyListeners();
   }
 
   int albumItemCount(String albumId) {
-    final album = _albums.where((a) => a.id == albumId).firstOrNull;
-    if (album == null) return 0;
-    return _items.where((item) => album.imageBasenames.contains(item.basename)).length;
+    return _albumService.albumItemCount(
+        albumId, _items.map((i) => i.basename).toList());
   }
 }

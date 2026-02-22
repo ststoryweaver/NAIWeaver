@@ -1,34 +1,31 @@
-import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:gal/gal.dart';
 import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/progress_dialog.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../core/utils/timestamp_utils.dart';
 import '../providers/gallery_notifier.dart';
 import '../../generation/providers/generation_notifier.dart';
-import '../../director_ref/providers/director_ref_notifier.dart';
-import '../../vibe_transfer/providers/vibe_transfer_notifier.dart';
 import '../../tools/img2img/providers/img2img_notifier.dart';
-import '../../tools/slideshow/models/slideshow_config.dart';
-import '../../tools/slideshow/providers/slideshow_notifier.dart';
-import '../../tools/slideshow/widgets/slideshow_player.dart';
-import '../../tools/tools_hub_screen.dart';
 import '../../../core/ml/ml_notifier.dart';
-import '../../../core/ml/widgets/ml_processing_overlay.dart';
-import '../../../core/ml/widgets/bg_removal_overlay.dart';
 import '../../tools/canvas/providers/canvas_notifier.dart';
 import '../../tools/canvas/widgets/canvas_editor.dart';
 import '../../tools/ml/widgets/segmentation_overlay.dart';
-import '../../../core/ml/widgets/upscale_comparison_view.dart';
 import 'comparison_view.dart';
+import 'image_detail_view.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
@@ -193,16 +190,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
           saved++;
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l.gallerySavedToDeviceCount(saved, selectedItems.length),
-                style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-            backgroundColor: const Color(0xFF0A1A0A),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-              side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-            ),
-          ));
+          showAppSnackBar(context, context.l.gallerySavedToDeviceCount(saved, selectedItems.length), color: t.accent);
         }
       } else {
         final dirPath = await FilePicker.platform.getDirectoryPath(
@@ -219,62 +207,26 @@ class _GalleryScreenState extends State<GalleryScreen> {
           copied++;
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l.galleryExportedToFolder(copied, p.basename(dirPath)),
-                style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-            backgroundColor: const Color(0xFF0A1A0A),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-              side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-            ),
-          ));
+          showAppSnackBar(context, context.l.galleryExportedToFolder(copied, p.basename(dirPath)), color: t.accent);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l.galleryExportFailed(e.toString()),
-              style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-          backgroundColor: const Color(0xFF1A0A0A),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
-          ),
-        ));
+        showErrorSnackBar(context, context.l.galleryExportFailed(e.toString()));
       }
     }
     _exitSelectionMode();
   }
 
   Future<void> _bulkDelete(List<GalleryItem> selectedItems) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final t = context.tRead;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(
-            context.l.galleryDeleteCount(selectedItems.length).toUpperCase(),
-            style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary),
-          ),
-          content: Text(
-            context.l.galleryCannotUndo,
-            style: TextStyle(color: t.textDisabled, fontSize: isMobile(context) ? t.fontSize(12) : t.fontSize(10)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(context.l.commonCancel.toUpperCase(), style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(context.l.commonDelete.toUpperCase(), style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(9))),
-            ),
-          ],
-        );
-      },
+    final t = context.tRead;
+    final confirm = await showConfirmDialog(
+      context,
+      title: context.l.galleryDeleteCount(selectedItems.length),
+      message: context.l.galleryCannotUndo,
+      confirmLabel: context.l.commonDelete,
+      confirmColor: t.accentDanger,
+      messageFontSize: isMobile(context) ? t.fontSize(12) : null,
     );
     if (!mounted || confirm != true) return;
     await Provider.of<GalleryNotifier>(context, listen: false).deleteItems(selectedItems);
@@ -350,65 +302,27 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Future<void> _bulkRemoveBg(List<GalleryItem> selectedItems) async {
     final ml = context.read<MLNotifier>();
     final gallery = context.read<GalleryNotifier>();
-    final t = context.tRead;
     final total = selectedItems.length;
     int completed = 0;
 
-    StateSetter? dialogSetState;
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setState) {
-            dialogSetState = setState;
-            final t = ctx.tRead;
-            return AlertDialog(
-              backgroundColor: t.surfaceHigh,
-              title: Text('REMOVING BACKGROUNDS', style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LinearProgressIndicator(
-                    value: total > 0 ? completed / total : 0,
-                    backgroundColor: t.borderSubtle,
-                    color: t.accent,
-                  ),
-                  const SizedBox(height: 12),
-                  Text('$completed/$total', style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }
+    final progress = mounted ? showProgressDialog(context, title: 'REMOVING BACKGROUNDS') : null;
 
     for (final item in selectedItems) {
       final bytes = await item.file.readAsBytes();
       final result = await ml.removeBackground(bytes);
       if (result != null) {
         final baseName = p.basenameWithoutExtension(item.file.path);
-        final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+        final timestamp = generateTimestamp();
         await gallery.saveMLResult(result, 'BG_${baseName}_$timestamp.png');
       }
       completed++;
-      dialogSetState?.call(() {});
+      progress?.update(completed, total);
     }
 
-    if (mounted) Navigator.of(context).pop();
+    progress?.close();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('BG REMOVED: $completed/$total IMAGES',
-            style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
-        backgroundColor: const Color(0xFF0A1A0A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-        ),
-      ));
+      showAppSnackBar(context, context.l.mlBgRemovedCount(completed, total));
     }
     _exitSelectionMode();
   }
@@ -416,65 +330,73 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Future<void> _bulkUpscale(List<GalleryItem> selectedItems) async {
     final ml = context.read<MLNotifier>();
     final gallery = context.read<GalleryNotifier>();
-    final t = context.tRead;
     final total = selectedItems.length;
     int completed = 0;
 
-    StateSetter? dialogSetState;
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setState) {
-            dialogSetState = setState;
-            final t = ctx.tRead;
-            return AlertDialog(
-              backgroundColor: t.surfaceHigh,
-              title: Text('UPSCALING IMAGES', style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LinearProgressIndicator(
-                    value: total > 0 ? completed / total : 0,
-                    backgroundColor: t.borderSubtle,
-                    color: t.accent,
-                  ),
-                  const SizedBox(height: 12),
-                  Text('$completed/$total', style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }
+    final progress = mounted ? showProgressDialog(context, title: context.l.mlUpscalingImages) : null;
 
     for (final item in selectedItems) {
       final bytes = await item.file.readAsBytes();
       final result = await ml.upscaleImage(bytes);
       if (result != null) {
         final baseName = p.basenameWithoutExtension(item.file.path);
-        final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
+        final timestamp = generateTimestamp();
         await gallery.saveMLResult(result, 'UP_${baseName}_$timestamp.png');
       }
       completed++;
-      dialogSetState?.call(() {});
+      progress?.update(completed, total);
     }
 
-    if (mounted) Navigator.of(context).pop();
+    progress?.close();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('UPSCALED: $completed/$total IMAGES',
-            style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
-        backgroundColor: const Color(0xFF0A1A0A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-        ),
-      ));
+      showAppSnackBar(context, context.l.mlUpscaledCount(completed, total));
+    }
+    _exitSelectionMode();
+  }
+
+  Future<void> _bulkNaiUpscale(List<GalleryItem> selectedItems) async {
+    final gen = context.read<GenerationNotifier>();
+    if (gen.state.apiKey.isEmpty) {
+      showErrorSnackBar(context, context.l.naiApiKeyRequired);
+      return;
+    }
+    final gallery = context.read<GalleryNotifier>();
+    final total = selectedItems.length;
+    int completed = 0;
+
+    final progress = mounted ? showProgressDialog(context, title: context.l.naiUpscaling, progressColor: context.tRead.accentEdit) : null;
+
+    for (final item in selectedItems) {
+      try {
+        final bytes = await item.file.readAsBytes();
+        final codec = await ui.instantiateImageCodec(bytes);
+        final frame = await codec.getNextFrame();
+        final w = frame.image.width;
+        final h = frame.image.height;
+        frame.image.dispose();
+
+        final imageBase64 = base64Encode(bytes);
+        final result = await gen.service.upscaleImage(
+          imageBase64: imageBase64,
+          width: w,
+          height: h,
+          scale: 4,
+        );
+        final baseName = p.basenameWithoutExtension(item.file.path);
+        final timestamp = generateTimestamp();
+        await gallery.saveMLResult(result, 'NAI_UP_${baseName}_$timestamp.png');
+      } catch (e) {
+        debugPrint('_GalleryScreenState._bulkNaiUpscale: $e');
+      }
+      completed++;
+      progress?.update(completed, total);
+    }
+
+    progress?.close();
+
+    if (mounted) {
+      showAppSnackBar(context, context.l.naiUpscaledCount(completed, total));
     }
     _exitSelectionMode();
   }
@@ -561,31 +483,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
         message = context.l.galleryImportSuccess(importResult.succeeded, importResult.withMetadata);
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(message,
-            style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-        backgroundColor: const Color(0xFF0A1A0A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-        ),
-      ));
+      showAppSnackBar(context, message, color: t.accent);
     } catch (e) {
       if (showProgress && mounted) {
         Navigator.of(context).pop();
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l.galleryImportFailed(e.toString()),
-            style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-        backgroundColor: const Color(0xFF1A0A0A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
-        ),
-      ));
+      showErrorSnackBar(context, context.l.galleryImportFailed(e.toString()));
     }
   }
 
@@ -704,17 +608,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   final pasteCount = gallery.clipboard.length;
                   gallery.pasteToAlbum(album.id);
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(context.l.galleryPastedIntoAlbum(pasteCount, album.name),
-                        style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
-                    backgroundColor: const Color(0xFF0A1A0A),
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                      side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-                    ),
-                  ));
+                  showAppSnackBar(context, context.l.galleryPastedIntoAlbum(pasteCount, album.name));
                 },
               ),
             ListTile(
@@ -1059,7 +953,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
           icon: Icon(
             gallery.showFavoritesOnly ? Icons.star : Icons.star_outline,
             size: mobile ? 22 : 16,
-            color: gallery.showFavoritesOnly ? Colors.amber : t.textDisabled,
+            color: gallery.showFavoritesOnly ? t.accentFavorite : t.textDisabled,
           ),
           tooltip: context.l.galleryFavoritesFilter,
           onPressed: () {
@@ -1280,7 +1174,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
             Positioned(
               top: 4,
               left: 4,
-              child: Icon(Icons.star, size: mobile ? 18 : 14, color: Colors.amber),
+              child: Icon(Icons.star, size: mobile ? 18 : 14, color: t.accentFavorite),
             ),
           // Canvas layers badge (bottom-left)
           if (item.hasCanvasState)
@@ -1389,9 +1283,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                const Spacer(),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
                 if (count == 2)
                   _ActionButton(
                     icon: Icons.compare,
@@ -1423,17 +1318,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   onTap: count > 0 ? () {
                     final gallery = context.read<GalleryNotifier>();
                     gallery.copyToClipboard(selectedItems);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(context.l.galleryImagesCopied(selectedItems.length),
-                          style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-                      backgroundColor: const Color(0xFF0A1A0A),
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        side: BorderSide(color: t.accent.withValues(alpha: 0.3)),
-                      ),
-                    ));
+                    showAppSnackBar(context, context.l.galleryImagesCopied(selectedItems.length), color: t.accent);
                     _exitSelectionMode();
                   } : null,
                 ),
@@ -1448,17 +1333,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                     onTap: () {
                       final pasteCount = gallery.clipboard.length;
                       gallery.pasteToAlbum(gallery.activeAlbumId!);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(context.l.galleryImagesPasted(pasteCount),
-                            style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
-                        backgroundColor: const Color(0xFF0A1A0A),
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                          side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-                        ),
-                      ));
+                      showAppSnackBar(context, context.l.galleryImagesPasted(pasteCount));
                     },
                   ),
                 if (gallery.hasClipboard && gallery.activeAlbumId != null)
@@ -1484,7 +1359,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 if (context.read<MLNotifier>().hasBgRemovalModel)
                   _ActionButton(
                     icon: Icons.content_cut,
-                    label: 'REMOVE BG',
+                    label: context.l.mlRemoveBg.toUpperCase(),
                     color: t.accent,
                     mobile: mobile,
                     iconOnly: mobile,
@@ -1495,7 +1370,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 if (context.read<MLNotifier>().hasUpscaleModel)
                   _ActionButton(
                     icon: Icons.zoom_out_map,
-                    label: 'UPSCALE',
+                    label: context.l.mlUpscale.toUpperCase(),
                     color: t.accent,
                     mobile: mobile,
                     iconOnly: mobile,
@@ -1503,22 +1378,33 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   ),
                 if (context.read<MLNotifier>().hasUpscaleModel)
                   SizedBox(width: mobile ? 12 : 8),
-                if (context.read<MLNotifier>().hasSegmentationModel && count == 1)
+                if (context.read<GenerationNotifier>().state.apiKey.isNotEmpty)
+                  _ActionButton(
+                    icon: Icons.cloud_upload_outlined,
+                    label: context.l.naiUpscale.toUpperCase(),
+                    color: t.accentEdit,
+                    mobile: mobile,
+                    iconOnly: mobile,
+                    onTap: count > 0 ? () => _bulkNaiUpscale(selectedItems) : null,
+                  ),
+                if (context.read<GenerationNotifier>().state.apiKey.isNotEmpty)
+                  SizedBox(width: mobile ? 12 : 8),
+                if (context.read<MLNotifier>().selectedSegmentationModelId != null && count == 1)
                   _ActionButton(
                     icon: Icons.auto_awesome,
-                    label: 'SEGMENT',
+                    label: context.l.mlSegment.toUpperCase(),
                     color: t.accent,
                     mobile: mobile,
                     iconOnly: mobile,
                     onTap: () => _openSegmentation(selectedItems.first),
                   ),
-                if (context.read<MLNotifier>().hasSegmentationModel && count == 1)
+                if (context.read<MLNotifier>().selectedSegmentationModelId != null && count == 1)
                   SizedBox(width: mobile ? 12 : 8),
                 // Send to Canvas (single image)
                 if (count == 1)
                   _ActionButton(
                     icon: Icons.brush,
-                    label: 'CANVAS',
+                    label: context.l.mlCanvas.toUpperCase(),
                     color: t.accentEdit,
                     mobile: mobile,
                     iconOnly: mobile,
@@ -1529,7 +1415,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 _ActionButton(
                   icon: Icons.star,
                   label: context.l.galleryFavorite.toUpperCase(),
-                  color: Colors.amber,
+                  color: t.accentFavorite,
                   mobile: mobile,
                   iconOnly: mobile,
                   onTap: count > 0 ? () => _bulkFavorite(selectedItems) : null,
@@ -1543,7 +1429,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   iconOnly: mobile,
                   onTap: count > 0 ? () => _bulkDelete(selectedItems) : null,
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1671,921 +1558,4 @@ class _DragRectPainter extends CustomPainter {
   @override
   bool shouldRepaint(_DragRectPainter oldDelegate) =>
       start != oldDelegate.start || end != oldDelegate.end;
-}
-
-class ImageDetailView extends StatefulWidget {
-  final int initialIndex;
-
-  const ImageDetailView({super.key, required this.initialIndex});
-
-  @override
-  State<ImageDetailView> createState() => _ImageDetailViewState();
-}
-
-class _ImageDetailViewState extends State<ImageDetailView>
-    with TickerProviderStateMixin {
-  late PageController _pageController;
-  late int _currentIndex;
-  Map<String, dynamic>? _settings;
-  bool _isLoadingMetadata = true;
-  bool _isExporting = false;
-  bool _showControls = true;
-  bool _promptExpanded = false;
-  Timer? _hideControlsTimer;
-  final FocusNode _focusNode = FocusNode();
-
-  // Per-page zoom controllers
-  final Map<int, TransformationController> _zoomControllers = {};
-  bool _isZoomed = false;
-
-  // Double-tap zoom animation
-  late final AnimationController _zoomAnimController;
-  Animation<Matrix4>? _zoomAnimation;
-  Offset? _lastDoubleTapLocal;
-
-  GalleryItem get _currentItem {
-    final gallery = Provider.of<GalleryNotifier>(context, listen: false);
-    final items = gallery.activeItems;
-    if (_currentIndex < items.length) return items[_currentIndex];
-    return items.last;
-  }
-
-  TransformationController _getZoomController(int index) {
-    return _zoomControllers.putIfAbsent(index, () => TransformationController());
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: _currentIndex);
-    _zoomAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    )..addListener(() {
-        if (_zoomAnimation != null) {
-          final controller = _zoomControllers[_currentIndex];
-          if (controller != null) {
-            controller.value = _zoomAnimation!.value;
-          }
-        }
-      });
-    _loadMetadata();
-    _scheduleHideControls();
-  }
-
-  @override
-  void dispose() {
-    _zoomAnimController.dispose();
-    _hideControlsTimer?.cancel();
-    _pageController.dispose();
-    _focusNode.dispose();
-    for (final c in _zoomControllers.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  void _scheduleHideControls() {
-    _hideControlsTimer?.cancel();
-    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showControls = false);
-    });
-  }
-
-  void _showControlsAndReset() {
-    if (!_showControls) {
-      setState(() => _showControls = true);
-    }
-    _scheduleHideControls();
-  }
-
-  Future<void> _loadMetadata() async {
-    final gallery = Provider.of<GalleryNotifier>(context, listen: false);
-    final items = gallery.activeItems;
-    if (_currentIndex >= items.length) {
-      setState(() => _isLoadingMetadata = false);
-      return;
-    }
-    final metadata = await gallery.getMetadata(items[_currentIndex]);
-
-    if (!mounted) return;
-    if (metadata != null && metadata.containsKey('Comment')) {
-      final settings = parseCommentJson(metadata['Comment']!);
-      setState(() {
-        _settings = settings;
-        _isLoadingMetadata = false;
-      });
-    } else {
-      setState(() {
-        _settings = null;
-        _isLoadingMetadata = false;
-      });
-    }
-  }
-
-  void _onPageChanged(int index) {
-    // Stop any in-flight zoom animation before resetting
-    _zoomAnimController.stop();
-
-    // Reset previous page zoom
-    final prevController = _zoomControllers[_currentIndex];
-    if (prevController != null) {
-      prevController.value = Matrix4.identity();
-    }
-
-    setState(() {
-      _currentIndex = index;
-      _isLoadingMetadata = true;
-      _promptExpanded = false;
-      _isZoomed = false;
-    });
-    _loadMetadata();
-
-    // Preload adjacent images
-    final gallery = Provider.of<GalleryNotifier>(context, listen: false);
-    final items = gallery.activeItems;
-    if (index + 1 < items.length) {
-      precacheImage(FileImage(items[index + 1].file), context).catchError((_) {});
-    }
-    if (index - 1 >= 0) {
-      precacheImage(FileImage(items[index - 1].file), context).catchError((_) {});
-    }
-  }
-
-  void _onInteractionEnd(TransformationController controller) {
-    final scale = controller.value.getMaxScaleOnAxis();
-    final zoomed = scale > 1.01;
-    if (zoomed != _isZoomed) {
-      setState(() => _isZoomed = zoomed);
-    }
-  }
-
-  void _onInteractionStart(ScaleStartDetails details) {
-    if (details.pointerCount >= 2) {
-      // Pinch detected — disable PageView scrolling immediately
-      if (!_isZoomed) {
-        setState(() => _isZoomed = true);
-      }
-    }
-  }
-
-  void _handleDoubleTap(TransformationController controller) {
-    final current = controller.value.clone();
-    final scale = current.getMaxScaleOnAxis();
-
-    Matrix4 target;
-    if (scale > 1.05) {
-      target = Matrix4.identity();
-      setState(() => _isZoomed = false);
-    } else {
-      const zoomScale = 2.5;
-      final pos = _lastDoubleTapLocal ?? Offset.zero;
-      final dx = pos.dx * (1 - zoomScale);
-      final dy = pos.dy * (1 - zoomScale);
-      target = Matrix4.identity()
-        // ignore: deprecated_member_use
-        ..translate(dx, dy, 0.0)
-        // ignore: deprecated_member_use
-        ..scale(zoomScale, zoomScale, 1.0);
-      setState(() => _isZoomed = true);
-    }
-
-    _zoomAnimation = Matrix4Tween(begin: current, end: target).animate(
-      CurvedAnimation(parent: _zoomAnimController, curve: Curves.easeOutCubic),
-    );
-    _zoomAnimController.forward(from: 0);
-  }
-
-  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    final gallery = Provider.of<GalleryNotifier>(context, listen: false);
-    final items = gallery.activeItems;
-    switch (event.logicalKey) {
-      case LogicalKeyboardKey.arrowRight:
-        if (_currentIndex < items.length - 1) {
-          _pageController.nextPage(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-        return KeyEventResult.handled;
-      case LogicalKeyboardKey.arrowLeft:
-        if (_currentIndex > 0) {
-          _pageController.previousPage(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-        return KeyEventResult.handled;
-      case LogicalKeyboardKey.escape:
-        Navigator.pop(context);
-        return KeyEventResult.handled;
-      default:
-        return KeyEventResult.ignored;
-    }
-  }
-
-  Future<void> _exportImage() async {
-    final t = context.tRead;
-    final prefs = context.read<PreferencesService>();
-    final item = _currentItem;
-    setState(() => _isExporting = true);
-    try {
-      final sourceFile = item.file;
-      final fileName = p.basename(sourceFile.path);
-
-      if (Platform.isAndroid || Platform.isIOS) {
-        final hasAccess = await Gal.hasAccess();
-        if (!hasAccess) await Gal.requestAccess();
-        var bytes = await sourceFile.readAsBytes();
-        if (prefs.stripMetadataOnExport) {
-          bytes = stripMetadata(bytes);
-        }
-        final name = p.basenameWithoutExtension(sourceFile.path);
-        await Gal.putImageBytes(bytes, name: name);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l.gallerySavedToDevice,
-                style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-            backgroundColor: const Color(0xFF0A1A0A),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-              side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-            ),
-          ));
-        }
-      } else {
-        final result = await FilePicker.platform.saveFile(
-          dialogTitle: context.l.galleryExportImageDialog,
-          fileName: fileName,
-          type: FileType.image,
-        );
-        if (result == null) return;
-
-        if (prefs.stripMetadataOnExport) {
-          var bytes = await sourceFile.readAsBytes();
-          bytes = stripMetadata(bytes);
-          await File(result).writeAsBytes(bytes);
-        } else {
-          await sourceFile.copy(result);
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l.gallerySavedTo(p.basename(result)),
-                style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-            backgroundColor: const Color(0xFF0A1A0A),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-              side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-            ),
-          ));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        final t = context.tRead;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l.galleryExportFailed(e.toString()),
-              style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
-          backgroundColor: const Color(0xFF1A0A0A),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
-          ),
-        ));
-      }
-    } finally {
-      if (mounted) setState(() => _isExporting = false);
-    }
-  }
-
-  Future<void> _handleRemoveBg(GalleryItem item) async {
-    final ml = context.read<MLNotifier>();
-    final gallery = context.read<GalleryNotifier>();
-    final t = context.tRead;
-
-    final bytes = await item.file.readAsBytes();
-    if (!mounted) return;
-
-    final result = await ml.removeBackground(bytes);
-    if (!mounted) return;
-
-    if (result == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('BG REMOVAL FAILED',
-            style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(11))),
-        backgroundColor: const Color(0xFF1A0A0A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
-        ),
-      ));
-      return;
-    }
-
-    // Show BG removal overlay
-    if (!mounted) return;
-    final saved = await showDialog<Uint8List>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog.fullscreen(
-        backgroundColor: t.background,
-        child: BGRemovalOverlay(
-          resultImage: result,
-          onSave: (img) => Navigator.pop(ctx, img),
-          onDiscard: () => Navigator.pop(ctx),
-        ),
-      ),
-    );
-
-    if (saved != null && mounted) {
-      final baseName = p.basenameWithoutExtension(item.file.path);
-      final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
-      final outputName = 'BG_${baseName}_$timestamp.png';
-      await gallery.saveMLResult(saved, outputName);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('BG REMOVED: SAVED AS $outputName',
-              style: TextStyle(color: t.accentSuccess, fontSize: t.fontSize(11))),
-          backgroundColor: const Color(0xFF0A1A0A),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-            side: BorderSide(color: t.accentSuccess.withValues(alpha: 0.3)),
-          ),
-        ));
-      }
-    }
-  }
-
-  Future<void> _handleUpscale(GalleryItem item) async {
-    final ml = context.read<MLNotifier>();
-    final gallery = context.read<GalleryNotifier>();
-    final t = context.tRead;
-
-    final bytes = await item.file.readAsBytes();
-    if (!mounted) return;
-
-    final result = await ml.upscaleImage(bytes);
-    if (!mounted) return;
-
-    if (result == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('UPSCALE FAILED',
-            style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(11))),
-        backgroundColor: const Color(0xFF1A0A0A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-          side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
-        ),
-      ));
-      return;
-    }
-
-    final baseName = p.basenameWithoutExtension(item.file.path);
-    final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:\-T]'), '').substring(8, 14);
-    final outputName = 'UP_${baseName}_$timestamp.png';
-
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => UpscaleComparisonView(
-            originalBytes: bytes,
-            upscaledBytes: result,
-            outputName: outputName,
-            onSave: () {
-              gallery.saveMLResultWithMetadata(result, outputName, sourceBytes: bytes);
-            },
-          ),
-        ),
-      );
-    }
-  }
-
-  void _launchSlideshow() {
-    final gallery = context.read<GalleryNotifier>();
-    final slideshowNotifier = context.read<SlideshowNotifier>();
-    final item = _currentItem;
-    final config = slideshowNotifier.defaultConfig ?? const SlideshowConfig(
-      id: '_quick_play',
-      name: 'Quick Play',
-    );
-    var playlist = slideshowNotifier.buildPlaylist(config, gallery);
-    // Rotate playlist to start at current image
-    final idx = playlist.indexWhere((i) => i.basename == item.basename);
-    if (idx > 0) {
-      playlist = [...playlist.sublist(idx), ...playlist.sublist(0, idx)];
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SlideshowPlayer(config: config, playlist: playlist),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.t;
-    final gallery = context.watch<GalleryNotifier>();
-    final mobile = isMobile(context);
-    final topPadding = MediaQuery.of(context).padding.top;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final items = gallery.activeItems;
-
-    // Guard: if all images deleted, pop
-    if (items.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.pop(context);
-      });
-      return Scaffold(backgroundColor: t.background);
-    }
-
-    // Clamp index if items were deleted
-    if (_currentIndex >= items.length) {
-      _currentIndex = items.length - 1;
-    }
-
-    final item = items[_currentIndex];
-
-    return Scaffold(
-      backgroundColor: t.background,
-      body: Focus(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKeyEvent: _handleKey,
-        child: GestureDetector(
-          onTap: _showControlsAndReset,
-          child: MouseRegion(
-            onHover: (_) => _showControlsAndReset(),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Layer 1: PageView with per-page InteractiveViewer
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: items.length,
-                  onPageChanged: _onPageChanged,
-                  physics: _isZoomed
-                      ? const NeverScrollableScrollPhysics()
-                      : const ClampingScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final pageItem = items[index];
-                    final zoomController = _getZoomController(index);
-                    return GestureDetector(
-                      onDoubleTapDown: (details) =>
-                          _lastDoubleTapLocal = details.localPosition,
-                      onDoubleTap: () => _handleDoubleTap(zoomController),
-                      child: InteractiveViewer(
-                        transformationController: zoomController,
-                        onInteractionStart: _onInteractionStart,
-                        onInteractionEnd: (_) => _onInteractionEnd(zoomController),
-                        child: Center(
-                          child: Image.file(pageItem.file),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Layer 2: Top overlay
-                AnimatedOpacity(
-                  opacity: _showControls ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: IgnorePointer(
-                    ignoring: !_showControls,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.only(
-                            top: topPadding + 8,
-                            left: 8,
-                            right: 8,
-                            bottom: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                t.background.withValues(alpha: 0.9),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.arrow_back_ios,
-                                    size: mobile ? 20 : 14, color: t.textSecondary),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                              const Spacer(),
-                              // Position indicator
-                              Text(
-                                '${_currentIndex + 1} / ${items.length}',
-                                style: TextStyle(
-                                  color: t.textDisabled,
-                                  fontSize: t.fontSize(mobile ? 11 : 9),
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                icon: Icon(
-                                  item.isFavorite ? Icons.star : Icons.star_outline,
-                                  size: mobile ? 22 : 18,
-                                  color: item.isFavorite ? Colors.amber : t.textSecondary,
-                                ),
-                                tooltip: context.l.galleryToggleFavorite,
-                                onPressed: () {
-                                  gallery.toggleFavorite(item);
-                                  setState(() {});
-                                },
-                              ),
-                              _isExporting
-                                  ? Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: SizedBox(
-                                        width: mobile ? 22 : 18,
-                                        height: mobile ? 22 : 18,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2, color: t.textSecondary),
-                                      ),
-                                    )
-                                  : IconButton(
-                                      icon: Icon(Icons.save_alt,
-                                          size: mobile ? 22 : 18, color: t.textSecondary),
-                                      tooltip: context.l.galleryExportImage,
-                                      onPressed: _exportImage,
-                                    ),
-                              IconButton(
-                                icon: Icon(Icons.delete_outline,
-                                    size: mobile ? 22 : 18, color: t.accentDanger),
-                                tooltip: context.l.galleryDeleteImageTooltip,
-                                onPressed: () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) {
-                                      final t = context.tRead;
-                                      return AlertDialog(
-                                        backgroundColor: t.surfaceHigh,
-                                        title: Text(context.l.galleryDeleteImage.toUpperCase(),
-                                            style: TextStyle(
-                                                fontSize: t.fontSize(10),
-                                                letterSpacing: 2,
-                                                color: t.textSecondary)),
-                                        actions: [
-                                          TextButton(
-                                              onPressed: () => Navigator.pop(context, false),
-                                              child: Text(context.l.commonCancel.toUpperCase(),
-                                                  style: TextStyle(
-                                                      color: t.textDisabled,
-                                                      fontSize: t.fontSize(9)))),
-                                          TextButton(
-                                              onPressed: () => Navigator.pop(context, true),
-                                              child: Text(context.l.commonDelete.toUpperCase(),
-                                                  style: TextStyle(
-                                                      color: t.accentDanger,
-                                                      fontSize: t.fontSize(9)))),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  if (!context.mounted || confirm != true) return;
-                                  await Provider.of<GalleryNotifier>(context, listen: false)
-                                      .deleteItem(item);
-                                  if (!context.mounted) return;
-                                  final newItems = Provider.of<GalleryNotifier>(context, listen: false).activeItems;
-                                  if (newItems.isEmpty) {
-                                    Navigator.pop(context);
-                                  } else {
-                                    setState(() {
-                                      if (_currentIndex >= newItems.length) {
-                                        _currentIndex = newItems.length - 1;
-                                      }
-                                      _isLoadingMetadata = true;
-                                    });
-                                    _loadMetadata();
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Layer 3: Bottom overlay
-                AnimatedOpacity(
-                  opacity: _showControls ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: IgnorePointer(
-                    ignoring: !_showControls,
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.only(
-                          bottom: bottomPadding + 12,
-                          left: 16,
-                          right: 16,
-                          top: 32,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              t.background.withValues(alpha: 0.9),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Prompt text (expandable)
-                            if (_isLoadingMetadata)
-                              LinearProgressIndicator(
-                                  minHeight: 1,
-                                  backgroundColor: Colors.transparent,
-                                  color: t.textMinimal)
-                            else if (_settings != null) ...[
-                              GestureDetector(
-                                onTap: () => setState(() => _promptExpanded = !_promptExpanded),
-                                child: Text(
-                                  (_settings!['prompt'] ?? context.l.galleryNoPrompt.toUpperCase()).toString().toUpperCase(),
-                                  maxLines: _promptExpanded ? 20 : 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: t.textSecondary,
-                                    fontSize: mobile ? t.fontSize(12) : t.fontSize(9),
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              // Info chips row
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    _InfoChip(label: context.l.galleryScale.toUpperCase(), value: _settings!['scale']?.toString() ?? "N/A"),
-                                    _InfoChip(label: context.l.gallerySteps.toUpperCase(), value: _settings!['steps']?.toString() ?? "N/A"),
-                                    _InfoChip(label: context.l.gallerySampler.toUpperCase(), value: _settings!['sampler']?.toString() ?? "N/A"),
-                                    _InfoChip(label: context.l.gallerySeed.toUpperCase(), value: _settings!['seed']?.toString() ?? "N/A"),
-                                  ],
-                                ),
-                              ),
-                            ] else
-                              Text(context.l.galleryNoMetadata.toUpperCase(),
-                                  style: TextStyle(
-                                      color: t.textDisabled,
-                                      fontSize: t.fontSize(9),
-                                      letterSpacing: 1)),
-                            const SizedBox(height: 12),
-                            // Action buttons row
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _ViewerAction(
-                                    icon: Icons.upload_outlined,
-                                    label: context.l.galleryPrompt.toUpperCase(),
-                                    color: t.accent,
-                                    mobile: mobile,
-                                    onTap: () {
-                                      context.read<GenerationNotifier>().importImageMetadata(item.file);
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                  _ViewerAction(
-                                    icon: Icons.brush_outlined,
-                                    label: context.l.galleryImg2img.toUpperCase(),
-                                    color: t.accentEdit,
-                                    mobile: mobile,
-                                    onTap: () async {
-                                      final bytes = await item.file.readAsBytes();
-                                      if (!context.mounted) return;
-                                      String? prompt;
-                                      String? negativePrompt;
-                                      final prefs = context.read<PreferencesService>();
-                                      if (prefs.img2imgImportPrompt) {
-                                        final metadata = extractMetadata(bytes);
-                                        if (metadata != null && metadata.containsKey('Comment')) {
-                                          final json = parseCommentJson(metadata['Comment']!);
-                                          if (json != null) {
-                                            prompt = json['prompt'] as String?;
-                                            negativePrompt = json['uc'] as String?;
-                                          }
-                                        }
-                                      }
-                                      if (!context.mounted) return;
-                                      context.read<Img2ImgNotifier>().loadSourceImage(bytes, prompt: prompt, negativePrompt: negativePrompt, filePath: item.file.path);
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (_) => const ToolsHubScreen(initialToolId: 'img2img')),
-                                      );
-                                    },
-                                  ),
-                                  if (context.read<MLNotifier>().hasBgRemovalModel)
-                                    _ViewerAction(
-                                      icon: context.watch<MLNotifier>().isProcessing
-                                          ? Icons.hourglass_top
-                                          : Icons.content_cut,
-                                      label: 'REMOVE BG',
-                                      color: t.accent,
-                                      mobile: mobile,
-                                      onTap: context.watch<MLNotifier>().isProcessing
-                                          ? () {}
-                                          : () => _handleRemoveBg(item),
-                                    ),
-                                  if (context.read<MLNotifier>().hasUpscaleModel)
-                                    _ViewerAction(
-                                      icon: context.watch<MLNotifier>().isProcessing
-                                          ? Icons.hourglass_top
-                                          : Icons.zoom_out_map,
-                                      label: 'UPSCALE',
-                                      color: t.accent,
-                                      mobile: mobile,
-                                      onTap: context.watch<MLNotifier>().isProcessing
-                                          ? () {}
-                                          : () => _handleUpscale(item),
-                                    ),
-                                  _ViewerAction(
-                                    icon: Icons.person_outline,
-                                    label: context.l.galleryCharRef.toUpperCase(),
-                                    color: t.accentRefCharacter,
-                                    mobile: mobile,
-                                    onTap: () async {
-                                      final bytes = await item.file.readAsBytes();
-                                      if (!context.mounted) return;
-                                      await context.read<DirectorRefNotifier>().addReference(bytes);
-                                      if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                        content: Text(context.l.galleryAddedAsCharRef,
-                                            style: TextStyle(color: t.accentRefCharacter, fontSize: t.fontSize(11))),
-                                        backgroundColor: const Color(0xFF0A1A0A),
-                                        behavior: SnackBarBehavior.floating,
-                                        duration: const Duration(seconds: 2),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(4),
-                                          side: BorderSide(color: t.accentRefCharacter.withValues(alpha: 0.3)),
-                                        ),
-                                      ));
-                                    },
-                                  ),
-                                  _ViewerAction(
-                                    icon: Icons.palette_outlined,
-                                    label: context.l.galleryVibe.toUpperCase(),
-                                    color: t.accentVibeTransfer,
-                                    mobile: mobile,
-                                    onTap: () async {
-                                      try {
-                                        final bytes = await item.file.readAsBytes();
-                                        if (!context.mounted) return;
-                                        await context.read<VibeTransferNotifier>().addVibe(bytes);
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                          content: Text(context.l.galleryAddedAsVibe,
-                                              style: TextStyle(color: t.accentVibeTransfer, fontSize: t.fontSize(11))),
-                                          backgroundColor: const Color(0xFF0A1A0A),
-                                          behavior: SnackBarBehavior.floating,
-                                          duration: const Duration(seconds: 2),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(4),
-                                            side: BorderSide(color: t.accentVibeTransfer.withValues(alpha: 0.3)),
-                                          ),
-                                        ));
-                                      } catch (e) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                          content: Text(context.l.galleryVibeTransferFailed(e.toString()),
-                                              style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(11))),
-                                          backgroundColor: const Color(0xFF1A0A0A),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(4),
-                                            side: BorderSide(color: t.accentDanger.withValues(alpha: 0.3)),
-                                          ),
-                                        ));
-                                      }
-                                    },
-                                  ),
-                                  _ViewerAction(
-                                    icon: Icons.slideshow_outlined,
-                                    label: context.l.gallerySlideshow.toUpperCase(),
-                                    color: t.textSecondary,
-                                    mobile: mobile,
-                                    onTap: _launchSlideshow,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // ML Processing overlay
-                const MLProcessingOverlay(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ViewerAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool mobile;
-  final VoidCallback onTap;
-
-  const _ViewerAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.mobile,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.t;
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: mobile ? 12 : 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: mobile ? 26 : 20, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: mobile ? t.fontSize(8) : t.fontSize(7),
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoChip({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.t;
-    final mobile = isMobile(context);
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: EdgeInsets.symmetric(horizontal: mobile ? 12 : 8, vertical: mobile ? 6 : 4),
-      decoration: BoxDecoration(
-        color: t.borderSubtle,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: t.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TextStyle(color: t.textDisabled, fontSize: mobile ? t.fontSize(9) : t.fontSize(7), fontWeight: FontWeight.bold)),
-          Text(value, style: TextStyle(color: t.textSecondary, fontSize: mobile ? t.fontSize(11) : t.fontSize(9), fontWeight: FontWeight.w900)),
-        ],
-      ),
-    );
-  }
 }

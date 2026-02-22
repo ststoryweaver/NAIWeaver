@@ -1,8 +1,11 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/utils/responsive.dart';
+import '../../../core/widgets/comparison_slider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../providers/gallery_notifier.dart';
 
 class ComparisonView extends StatefulWidget {
@@ -20,32 +23,26 @@ class _ComparisonViewState extends State<ComparisonView> {
   late GalleryItem _right;
   Map<String, dynamic>? _settingsLeft;
   Map<String, dynamic>? _settingsRight;
+  Uint8List? _leftBytes;
+  Uint8List? _rightBytes;
   bool _loading = true;
-
-  final TransformationController _controllerLeft = TransformationController();
-  final TransformationController _controllerRight = TransformationController();
-  bool _syncZoom = true;
 
   @override
   void initState() {
     super.initState();
     _left = widget.itemA;
     _right = widget.itemB;
-    _loadMetadata();
+    _loadData();
   }
 
-  @override
-  void dispose() {
-    _controllerLeft.dispose();
-    _controllerRight.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadMetadata() async {
+  Future<void> _loadData() async {
     final gallery = Provider.of<GalleryNotifier>(context, listen: false);
     final metaA = await gallery.getMetadata(_left);
     final metaB = await gallery.getMetadata(_right);
+    final bytesA = await _left.file.readAsBytes();
+    final bytesB = await _right.file.readAsBytes();
 
+    if (!mounted) return;
     setState(() {
       if (metaA != null && metaA.containsKey('Comment')) {
         _settingsLeft = parseCommentJson(metaA['Comment']!);
@@ -53,6 +50,8 @@ class _ComparisonViewState extends State<ComparisonView> {
       if (metaB != null && metaB.containsKey('Comment')) {
         _settingsRight = parseCommentJson(metaB['Comment']!);
       }
+      _leftBytes = bytesA;
+      _rightBytes = bytesB;
       _loading = false;
     });
   }
@@ -65,18 +64,16 @@ class _ComparisonViewState extends State<ComparisonView> {
       final tmpS = _settingsLeft;
       _settingsLeft = _settingsRight;
       _settingsRight = tmpS;
+      final tmpB = _leftBytes;
+      _leftBytes = _rightBytes;
+      _rightBytes = tmpB;
     });
-  }
-
-  void _onInteractionUpdate(TransformationController source, TransformationController target) {
-    if (_syncZoom) {
-      target.value = source.value;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final t = context.t;
+    final l = AppLocalizations.of(context);
     final mobile = isMobile(context);
 
     return Scaffold(
@@ -105,51 +102,22 @@ class _ComparisonViewState extends State<ComparisonView> {
             tooltip: 'Swap',
             onPressed: _swap,
           ),
-          IconButton(
-            icon: Icon(
-              _syncZoom ? Icons.link : Icons.link_off,
-              size: mobile ? 22 : 16,
-              color: _syncZoom ? t.accent : t.textDisabled,
-            ),
-            tooltip: _syncZoom ? 'Synced zoom' : 'Independent zoom',
-            onPressed: () => setState(() => _syncZoom = !_syncZoom),
-          ),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: mobile
-                ? Column(
-                    children: [
-                      Expanded(child: _buildPanel(_left, _controllerLeft, _controllerRight, mobile)),
-                      Divider(height: 1, color: t.borderMedium),
-                      Expanded(child: _buildPanel(_right, _controllerRight, _controllerLeft, mobile)),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(child: _buildPanel(_left, _controllerLeft, _controllerRight, mobile)),
-                      VerticalDivider(width: 1, color: t.borderMedium),
-                      Expanded(child: _buildPanel(_right, _controllerRight, _controllerLeft, mobile)),
-                    ],
+            child: _loading
+                ? Center(child: CircularProgressIndicator(color: t.accent))
+                : ComparisonSlider(
+                    beforeBytes: _leftBytes!,
+                    afterBytes: _rightBytes!,
+                    beforeLabel: l.comparisonBefore.toUpperCase(),
+                    afterLabel: l.comparisonAfter.toUpperCase(),
                   ),
           ),
           if (!_loading) _buildMetadataBar(mobile),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPanel(GalleryItem item, TransformationController controller, TransformationController other, bool mobile) {
-    return GestureDetector(
-      onDoubleTap: () => controller.value = Matrix4.identity(),
-      child: InteractiveViewer(
-        transformationController: controller,
-        onInteractionUpdate: (_) => _onInteractionUpdate(controller, other),
-        child: Center(
-          child: Image.file(item.file),
-        ),
       ),
     );
   }
@@ -166,19 +134,19 @@ class _ComparisonViewState extends State<ComparisonView> {
         child: mobile
             ? Column(
                 children: [
-                  _buildMetadataRow(_settingsLeft, 'LEFT', mobile),
+                  _buildMetadataRow(_settingsLeft, 'BEFORE', mobile),
                   const SizedBox(height: 8),
-                  _buildMetadataRow(_settingsRight, 'RIGHT', mobile),
+                  _buildMetadataRow(_settingsRight, 'AFTER', mobile),
                 ],
               )
             : Row(
                 children: [
-                  Expanded(child: _buildMetadataRow(_settingsLeft, 'LEFT', mobile)),
+                  Expanded(child: _buildMetadataRow(_settingsLeft, 'BEFORE', mobile)),
                   SizedBox(
                     height: 30,
                     child: VerticalDivider(width: 16, color: t.borderMedium),
                   ),
-                  Expanded(child: _buildMetadataRow(_settingsRight, 'RIGHT', mobile)),
+                  Expanded(child: _buildMetadataRow(_settingsRight, 'AFTER', mobile)),
                 ],
               ),
       ),
