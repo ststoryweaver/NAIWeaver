@@ -1,12 +1,18 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/l10n/l10n_extensions.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/theme/vision_tokens.dart';
+import '../../../../core/utils/app_snackbar.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../gallery/providers/gallery_notifier.dart';
 import '../../img2img/providers/img2img_notifier.dart';
@@ -51,9 +57,12 @@ class _CanvasEditorState extends State<CanvasEditor> {
                   ? _buildMobileBody(t)
                   : _buildDesktopBody(t),
             ),
-            CanvasToolbar(
-              onFlatten: _flatten,
-              onShowLayers: mobile ? () => _showLayerSheet(context, t) : null,
+            Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: CanvasToolbar(
+                onFlatten: _flatten,
+                onShowLayers: mobile ? () => _showLayerSheet(context, t) : null,
+              ),
             ),
           ],
         ),
@@ -62,7 +71,7 @@ class _CanvasEditorState extends State<CanvasEditor> {
     );
   }
 
-  Widget _buildDesktopBody(dynamic t) {
+  Widget _buildDesktopBody(VisionTokens t) {
     return Row(
       children: [
         Expanded(
@@ -79,14 +88,14 @@ class _CanvasEditorState extends State<CanvasEditor> {
     );
   }
 
-  Widget _buildMobileBody(dynamic t) {
+  Widget _buildMobileBody(VisionTokens t) {
     return Container(
       color: t.background,
       child: const CanvasPaintSurface(),
     );
   }
 
-  void _showLayerSheet(BuildContext context, dynamic t) {
+  void _showLayerSheet(BuildContext context, VisionTokens t) {
     showModalBottomSheet(
       context: context,
       backgroundColor: t.surfaceMid,
@@ -112,7 +121,7 @@ class _CanvasEditorState extends State<CanvasEditor> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, dynamic t, dynamic l,
+  Widget _buildHeader(BuildContext context, VisionTokens t, AppLocalizations l,
       CanvasNotifier notifier) {
     final session = notifier.session;
 
@@ -161,39 +170,59 @@ class _CanvasEditorState extends State<CanvasEditor> {
           ],
           const Spacer(),
           if (session != null && isMobile(context))
-            GestureDetector(
-              onTap: () => _showLayerSheet(context, t),
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.layers, size: 14, color: t.textTertiary),
-                    const SizedBox(width: 4),
-                    if (session.activeLayer != null)
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 80),
-                        child: Text(
-                          session.activeLayer!.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: t.textDisabled,
-                            fontSize: t.fontSize(8),
-                            letterSpacing: 0.5,
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Tooltip(
+                message: context.l.canvasLayers,
+                child: InkWell(
+                onTap: () => _showLayerSheet(context, t),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: t.accentEdit.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: t.borderSubtle),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.layers, size: 16, color: t.accentEdit),
+                      const SizedBox(width: 6),
+                      if (session.activeLayer != null)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 80),
+                          child: Text(
+                            session.activeLayer!.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: t.textDisabled,
+                              fontSize: t.fontSize(9),
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${session.layers.length})',
+                        style: TextStyle(
+                          color: t.textMinimal,
+                          fontSize: t.fontSize(9),
+                        ),
                       ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '(${session.layers.length})',
-                      style: TextStyle(
-                        color: t.textMinimal,
-                        fontSize: t.fontSize(8),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
+              ),
+            ),
+          // Import image as layer
+          if (session != null)
+            IconButton(
+              icon: Icon(Icons.add_photo_alternate_outlined,
+                  size: 16, color: t.textTertiary),
+              onPressed: _importImage,
+              tooltip: l.canvasImportImage,
             ),
           if (_isFlattening)
             SizedBox(
@@ -207,56 +236,48 @@ class _CanvasEditorState extends State<CanvasEditor> {
     );
   }
 
-  void _handleBack(
-      BuildContext context, CanvasNotifier notifier, dynamic l) {
+  Future<void> _handleBack(
+      BuildContext context, CanvasNotifier notifier, AppLocalizations l) async {
     final session = notifier.session;
     if (session != null && session.hasStrokes) {
-      showDialog(
-        context: context,
-        builder: (ctx) {
-          final t = ctx.t;
-          return AlertDialog(
-            backgroundColor: t.surfaceHigh,
-            title: Text(
-              l.canvasDiscardTitle,
-              style: TextStyle(
-                  color: t.textSecondary,
-                  fontSize: t.fontSize(10),
-                  letterSpacing: 2),
-            ),
-            content: Text(
-              l.canvasDiscardMessage,
-              style: TextStyle(
-                  color: t.textTertiary, fontSize: t.fontSize(10)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  l.commonCancel.toUpperCase(),
-                  style: TextStyle(
-                      color: t.textDisabled, fontSize: t.fontSize(9)),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  notifier.clearSession();
-                  Navigator.pop(context);
-                },
-                child: Text(
-                  l.canvasDiscard,
-                  style: TextStyle(
-                      color: t.accentDanger, fontSize: t.fontSize(9)),
-                ),
-              ),
-            ],
-          );
-        },
+      final t = context.t;
+      final confirm = await showConfirmDialog(
+        context,
+        title: l.canvasDiscardTitle,
+        message: l.canvasDiscardMessage,
+        confirmLabel: l.canvasDiscard,
+        confirmColor: t.accentDanger,
       );
+      if (confirm == true) {
+        notifier.clearSession();
+        if (context.mounted) Navigator.pop(context);
+      }
     } else {
       notifier.clearSession();
       Navigator.pop(context);
+    }
+  }
+
+  Future<void> _importImage() async {
+    final notifier = context.read<CanvasNotifier>();
+    if (notifier.session == null) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final filePath = result.files.single.path;
+      if (filePath == null) return;
+
+      final bytes = await File(filePath).readAsBytes();
+      final name = result.files.single.name;
+      notifier.addImageLayer(bytes, name: name);
+      notifier.setTool(CanvasTool.transform);
+    } catch (e) {
+      debugPrint('Image import failed: $e');
     }
   }
 
@@ -363,10 +384,7 @@ class _CanvasEditorState extends State<CanvasEditor> {
       debugPrint('Canvas flatten error: $e');
       if (mounted) {
         setState(() => _isFlattening = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(context.l.canvasFlattenFailed(e.toString()))),
-        );
+        showErrorSnackBar(context, context.l.canvasFlattenFailed(e.toString()));
       }
     }
   }

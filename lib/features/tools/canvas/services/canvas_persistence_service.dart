@@ -53,6 +53,16 @@ class CanvasPersistenceService {
       };
       await File(_layersPath).writeAsString(jsonEncode(layersData));
 
+      // Write image layer sidecars
+      for (final layer in session.layers) {
+        if (layer.isImageLayer && layer.imageBytes != null) {
+          final imgFile = File(p.join(sessionDir, 'layer_${layer.id}.png'));
+          if (!await imgFile.exists()) {
+            await imgFile.writeAsBytes(layer.imageBytes!);
+          }
+        }
+      }
+
       // Write session metadata
       final meta = {
         'sessionId': session.sessionId,
@@ -95,9 +105,19 @@ class CanvasPersistenceService {
       if (await layersFile.exists()) {
         final layersData = jsonDecode(await layersFile.readAsString())
             as Map<String, dynamic>;
-        final layers = (layersData['layers'] as List)
-            .map((j) => CanvasLayer.fromJson(j as Map<String, dynamic>))
-            .toList();
+        final layerJsonList = layersData['layers'] as List;
+        final layers = <CanvasLayer>[];
+        for (final j in layerJsonList) {
+          final map = j as Map<String, dynamic>;
+          Uint8List? imgBytes;
+          if (map['hasImage'] == true) {
+            final imgFile = File(p.join(sessionDir, 'layer_${map['id']}.png'));
+            if (await imgFile.exists()) {
+              imgBytes = await imgFile.readAsBytes();
+            }
+          }
+          layers.add(CanvasLayer.fromJson(map, imageBytes: imgBytes));
+        }
         final activeLayerId =
             layersData['activeLayerId'] as String? ?? layers.first.id;
 

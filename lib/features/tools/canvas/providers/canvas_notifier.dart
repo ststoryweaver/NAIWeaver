@@ -8,7 +8,7 @@ import '../models/canvas_session.dart';
 import '../models/paint_stroke.dart';
 
 /// Tool mode for the canvas editor.
-enum CanvasTool { paint, erase, line, rectangle, circle, fill, text, eyedropper }
+enum CanvasTool { paint, erase, line, rectangle, circle, fill, text, eyedropper, transform }
 
 /// Manages a canvas editing session: layer CRUD, stroke lifecycle,
 /// action-based undo/redo, brush settings.
@@ -444,6 +444,94 @@ class CanvasNotifier extends ChangeNotifier {
     ));
   }
 
+  // --- Image layer management ---
+
+  /// Add an image as a new layer.
+  void addImageLayer(Uint8List bytes, {String? name}) {
+    if (_session == null) return;
+    final id = 'layer_${DateTime.now().microsecondsSinceEpoch}';
+    final layerName = name ?? 'Image $_nextLayerNumber';
+    _nextLayerNumber++;
+
+    final layer = CanvasLayer(
+      id: id,
+      name: layerName,
+      imageBytes: bytes,
+      imageX: 0.0,
+      imageY: 0.0,
+      imageScale: 1.0,
+      imageRotation: 0.0,
+    );
+
+    _pushAction(AddImageLayerAction(layer: layer));
+    _session = _session!.copyWith(activeLayerId: id);
+    notifyListeners();
+  }
+
+  // Transform tool state
+  double? _transformStartX;
+  double? _transformStartY;
+  double? _transformStartScale;
+  double? _transformStartRotation;
+
+  void beginTransform() {
+    if (_session == null) return;
+    final layer = _session!.activeLayer;
+    if (layer == null || !layer.isImageLayer) return;
+
+    _transformStartX = layer.imageX;
+    _transformStartY = layer.imageY;
+    _transformStartScale = layer.imageScale;
+    _transformStartRotation = layer.imageRotation;
+  }
+
+  void updateTransform({
+    double? dx,
+    double? dy,
+    double? scale,
+    double? rotation,
+  }) {
+    if (_session == null) return;
+    final layer = _session!.activeLayer;
+    if (layer == null || !layer.isImageLayer) return;
+
+    final layers = List<CanvasLayer>.from(_session!.layers);
+    final idx = layers.indexWhere((l) => l.id == layer.id);
+    if (idx < 0) return;
+
+    layers[idx] = layers[idx].copyWith(
+      imageX: dx ?? layer.imageX,
+      imageY: dy ?? layer.imageY,
+      imageScale: scale ?? layer.imageScale,
+      imageRotation: rotation ?? layer.imageRotation,
+    );
+    _session = _session!.copyWith(layers: layers);
+    notifyListeners();
+  }
+
+  void endTransform() {
+    if (_session == null || _transformStartX == null) return;
+    final layer = _session!.activeLayer;
+    if (layer == null || !layer.isImageLayer) return;
+
+    _pushAction(TransformImageLayerAction(
+      layerId: layer.id,
+      oldX: _transformStartX!,
+      oldY: _transformStartY!,
+      oldScale: _transformStartScale!,
+      oldRotation: _transformStartRotation!,
+      newX: layer.imageX,
+      newY: layer.imageY,
+      newScale: layer.imageScale,
+      newRotation: layer.imageRotation,
+    ));
+
+    _transformStartX = null;
+    _transformStartY = null;
+    _transformStartScale = null;
+    _transformStartRotation = null;
+  }
+
   // --- Undo / Redo ---
 
   void undo() {
@@ -478,136 +566,13 @@ class CanvasNotifier extends ChangeNotifier {
 
   void _applyAction(CanvasAction action) {
     final layers = List<CanvasLayer>.from(_session!.layers);
-
-    switch (action) {
-      case AddStrokeAction(:final layerId, :final stroke):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(
-            strokes: [...layers[idx].strokes, stroke],
-          );
-        }
-
-      case AddLayerAction(:final layer):
-        final activeIdx =
-            layers.indexWhere((l) => l.id == _session!.activeLayerId);
-        final insertIdx = activeIdx >= 0 ? activeIdx + 1 : layers.length;
-        layers.insert(insertIdx, layer);
-
-      case RemoveLayerAction(:final index):
-        if (index >= 0 && index < layers.length) {
-          layers.removeAt(index);
-        }
-
-      case DuplicateLayerAction(:final duplicatedLayer, :final insertIndex):
-        layers.insert(
-            insertIndex.clamp(0, layers.length), duplicatedLayer);
-
-      case ReorderLayerAction(:final oldIndex, :final newIndex):
-        if (oldIndex >= 0 && oldIndex < layers.length) {
-          final layer = layers.removeAt(oldIndex);
-          final adjustedNew =
-              newIndex > oldIndex ? newIndex - 1 : newIndex;
-          layers.insert(adjustedNew.clamp(0, layers.length), layer);
-        }
-
-      case SetLayerVisibilityAction(:final layerId, :final newVisible):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(visible: newVisible);
-        }
-
-      case SetLayerOpacityAction(:final layerId, :final newOpacity):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(opacity: newOpacity);
-        }
-
-      case SetLayerBlendModeAction(:final layerId, :final newMode):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(blendMode: newMode);
-        }
-
-      case RenameLayerAction(:final layerId, :final newName):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(name: newName);
-        }
-
-      case ClearLayerAction(:final layerId):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(strokes: []);
-        }
-    }
-
+    action.apply(layers, activeLayerId: _session!.activeLayerId);
     _session = _session!.copyWith(layers: layers);
   }
 
   void _revertAction(CanvasAction action) {
     final layers = List<CanvasLayer>.from(_session!.layers);
-
-    switch (action) {
-      case AddStrokeAction(:final layerId):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0 && layers[idx].strokes.isNotEmpty) {
-          layers[idx] = layers[idx].copyWith(
-            strokes: layers[idx]
-                .strokes
-                .sublist(0, layers[idx].strokes.length - 1),
-          );
-        }
-
-      case AddLayerAction(:final layer):
-        layers.removeWhere((l) => l.id == layer.id);
-
-      case RemoveLayerAction(:final removedLayer, :final index):
-        layers.insert(index.clamp(0, layers.length), removedLayer);
-
-      case DuplicateLayerAction(:final duplicatedLayer):
-        layers.removeWhere((l) => l.id == duplicatedLayer.id);
-
-      case ReorderLayerAction(:final oldIndex, :final newIndex):
-        // Reverse the reorder
-        final adjustedNew =
-            newIndex > oldIndex ? newIndex - 1 : newIndex;
-        if (adjustedNew >= 0 && adjustedNew < layers.length) {
-          final layer = layers.removeAt(adjustedNew);
-          layers.insert(oldIndex.clamp(0, layers.length), layer);
-        }
-
-      case SetLayerVisibilityAction(:final layerId, :final oldVisible):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(visible: oldVisible);
-        }
-
-      case SetLayerOpacityAction(:final layerId, :final oldOpacity):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(opacity: oldOpacity);
-        }
-
-      case SetLayerBlendModeAction(:final layerId, :final oldMode):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(blendMode: oldMode);
-        }
-
-      case RenameLayerAction(:final layerId, :final oldName):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(name: oldName);
-        }
-
-      case ClearLayerAction(:final layerId, :final removedStrokes):
-        final idx = layers.indexWhere((l) => l.id == layerId);
-        if (idx >= 0) {
-          layers[idx] = layers[idx].copyWith(strokes: removedStrokes);
-        }
-    }
-
+    action.revert(layers);
     _session = _session!.copyWith(layers: layers);
   }
 }

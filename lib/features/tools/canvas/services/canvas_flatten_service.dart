@@ -14,6 +14,7 @@ class _FlattenPayload {
   final int sourceHeight;
   final List<Map<String, dynamic>> layersJson;
   final Map<String, Uint8List> textOverlays;
+  final Map<String, Uint8List> imageLayerBytes;
 
   _FlattenPayload({
     required this.sourceBytes,
@@ -21,6 +22,7 @@ class _FlattenPayload {
     required this.sourceHeight,
     required this.layersJson,
     this.textOverlays = const {},
+    this.imageLayerBytes = const {},
   });
 }
 
@@ -34,12 +36,21 @@ class CanvasFlattenService {
     required List<CanvasLayer> visibleLayers,
     Map<String, Uint8List> textOverlays = const {},
   }) {
+    // Collect image layer bytes for isolate transfer
+    final imageLayerBytes = <String, Uint8List>{};
+    for (final layer in visibleLayers) {
+      if (layer.isImageLayer && layer.imageBytes != null) {
+        imageLayerBytes[layer.id] = layer.imageBytes!;
+      }
+    }
+
     final payload = _FlattenPayload(
       sourceBytes: sourceBytes,
       sourceWidth: sourceWidth,
       sourceHeight: sourceHeight,
       layersJson: visibleLayers.map((l) => l.toJson()).toList(),
       textOverlays: textOverlays,
+      imageLayerBytes: imageLayerBytes,
     );
     return compute(_flattenInIsolate, payload);
   }
@@ -50,10 +61,14 @@ Uint8List _flattenInIsolate(_FlattenPayload payload) {
   if (source == null) return payload.sourceBytes;
 
   final result = img.Image.from(source);
-  final layers = payload.layersJson.map((j) => CanvasLayer.fromJson(j)).toList();
+  final layers = payload.layersJson.map((j) {
+    final id = j['id'] as String;
+    return CanvasLayer.fromJson(j, imageBytes: payload.imageLayerBytes[id]);
+  }).toList();
 
   for (final layer in layers) {
-    if (!layer.visible || layer.strokes.isEmpty) continue;
+    if (!layer.visible) continue;
+    if (!layer.isImageLayer && layer.strokes.isEmpty) continue;
 
     // Create a transparent overlay for this layer
     final overlay = img.Image(
@@ -61,6 +76,24 @@ Uint8List _flattenInIsolate(_FlattenPayload payload) {
       height: payload.sourceHeight,
       numChannels: 4,
     );
+
+    // Render image layer content first
+    if (layer.isImageLayer && layer.imageBytes != null) {
+      final layerImg = img.decodeImage(layer.imageBytes!);
+      if (layerImg != null) {
+        final imgW = layerImg.width;
+        final imgH = layerImg.height;
+        final scale = layer.imageScale * payload.sourceWidth / imgW;
+        final dx = (layer.imageX * payload.sourceWidth).round();
+        final dy = (layer.imageY * payload.sourceHeight).round();
+        // Simple compositing without rotation for isolate compatibility
+        final scaledW = (imgW * scale).round();
+        final scaledH = (imgH * scale).round();
+        final scaled = img.copyResize(layerImg, width: scaledW, height: scaledH,
+            interpolation: img.Interpolation.linear);
+        img.compositeImage(overlay, scaled, dstX: dx, dstY: dy);
+      }
+    }
 
     // Render all strokes onto the overlay
     for (final stroke in layer.strokes) {

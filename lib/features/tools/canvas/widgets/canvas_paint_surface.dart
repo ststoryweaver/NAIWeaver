@@ -46,10 +46,33 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _textFocusNode = FocusNode();
 
+  // Image layer cache
+  final Map<String, ui.Image> _imageLayerCache = {};
+  final Set<String> _decodingImages = {};
+
+  void _ensureImageCached(CanvasLayer layer) {
+    if (!layer.isImageLayer || layer.imageBytes == null) return;
+    if (_imageLayerCache.containsKey(layer.id)) return;
+    if (_decodingImages.contains(layer.id)) return;
+    _decodingImages.add(layer.id);
+
+    ui.decodeImageFromList(layer.imageBytes!, (result) {
+      if (mounted) {
+        setState(() {
+          _imageLayerCache[layer.id] = result;
+          _decodingImages.remove(layer.id);
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
     _textController.dispose();
     _textFocusNode.dispose();
+    for (final img in _imageLayerCache.values) {
+      img.dispose();
+    }
     super.dispose();
   }
 
@@ -77,6 +100,11 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
         final offsetX = (containerSize.width - renderWidth) / 2;
         final offsetY = (containerSize.height - renderHeight) / 2;
         _imageRect = Rect.fromLTWH(offsetX, offsetY, renderWidth, renderHeight);
+
+        // Ensure image layers are cached
+        for (final layer in session.layers) {
+          _ensureImageCached(layer);
+        }
 
         // Build pending text stroke for live preview
         PaintStroke? pendingTextStroke;
@@ -120,6 +148,7 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
                             width: session.sourceWidth.toDouble(),
                             height: session.sourceHeight.toDouble(),
                             gaplessPlayback: true,
+                            filterQuality: FilterQuality.medium,
                           ),
                         ),
                       ),
@@ -133,6 +162,7 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
                             activeStroke: notifier.activeStroke,
                             pendingTextStroke: pendingTextStroke,
                             imageRect: _imageRect,
+                            imageCache: _imageLayerCache,
                           ),
                         ),
                       ),
@@ -187,7 +217,9 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
     const editorWidth = 220.0;
     const editorHeight = 40.0;
     final clampedX = screenX.clamp(_imageRect.left, _imageRect.right - editorWidth);
-    final clampedY = (screenY - editorHeight - 8).clamp(_imageRect.top, _imageRect.bottom - editorHeight);
+    final keyboardTop = MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
+    final maxY = (keyboardTop - editorHeight - 8).clamp(_imageRect.top, _imageRect.bottom - editorHeight);
+    final clampedY = (screenY - editorHeight - 8).clamp(_imageRect.top, maxY);
 
     return Positioned(
       left: clampedX,
@@ -366,12 +398,14 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
 }
 
 /// Paints smooth anti-aliased strokes per-layer with blend mode + opacity compositing.
+/// Also renders image layers with transform.
 class _CanvasPaintOverlayPainter extends CustomPainter {
   final List<CanvasLayer> layers;
   final String activeLayerId;
   final PaintStroke? activeStroke;
   final PaintStroke? pendingTextStroke;
   final Rect imageRect;
+  final Map<String, ui.Image> imageCache;
 
   _CanvasPaintOverlayPainter({
     required this.layers,
@@ -379,6 +413,7 @@ class _CanvasPaintOverlayPainter extends CustomPainter {
     this.activeStroke,
     this.pendingTextStroke,
     required this.imageRect,
+    this.imageCache = const {},
   });
 
   @override
@@ -407,6 +442,30 @@ class _CanvasPaintOverlayPainter extends CustomPainter {
           ..color = Color.fromARGB(
               (layer.opacity * 255).round(), 255, 255, 255),
       );
+
+      // Draw image layer content first (if present)
+      if (layer.isImageLayer) {
+        final cached = imageCache[layer.id];
+        if (cached != null) {
+          canvas.save();
+          final imgW = cached.width.toDouble();
+          final imgH = cached.height.toDouble();
+          // Compute destination rect based on normalized transform
+          final scale = layer.imageScale * imageRect.width / imgW;
+          final dx = imageRect.left + layer.imageX * imageRect.width;
+          final dy = imageRect.top + layer.imageY * imageRect.height;
+          canvas.translate(dx + imgW * scale / 2, dy + imgH * scale / 2);
+          canvas.rotate(layer.imageRotation);
+          canvas.translate(-imgW * scale / 2, -imgH * scale / 2);
+          canvas.drawImageRect(
+            cached,
+            Rect.fromLTWH(0, 0, imgW, imgH),
+            Rect.fromLTWH(0, 0, imgW * scale, imgH * scale),
+            Paint(),
+          );
+          canvas.restore();
+        }
+      }
 
       for (final stroke in layerStrokes) {
         _drawStroke(canvas, stroke);

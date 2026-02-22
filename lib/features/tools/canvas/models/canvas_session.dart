@@ -35,7 +35,7 @@ class CanvasSession {
 
   bool get canUndo => historyIndex > 0;
   bool get canRedo => historyIndex < history.length;
-  bool get hasStrokes => layers.any((l) => l.strokes.isNotEmpty);
+  bool get hasStrokes => layers.any((l) => l.strokes.isNotEmpty || l.isImageLayer);
   List<CanvasLayer> get visibleLayers =>
       layers.where((l) => l.visible).toList();
 

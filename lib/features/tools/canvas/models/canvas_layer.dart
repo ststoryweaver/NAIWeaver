@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'paint_stroke.dart';
@@ -25,6 +26,7 @@ enum CanvasBlendMode {
 
 /// A single layer in the canvas editor.
 /// Each layer holds its own strokes and has independent visibility, opacity, and blend mode.
+/// Optionally holds an image (for image layers imported from gallery/segmentation).
 class CanvasLayer {
   final String id;
   final String name;
@@ -33,6 +35,15 @@ class CanvasLayer {
   final double opacity;
   final CanvasBlendMode blendMode;
 
+  // Image layer fields (null = stroke-only layer)
+  final Uint8List? imageBytes;
+  final double imageX; // normalized 0-1
+  final double imageY;
+  final double imageScale; // 1.0 = fits canvas width
+  final double imageRotation; // radians
+
+  bool get isImageLayer => imageBytes != null;
+
   const CanvasLayer({
     required this.id,
     required this.name,
@@ -40,6 +51,11 @@ class CanvasLayer {
     this.visible = true,
     this.opacity = 1.0,
     this.blendMode = CanvasBlendMode.normal,
+    this.imageBytes,
+    this.imageX = 0.0,
+    this.imageY = 0.0,
+    this.imageScale = 1.0,
+    this.imageRotation = 0.0,
   });
 
   CanvasLayer copyWith({
@@ -49,6 +65,11 @@ class CanvasLayer {
     bool? visible,
     double? opacity,
     CanvasBlendMode? blendMode,
+    Uint8List? imageBytes,
+    double? imageX,
+    double? imageY,
+    double? imageScale,
+    double? imageRotation,
   }) {
     return CanvasLayer(
       id: id ?? this.id,
@@ -57,6 +78,11 @@ class CanvasLayer {
       visible: visible ?? this.visible,
       opacity: opacity ?? this.opacity,
       blendMode: blendMode ?? this.blendMode,
+      imageBytes: imageBytes ?? this.imageBytes,
+      imageX: imageX ?? this.imageX,
+      imageY: imageY ?? this.imageY,
+      imageScale: imageScale ?? this.imageScale,
+      imageRotation: imageRotation ?? this.imageRotation,
     );
   }
 
@@ -67,9 +93,14 @@ class CanvasLayer {
         'opacity': opacity,
         'blendMode': blendMode.name,
         'strokes': strokes.map((s) => s.toJson()).toList(),
+        'hasImage': isImageLayer,
+        'imageX': imageX,
+        'imageY': imageY,
+        'imageScale': imageScale,
+        'imageRotation': imageRotation,
       };
 
-  factory CanvasLayer.fromJson(Map<String, dynamic> json) {
+  factory CanvasLayer.fromJson(Map<String, dynamic> json, {Uint8List? imageBytes}) {
     return CanvasLayer(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -83,6 +114,11 @@ class CanvasLayer {
               ?.map((j) => PaintStroke.fromJson(j as Map<String, dynamic>))
               .toList() ??
           [],
+      imageBytes: imageBytes,
+      imageX: (json['imageX'] as num?)?.toDouble() ?? 0.0,
+      imageY: (json['imageY'] as num?)?.toDouble() ?? 0.0,
+      imageScale: (json['imageScale'] as num?)?.toDouble() ?? 1.0,
+      imageRotation: (json['imageRotation'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

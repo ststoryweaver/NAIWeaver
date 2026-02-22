@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/l10n/l10n_extensions.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/theme/vision_tokens.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
+import '../../../../core/widgets/vision_slider.dart';
 import '../models/canvas_layer.dart';
 import '../providers/canvas_notifier.dart';
 
@@ -154,28 +158,14 @@ class LayerPanel extends StatelessWidget {
                         ),
                       ),
                       Expanded(
-                        child: SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            activeTrackColor: t.textDisabled,
-                            inactiveTrackColor: t.textMinimal,
-                            thumbColor: t.textPrimary,
-                            trackHeight: 2,
-                            thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 5),
-                            overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 10),
-                          ),
-                          child: Slider(
-                            value: activeLayer.opacity,
-                            min: 0.0,
-                            max: 1.0,
-                            onChanged: (v) {
-                              // Live preview without action push — just visual
-                            },
-                            onChangeEnd: (v) {
-                              notifier.setLayerOpacity(activeLayer.id, v);
-                            },
-                          ),
+                        child: VisionSlider.subtle(
+                          value: activeLayer.opacity,
+                          onChanged: (v) {
+                            notifier.setLayerOpacity(activeLayer.id, v);
+                          },
+                          t: t,
+                          thumbRadius: 5,
+                          overlayRadius: 10,
                         ),
                       ),
                       SizedBox(
@@ -236,92 +226,36 @@ class LayerPanel extends StatelessWidget {
     );
   }
 
-  void _confirmDeleteLayer(BuildContext context, CanvasNotifier notifier,
-      CanvasLayer layer, dynamic l, dynamic t) {
-    if (layer.strokes.isEmpty) {
+  Future<void> _confirmDeleteLayer(BuildContext context, CanvasNotifier notifier,
+      CanvasLayer layer, AppLocalizations l, VisionTokens t) async {
+    if (layer.strokes.isEmpty && !layer.isImageLayer) {
       notifier.removeLayer(layer.id);
       return;
     }
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final dt = ctx.t;
-        return AlertDialog(
-          backgroundColor: dt.surfaceHigh,
-          title: Text(
-            l.canvasLayerDelete,
-            style: TextStyle(
-                color: dt.textSecondary,
-                fontSize: dt.fontSize(10),
-                letterSpacing: 2),
-          ),
-          content: Text(
-            l.canvasLayerDeleteConfirm,
-            style:
-                TextStyle(color: dt.textTertiary, fontSize: dt.fontSize(10)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l.commonCancel.toUpperCase(),
-                  style: TextStyle(
-                      color: dt.textDisabled, fontSize: dt.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                notifier.removeLayer(layer.id);
-              },
-              child: Text(l.canvasLayerDelete,
-                  style: TextStyle(
-                      color: dt.accentDanger, fontSize: dt.fontSize(9))),
-            ),
-          ],
-        );
-      },
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.canvasLayerDelete,
+      message: l.canvasLayerDeleteConfirm,
+      confirmLabel: l.canvasLayerDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.removeLayer(layer.id);
+    }
   }
 
-  void _confirmClearLayer(BuildContext context, CanvasNotifier notifier,
-      CanvasLayer layer, dynamic l, dynamic t) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final dt = ctx.t;
-        return AlertDialog(
-          backgroundColor: dt.surfaceHigh,
-          title: Text(
-            l.canvasLayerClear,
-            style: TextStyle(
-                color: dt.textSecondary,
-                fontSize: dt.fontSize(10),
-                letterSpacing: 2),
-          ),
-          content: Text(
-            l.canvasLayerClearConfirm,
-            style:
-                TextStyle(color: dt.textTertiary, fontSize: dt.fontSize(10)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l.commonCancel.toUpperCase(),
-                  style: TextStyle(
-                      color: dt.textDisabled, fontSize: dt.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                notifier.clearLayer(layer.id);
-              },
-              child: Text(l.canvasLayerClear,
-                  style: TextStyle(
-                      color: dt.accentDanger, fontSize: dt.fontSize(9))),
-            ),
-          ],
-        );
-      },
+  Future<void> _confirmClearLayer(BuildContext context, CanvasNotifier notifier,
+      CanvasLayer layer, AppLocalizations l, VisionTokens t) async {
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.canvasLayerClear,
+      message: l.canvasLayerClearConfirm,
+      confirmLabel: l.canvasLayerClear,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.clearLayer(layer.id);
+    }
   }
 }
 
@@ -330,7 +264,7 @@ class _LayerRow extends StatefulWidget {
   final CanvasLayer layer;
   final bool isActive;
   final int index;
-  final dynamic t;
+  final VisionTokens t;
   final VoidCallback onTap;
   final VoidCallback onToggleVisibility;
   final ValueChanged<String> onRename;
@@ -401,7 +335,9 @@ class _LayerRowState extends State<_LayerRow> {
 
     // Determine dominant stroke color for the color dot
     Color dotColor = Colors.grey;
-    if (layer.strokes.isNotEmpty) {
+    if (layer.isImageLayer) {
+      dotColor = Colors.teal;
+    } else if (layer.strokes.isNotEmpty) {
       final lastPaint =
           layer.strokes.lastWhere((s) => !s.isErase, orElse: () => layer.strokes.last);
       if (!lastPaint.isErase) {
@@ -431,25 +367,31 @@ class _LayerRowState extends State<_LayerRow> {
           child: Row(
             children: [
               // Visibility toggle
-              GestureDetector(
-                onTap: widget.onToggleVisibility,
-                child: Icon(
-                  layer.visible ? Icons.visibility : Icons.visibility_off,
-                  size: 14,
-                  color: layer.visible ? t.textTertiary : t.textMinimal,
+              Tooltip(
+                message: context.l.canvasLayerToggleVisibility,
+                child: GestureDetector(
+                  onTap: widget.onToggleVisibility,
+                  child: Icon(
+                    layer.visible ? Icons.visibility : Icons.visibility_off,
+                    size: 14,
+                    color: layer.visible ? t.textTertiary : t.textMinimal,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              // Color dot
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: t.borderSubtle, width: 0.5),
+              // Color dot or image icon
+              if (layer.isImageLayer)
+                Icon(Icons.image, size: 12, color: dotColor)
+              else
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: t.borderSubtle, width: 0.5),
+                  ),
                 ),
-              ),
               const SizedBox(width: 8),
               // Layer name (or inline edit)
               Expanded(
@@ -506,7 +448,7 @@ class _SmallIconButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  final dynamic t;
+  final VisionTokens t;
 
   const _SmallIconButton({
     required this.icon,
@@ -534,7 +476,7 @@ class _SmallIconButton extends StatelessWidget {
 class _PanelButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
-  final dynamic t;
+  final VisionTokens t;
   final bool danger;
 
   const _PanelButton({

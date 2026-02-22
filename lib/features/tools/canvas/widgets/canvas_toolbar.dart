@@ -5,8 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/l10n/l10n_extensions.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/theme/vision_tokens.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/vision_slider.dart';
 import '../providers/canvas_notifier.dart';
 import 'canvas_color_picker.dart';
 
@@ -102,7 +105,7 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
     return _buildDesktopToolbar(t, l, notifier);
   }
 
-  Widget _buildDesktopToolbar(dynamic t, dynamic l, CanvasNotifier notifier) {
+  Widget _buildDesktopToolbar(VisionTokens t, AppLocalizations l, CanvasNotifier notifier) {
     final session = notifier.session!;
 
     return Container(
@@ -189,6 +192,15 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
                 t: t,
               ),
               const SizedBox(width: 4),
+              // Transform tool
+              _ToolButton(
+                icon: Icons.open_with,
+                label: l.canvasTransform,
+                isActive: notifier.tool == CanvasTool.transform,
+                onTap: () => notifier.setTool(CanvasTool.transform),
+                t: t,
+              ),
+              const SizedBox(width: 4),
               // Smooth toggle
               _ToolButton(
                 icon: Icons.gesture,
@@ -203,15 +215,18 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
               const SizedBox(width: 12),
 
               // Color swatch (tap to toggle picker)
-              GestureDetector(
-                onTap: () => setState(() => _showColorPicker = !_showColorPicker),
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: notifier.brushColorAsColor,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: t.borderMedium, width: 1.5),
+              Tooltip(
+                message: l.canvasColor,
+                child: GestureDetector(
+                  onTap: () => setState(() => _showColorPicker = !_showColorPicker),
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: notifier.brushColorAsColor,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: t.borderMedium, width: 1.5),
+                    ),
                   ),
                 ),
               ),
@@ -300,21 +315,10 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: t.textDisabled,
-                    inactiveTrackColor: t.textMinimal,
-                    thumbColor: t.textPrimary,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                  ),
-                  child: Slider(
-                    value: _radiusToSlider(notifier.brushRadius),
-                    min: 0.0,
-                    max: 1.0,
-                    onChanged: (t) => notifier.setBrushRadius(_sliderToRadius(t)),
-                  ),
+                child: VisionSlider.subtle(
+                  value: _radiusToSlider(notifier.brushRadius),
+                  onChanged: (t) => notifier.setBrushRadius(_sliderToRadius(t)),
+                  t: t,
                 ),
               ),
               SizedBox(
@@ -362,21 +366,11 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: t.textDisabled,
-                    inactiveTrackColor: t.textMinimal,
-                    thumbColor: t.textPrimary,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                  ),
-                  child: Slider(
-                    value: notifier.brushOpacity,
-                    min: 0.05,
-                    max: 1.0,
-                    onChanged: notifier.setBrushOpacity,
-                  ),
+                child: VisionSlider.subtle(
+                  value: notifier.brushOpacity,
+                  min: 0.05,
+                  onChanged: notifier.setBrushOpacity,
+                  t: t,
                 ),
               ),
               SizedBox(
@@ -436,7 +430,7 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
     );
   }
 
-  Widget _buildTextSettingsRow(dynamic t, dynamic l, CanvasNotifier notifier) {
+  Widget _buildTextSettingsRow(VisionTokens t, AppLocalizations l, CanvasNotifier notifier) {
     return Row(
       children: [
         // Font dropdown
@@ -463,21 +457,12 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: t.textDisabled,
-              inactiveTrackColor: t.textMinimal,
-              thumbColor: t.textPrimary,
-              trackHeight: 2,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-            ),
-            child: Slider(
-              value: notifier.pendingTextFontSize,
-              min: 0.01,
-              max: 0.20,
-              onChanged: notifier.setPendingTextFontSize,
-            ),
+          child: VisionSlider.subtle(
+            value: notifier.pendingTextFontSize,
+            min: 0.01,
+            max: 0.20,
+            onChanged: notifier.setPendingTextFontSize,
+            t: t,
           ),
         ),
         SizedBox(
@@ -496,21 +481,12 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: t.textDisabled,
-              inactiveTrackColor: t.textMinimal,
-              thumbColor: t.textPrimary,
-              trackHeight: 2,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-            ),
-            child: Slider(
-              value: notifier.pendingTextLetterSpacing,
-              min: -0.01,
-              max: 0.05,
-              onChanged: notifier.setPendingTextLetterSpacing,
-            ),
+          child: VisionSlider.subtle(
+            value: notifier.pendingTextLetterSpacing,
+            min: -0.01,
+            max: 0.05,
+            onChanged: notifier.setPendingTextLetterSpacing,
+            t: t,
           ),
         ),
         SizedBox(
@@ -525,7 +501,7 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
     );
   }
 
-  void _showTextSettingsSheet(BuildContext context, dynamic t, dynamic l, CanvasNotifier notifier) {
+  void _showTextSettingsSheet(BuildContext context, VisionTokens t, AppLocalizations l, CanvasNotifier notifier) {
     showModalBottomSheet(
       context: context,
       backgroundColor: t.surfaceHigh,
@@ -541,7 +517,7 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
     );
   }
 
-  Widget _buildMobileToolbar(dynamic t, dynamic l, CanvasNotifier notifier) {
+  Widget _buildMobileToolbar(VisionTokens t, AppLocalizations l, CanvasNotifier notifier) {
     final session = notifier.session!;
 
     return Container(
@@ -635,6 +611,15 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
                       ),
                       const SizedBox(width: 2),
                       _ToolButton(
+                        icon: Icons.open_with,
+                        label: l.canvasTransform,
+                        isActive: notifier.tool == CanvasTool.transform,
+                        onTap: () => notifier.setTool(CanvasTool.transform),
+                        t: t,
+                        iconOnly: true,
+                      ),
+                      const SizedBox(width: 2),
+                      _ToolButton(
                         icon: Icons.gesture,
                         label: l.canvasSmooth,
                         isActive: notifier.smoothStrokes,
@@ -648,15 +633,18 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
               ),
               const SizedBox(width: 6),
               // Color swatch
-              GestureDetector(
-                onTap: () => setState(() => _showColorPicker = !_showColorPicker),
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: notifier.brushColorAsColor,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: t.borderMedium, width: 1.5),
+              Tooltip(
+                message: l.canvasColor,
+                child: GestureDetector(
+                  onTap: () => setState(() => _showColorPicker = !_showColorPicker),
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: notifier.brushColorAsColor,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: t.borderMedium, width: 1.5),
+                    ),
                   ),
                 ),
               ),
@@ -711,21 +699,12 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
                 style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(7), letterSpacing: 1),
               ),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: t.textDisabled,
-                    inactiveTrackColor: t.textMinimal,
-                    thumbColor: t.textPrimary,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                  ),
-                  child: Slider(
-                    value: _radiusToSlider(notifier.brushRadius),
-                    min: 0.0,
-                    max: 1.0,
-                    onChanged: (t) => notifier.setBrushRadius(_sliderToRadius(t)),
-                  ),
+                child: VisionSlider.subtle(
+                  value: _radiusToSlider(notifier.brushRadius),
+                  onChanged: (t) => notifier.setBrushRadius(_sliderToRadius(t)),
+                  t: t,
+                  thumbRadius: 5,
+                  overlayRadius: 10,
                 ),
               ),
               SizedBox(
@@ -742,21 +721,13 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
                 style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(7), letterSpacing: 1),
               ),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: t.textDisabled,
-                    inactiveTrackColor: t.textMinimal,
-                    thumbColor: t.textPrimary,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                  ),
-                  child: Slider(
-                    value: notifier.brushOpacity,
-                    min: 0.05,
-                    max: 1.0,
-                    onChanged: notifier.setBrushOpacity,
-                  ),
+                child: VisionSlider.subtle(
+                  value: notifier.brushOpacity,
+                  min: 0.05,
+                  onChanged: notifier.setBrushOpacity,
+                  t: t,
+                  thumbRadius: 5,
+                  overlayRadius: 10,
                 ),
               ),
               SizedBox(
@@ -821,8 +792,8 @@ class _CanvasToolbarState extends State<CanvasToolbar> {
 
 /// Bottom sheet for mobile text tool settings.
 class _MobileTextSettingsSheet extends StatelessWidget {
-  final dynamic t;
-  final dynamic l;
+  final VisionTokens t;
+  final AppLocalizations l;
 
   const _MobileTextSettingsSheet({required this.t, required this.l});
 
@@ -872,21 +843,12 @@ class _MobileTextSettingsSheet extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: t.textDisabled,
-                    inactiveTrackColor: t.textMinimal,
-                    thumbColor: t.textPrimary,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                  ),
-                  child: Slider(
-                    value: notifier.pendingTextFontSize,
-                    min: 0.01,
-                    max: 0.20,
-                    onChanged: notifier.setPendingTextFontSize,
-                  ),
+                child: VisionSlider.subtle(
+                  value: notifier.pendingTextFontSize,
+                  min: 0.01,
+                  max: 0.20,
+                  onChanged: notifier.setPendingTextFontSize,
+                  t: t,
                 ),
               ),
               SizedBox(
@@ -909,21 +871,12 @@ class _MobileTextSettingsSheet extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: t.textDisabled,
-                    inactiveTrackColor: t.textMinimal,
-                    thumbColor: t.textPrimary,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                  ),
-                  child: Slider(
-                    value: notifier.pendingTextLetterSpacing,
-                    min: -0.01,
-                    max: 0.05,
-                    onChanged: notifier.setPendingTextLetterSpacing,
-                  ),
+                child: VisionSlider.subtle(
+                  value: notifier.pendingTextLetterSpacing,
+                  min: -0.01,
+                  max: 0.05,
+                  onChanged: notifier.setPendingTextLetterSpacing,
+                  t: t,
                 ),
               ),
               SizedBox(
@@ -947,7 +900,7 @@ class _FontDropdown extends StatelessWidget {
   final String? value;
   final String defaultLabel;
   final ValueChanged<String?> onChanged;
-  final dynamic t;
+  final VisionTokens t;
 
   const _FontDropdown({
     required this.value,
@@ -1007,7 +960,7 @@ class _ToolButton extends StatelessWidget {
   final String label;
   final bool isActive;
   final VoidCallback onTap;
-  final dynamic t;
+  final VisionTokens t;
   final bool iconOnly;
 
   const _ToolButton({

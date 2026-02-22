@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/theme/vision_tokens.dart';
+import '../../../../core/widgets/vision_slider.dart';
 
 /// Inline HSV color picker for the canvas toolbar.
 /// Collapsed: color swatch + quick palette row.
@@ -105,7 +107,7 @@ class _CanvasColorPickerState extends State<CanvasColorPicker> {
     return _buildExpanded(t, currentColor);
   }
 
-  Widget _buildCollapsed(dynamic t, Color currentColor) {
+  Widget _buildCollapsed(VisionTokens t, Color currentColor) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -151,7 +153,7 @@ class _CanvasColorPickerState extends State<CanvasColorPicker> {
     );
   }
 
-  Widget _buildExpanded(dynamic t, Color currentColor) {
+  Widget _buildExpanded(VisionTokens t, Color currentColor) {
     final svHeight = widget.compact ? 140.0 : 180.0;
     final hueHeight = widget.compact ? 20.0 : 28.0;
     final swatchSize = widget.compact ? 24.0 : 32.0;
@@ -241,21 +243,15 @@ class _CanvasColorPickerState extends State<CanvasColorPicker> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: currentColor,
-                    inactiveTrackColor: t.textMinimal,
-                    thumbColor: t.textPrimary,
-                    trackHeight: 2,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                  ),
-                  child: Slider(
-                    value: widget.opacity,
-                    min: 0.05,
-                    max: 1.0,
-                    onChanged: widget.onOpacityChanged,
-                  ),
+                child: VisionSlider(
+                  value: widget.opacity,
+                  min: 0.05,
+                  onChanged: widget.onOpacityChanged,
+                  activeColor: currentColor,
+                  inactiveColor: t.textMinimal,
+                  thumbColor: t.textPrimary,
+                  thumbRadius: 6,
+                  overlayRadius: 10,
                 ),
               ),
               SizedBox(
