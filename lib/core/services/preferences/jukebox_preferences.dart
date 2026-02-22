@@ -23,6 +23,7 @@ class JukeboxPreferences {
   static const String _kVizIntensity = 'jukebox_viz_intensity';
   static const String _kVizSpeed = 'jukebox_viz_speed';
   static const String _kVizDensity = 'jukebox_viz_density';
+  static const String _kHighScores = 'jukebox_high_scores';
 
   // — Volume —
 
@@ -182,5 +183,13 @@ class JukeboxPreferences {
 
   Future<void> setVizDensity(double value) async {
     await _prefs.setDouble(_kVizDensity, value);
+  }
+
+  // — High Scores —
+
+  String get highScores => _prefs.getString(_kHighScores) ?? '';
+
+  Future<void> setHighScores(String value) async {
+    await _prefs.setString(_kHighScores, value);
   }
 }

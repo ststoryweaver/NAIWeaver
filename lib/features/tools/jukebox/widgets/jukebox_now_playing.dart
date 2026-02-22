@@ -328,22 +328,29 @@ class JukeboxMobileNowPlaying extends StatelessWidget {
     final song = jukebox.currentSong!;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return AnimatedContainer(
+    return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      height: expanded ? screenHeight * 0.7 : null,
-      color: t.surfaceMid,
-      child: Column(
-        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
-        children: [
-          _buildDragHandle(),
-          if (!expanded) ...[
-            _buildCompactBar(context, song),
-            const SizedBox(height: 4),
-          ],
-          if (expanded)
-            Expanded(child: expandedBody),
-        ],
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: expanded ? screenHeight * 0.5 : double.infinity,
+        ),
+        child: Container(
+          color: t.surfaceMid,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDragHandle(),
+              if (!expanded) ...[
+                _buildCompactBar(context, song),
+                const SizedBox(height: 4),
+              ],
+              if (expanded)
+                Flexible(child: expandedBody),
+            ],
+          ),
+        ),
       ),
     );
   }

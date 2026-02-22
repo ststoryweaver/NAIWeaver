@@ -135,6 +135,8 @@ class MLNotifier extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void selectSegmentationModel(String? id) {
+    // SAM 2.1 crashes on Android — never select segmentation there
+    if (id != null && defaultTargetPlatform == TargetPlatform.android) return;
     _selectedSegmentationModelId = id;
     _prefs.setSelectedSegmentationModel(id);
     notifyListeners();
@@ -460,7 +462,10 @@ class MLNotifier extends ChangeNotifier with WidgetsBindingObserver {
       selectSegmentationModel(null);
     }
     // Auto-select segmentation if both models downloaded but no selection
-    if (_selectedSegmentationModelId == null && hasSegmentationModel) {
+    // (skip on Android where SAM 2.1 crashes)
+    if (_selectedSegmentationModelId == null &&
+        hasSegmentationModel &&
+        defaultTargetPlatform != TargetPlatform.android) {
       selectSegmentationModel(_dlManager.findSegmentationEncoder());
     }
     notifyListeners();
@@ -483,7 +488,9 @@ class MLNotifier extends ChangeNotifier with WidgetsBindingObserver {
         _upgradeSelectionIfBetterTier(entry, MLModelType.upscale);
       }
     } else if (entry.type == MLModelType.segmentation) {
-      if (_selectedSegmentationModelId == null && hasSegmentationModel) {
+      if (_selectedSegmentationModelId == null &&
+          hasSegmentationModel &&
+          defaultTargetPlatform != TargetPlatform.android) {
         selectSegmentationModel(_dlManager.findSegmentationEncoder());
       }
     }

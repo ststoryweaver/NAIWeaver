@@ -352,4 +352,6 @@ class PreferencesService {
   Future<void> setJukeboxVizSpeed(double value) => jukebox.setVizSpeed(value);
   double get jukeboxVizDensity => jukebox.vizDensity;
   Future<void> setJukeboxVizDensity(double value) => jukebox.setVizDensity(value);
+  String get jukeboxHighScores => jukebox.highScores;
+  Future<void> setJukeboxHighScores(String value) => jukebox.setHighScores(value);
 }

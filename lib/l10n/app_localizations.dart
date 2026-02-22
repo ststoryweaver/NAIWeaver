@@ -5064,6 +5064,18 @@ abstract class AppLocalizations {
   /// **'After'**
   String get comparisonAfter;
 
+  /// No description provided for @comparisonSideBySide.
+  ///
+  /// In en, this message translates to:
+  /// **'Side by side'**
+  String get comparisonSideBySide;
+
+  /// No description provided for @comparisonSliderMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Slider mode'**
+  String get comparisonSliderMode;
+
   /// No description provided for @settingsBgRemovalButton.
   ///
   /// In en, this message translates to:
@@ -5159,6 +5171,636 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upscale'**
   String get themeColorUpscale;
+
+  /// No description provided for @jukeboxSynthUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Synthesizer unavailable'**
+  String get jukeboxSynthUnavailable;
+
+  /// No description provided for @jukeboxImport.
+  ///
+  /// In en, this message translates to:
+  /// **'IMPORT'**
+  String get jukeboxImport;
+
+  /// No description provided for @jukeboxKeyboard.
+  ///
+  /// In en, this message translates to:
+  /// **'KEYBOARD'**
+  String get jukeboxKeyboard;
+
+  /// No description provided for @jukeboxGame.
+  ///
+  /// In en, this message translates to:
+  /// **'GAME'**
+  String get jukeboxGame;
+
+  /// No description provided for @jukeboxEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'END'**
+  String get jukeboxEnd;
+
+  /// No description provided for @jukeboxTempo.
+  ///
+  /// In en, this message translates to:
+  /// **'TEMPO'**
+  String get jukeboxTempo;
+
+  /// No description provided for @jukeboxKeyboardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'KEYS: A-L  SHARPS: W,E,T,Y,U,O,P  OCTAVE: Z/X'**
+  String get jukeboxKeyboardHint;
+
+  /// No description provided for @jukeboxGameResults.
+  ///
+  /// In en, this message translates to:
+  /// **'RESULTS'**
+  String get jukeboxGameResults;
+
+  /// No description provided for @jukeboxGameScore.
+  ///
+  /// In en, this message translates to:
+  /// **'SCORE'**
+  String get jukeboxGameScore;
+
+  /// No description provided for @jukeboxGameMaxCombo.
+  ///
+  /// In en, this message translates to:
+  /// **'MAX COMBO'**
+  String get jukeboxGameMaxCombo;
+
+  /// No description provided for @jukeboxGameAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'ACCURACY'**
+  String get jukeboxGameAccuracy;
+
+  /// No description provided for @jukeboxGamePerfect.
+  ///
+  /// In en, this message translates to:
+  /// **'PERFECT'**
+  String get jukeboxGamePerfect;
+
+  /// No description provided for @jukeboxGameGreat.
+  ///
+  /// In en, this message translates to:
+  /// **'GREAT'**
+  String get jukeboxGameGreat;
+
+  /// No description provided for @jukeboxGameGood.
+  ///
+  /// In en, this message translates to:
+  /// **'GOOD'**
+  String get jukeboxGameGood;
+
+  /// No description provided for @jukeboxGameMiss.
+  ///
+  /// In en, this message translates to:
+  /// **'MISS'**
+  String get jukeboxGameMiss;
+
+  /// No description provided for @jukeboxHighScores.
+  ///
+  /// In en, this message translates to:
+  /// **'HIGH SCORES'**
+  String get jukeboxHighScores;
+
+  /// No description provided for @jukeboxQueueCount.
+  ///
+  /// In en, this message translates to:
+  /// **'QUEUE ({count})'**
+  String jukeboxQueueCount(int count);
+
+  /// No description provided for @jukeboxStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'STYLE'**
+  String get jukeboxStyle;
+
+  /// No description provided for @jukeboxGameModeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Game Mode'**
+  String get jukeboxGameModeTooltip;
+
+  /// No description provided for @jukeboxEndGameTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'End Game'**
+  String get jukeboxEndGameTooltip;
+
+  /// No description provided for @jukeboxImportTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get jukeboxImportTooltip;
+
+  /// No description provided for @jukeboxShuffleAllTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle All'**
+  String get jukeboxShuffleAllTooltip;
+
+  /// No description provided for @jukeboxPlayAllTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Play All'**
+  String get jukeboxPlayAllTooltip;
+
+  /// No description provided for @jukeboxKeyboardTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard'**
+  String get jukeboxKeyboardTooltip;
+
+  /// No description provided for @jukeboxGameMode.
+  ///
+  /// In en, this message translates to:
+  /// **'GAME MODE'**
+  String get jukeboxGameMode;
+
+  /// No description provided for @jukeboxNoSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'NO SONGS'**
+  String get jukeboxNoSongs;
+
+  /// No description provided for @jukeboxRecommendedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'REC'**
+  String get jukeboxRecommendedBadge;
+
+  /// No description provided for @jukeboxAnalyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'ANALYZING...'**
+  String get jukeboxAnalyzing;
+
+  /// No description provided for @jukeboxNoScoresYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No scores yet'**
+  String get jukeboxNoScoresYet;
+
+  /// No description provided for @jukeboxSelectInstrument.
+  ///
+  /// In en, this message translates to:
+  /// **'SELECT INSTRUMENT'**
+  String get jukeboxSelectInstrument;
+
+  /// No description provided for @jukeboxWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'WATCH'**
+  String get jukeboxWatch;
+
+  /// No description provided for @jukeboxPlayGame.
+  ///
+  /// In en, this message translates to:
+  /// **'PLAY GAME'**
+  String get jukeboxPlayGame;
+
+  /// No description provided for @jukeboxChannelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'CH {channel}'**
+  String jukeboxChannelLabel(int channel);
+
+  /// No description provided for @jukeboxCombo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} COMBO'**
+  String jukeboxCombo(int count);
+
+  /// No description provided for @jukeboxPressOnTheLine.
+  ///
+  /// In en, this message translates to:
+  /// **'PRESS ON THE LINE'**
+  String get jukeboxPressOnTheLine;
+
+  /// No description provided for @jukeboxGradePerfect.
+  ///
+  /// In en, this message translates to:
+  /// **'PERFECT'**
+  String get jukeboxGradePerfect;
+
+  /// No description provided for @jukeboxGradeGreat.
+  ///
+  /// In en, this message translates to:
+  /// **'GREAT'**
+  String get jukeboxGradeGreat;
+
+  /// No description provided for @jukeboxGradeGood.
+  ///
+  /// In en, this message translates to:
+  /// **'GOOD'**
+  String get jukeboxGradeGood;
+
+  /// No description provided for @jukeboxGradeMiss.
+  ///
+  /// In en, this message translates to:
+  /// **'MISS'**
+  String get jukeboxGradeMiss;
+
+  /// No description provided for @jukeboxDifficultyEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'EASY'**
+  String get jukeboxDifficultyEasy;
+
+  /// No description provided for @jukeboxDifficultyMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'MEDIUM'**
+  String get jukeboxDifficultyMedium;
+
+  /// No description provided for @jukeboxDifficultyHard.
+  ///
+  /// In en, this message translates to:
+  /// **'HARD'**
+  String get jukeboxDifficultyHard;
+
+  /// No description provided for @jukeboxDifficultyExtreme.
+  ///
+  /// In en, this message translates to:
+  /// **'EXTREME'**
+  String get jukeboxDifficultyExtreme;
+
+  /// No description provided for @jukeboxInstrumentAcousticGrandPiano.
+  ///
+  /// In en, this message translates to:
+  /// **'Acoustic Grand Piano'**
+  String get jukeboxInstrumentAcousticGrandPiano;
+
+  /// No description provided for @jukeboxInstrumentElectricPiano.
+  ///
+  /// In en, this message translates to:
+  /// **'Electric Piano'**
+  String get jukeboxInstrumentElectricPiano;
+
+  /// No description provided for @jukeboxInstrumentHarpsichord.
+  ///
+  /// In en, this message translates to:
+  /// **'Harpsichord'**
+  String get jukeboxInstrumentHarpsichord;
+
+  /// No description provided for @jukeboxInstrumentVibraphone.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibraphone'**
+  String get jukeboxInstrumentVibraphone;
+
+  /// No description provided for @jukeboxInstrumentXylophone.
+  ///
+  /// In en, this message translates to:
+  /// **'Xylophone'**
+  String get jukeboxInstrumentXylophone;
+
+  /// No description provided for @jukeboxInstrumentChurchOrgan.
+  ///
+  /// In en, this message translates to:
+  /// **'Church Organ'**
+  String get jukeboxInstrumentChurchOrgan;
+
+  /// No description provided for @jukeboxInstrumentNylonGuitar.
+  ///
+  /// In en, this message translates to:
+  /// **'Nylon Guitar'**
+  String get jukeboxInstrumentNylonGuitar;
+
+  /// No description provided for @jukeboxInstrumentSteelGuitar.
+  ///
+  /// In en, this message translates to:
+  /// **'Steel Guitar'**
+  String get jukeboxInstrumentSteelGuitar;
+
+  /// No description provided for @jukeboxInstrumentCleanElectricGuitar.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean Electric Guitar'**
+  String get jukeboxInstrumentCleanElectricGuitar;
+
+  /// No description provided for @jukeboxInstrumentDistortionGuitar.
+  ///
+  /// In en, this message translates to:
+  /// **'Distortion Guitar'**
+  String get jukeboxInstrumentDistortionGuitar;
+
+  /// No description provided for @jukeboxInstrumentAcousticBass.
+  ///
+  /// In en, this message translates to:
+  /// **'Acoustic Bass'**
+  String get jukeboxInstrumentAcousticBass;
+
+  /// No description provided for @jukeboxInstrumentElectricBassFinger.
+  ///
+  /// In en, this message translates to:
+  /// **'Electric Bass (Finger)'**
+  String get jukeboxInstrumentElectricBassFinger;
+
+  /// No description provided for @jukeboxInstrumentViolin.
+  ///
+  /// In en, this message translates to:
+  /// **'Violin'**
+  String get jukeboxInstrumentViolin;
+
+  /// No description provided for @jukeboxInstrumentCello.
+  ///
+  /// In en, this message translates to:
+  /// **'Cello'**
+  String get jukeboxInstrumentCello;
+
+  /// No description provided for @jukeboxInstrumentOrchestralHarp.
+  ///
+  /// In en, this message translates to:
+  /// **'Orchestral Harp'**
+  String get jukeboxInstrumentOrchestralHarp;
+
+  /// No description provided for @jukeboxInstrumentStringEnsemble.
+  ///
+  /// In en, this message translates to:
+  /// **'String Ensemble'**
+  String get jukeboxInstrumentStringEnsemble;
+
+  /// No description provided for @jukeboxInstrumentTrumpet.
+  ///
+  /// In en, this message translates to:
+  /// **'Trumpet'**
+  String get jukeboxInstrumentTrumpet;
+
+  /// No description provided for @jukeboxInstrumentFrenchHorn.
+  ///
+  /// In en, this message translates to:
+  /// **'French Horn'**
+  String get jukeboxInstrumentFrenchHorn;
+
+  /// No description provided for @jukeboxInstrumentAltoSax.
+  ///
+  /// In en, this message translates to:
+  /// **'Alto Sax'**
+  String get jukeboxInstrumentAltoSax;
+
+  /// No description provided for @jukeboxInstrumentFlute.
+  ///
+  /// In en, this message translates to:
+  /// **'Flute'**
+  String get jukeboxInstrumentFlute;
+
+  /// No description provided for @jukeboxInstrumentSquareLeadSynth.
+  ///
+  /// In en, this message translates to:
+  /// **'Square Lead (Synth)'**
+  String get jukeboxInstrumentSquareLeadSynth;
+
+  /// No description provided for @jukeboxInstrumentLeadVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Lead 6 (Voice)'**
+  String get jukeboxInstrumentLeadVoice;
+
+  /// No description provided for @jukeboxKaraokeBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'KAR'**
+  String get jukeboxKaraokeBadge;
+
+  /// No description provided for @jukeboxDeleteCustomSongTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete custom song'**
+  String get jukeboxDeleteCustomSongTooltip;
+
+  /// No description provided for @jukeboxDeleteSong.
+  ///
+  /// In en, this message translates to:
+  /// **'DELETE SONG'**
+  String get jukeboxDeleteSong;
+
+  /// No description provided for @jukeboxDeleteSongConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {title}? This will remove the file from disk.'**
+  String jukeboxDeleteSongConfirm(String title);
+
+  /// No description provided for @jukeboxStyleHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'HIGHLIGHT'**
+  String get jukeboxStyleHighlight;
+
+  /// No description provided for @jukeboxStyleUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'UPCOMING'**
+  String get jukeboxStyleUpcoming;
+
+  /// No description provided for @jukeboxStyleNextLine.
+  ///
+  /// In en, this message translates to:
+  /// **'NEXT LINE'**
+  String get jukeboxStyleNextLine;
+
+  /// No description provided for @jukeboxStyleGlow.
+  ///
+  /// In en, this message translates to:
+  /// **'GLOW'**
+  String get jukeboxStyleGlow;
+
+  /// No description provided for @jukeboxVisualizer.
+  ///
+  /// In en, this message translates to:
+  /// **'VISUALIZER'**
+  String get jukeboxVisualizer;
+
+  /// No description provided for @jukeboxVizIntensity.
+  ///
+  /// In en, this message translates to:
+  /// **'INTENSITY'**
+  String get jukeboxVizIntensity;
+
+  /// No description provided for @jukeboxVizSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'SPEED'**
+  String get jukeboxVizSpeed;
+
+  /// No description provided for @jukeboxVizDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'DENSITY'**
+  String get jukeboxVizDensity;
+
+  /// No description provided for @jukeboxFontSize.
+  ///
+  /// In en, this message translates to:
+  /// **'SIZE'**
+  String get jukeboxFontSize;
+
+  /// No description provided for @jukeboxResetToDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'RESET TO DEFAULTS'**
+  String get jukeboxResetToDefaults;
+
+  /// No description provided for @jukeboxRepeatMode.
+  ///
+  /// In en, this message translates to:
+  /// **'REPEAT: {mode}'**
+  String jukeboxRepeatMode(String mode);
+
+  /// No description provided for @jukeboxShuffleStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'SHUFFLE: {status}'**
+  String jukeboxShuffleStatus(String status);
+
+  /// No description provided for @galleryBadgeNaiUpscale.
+  ///
+  /// In en, this message translates to:
+  /// **'NAI UPSCALE'**
+  String get galleryBadgeNaiUpscale;
+
+  /// No description provided for @galleryBadgeDirectorTool.
+  ///
+  /// In en, this message translates to:
+  /// **'DIRECTOR: {tool}'**
+  String galleryBadgeDirectorTool(String tool);
+
+  /// No description provided for @galleryBadgeEnhanced.
+  ///
+  /// In en, this message translates to:
+  /// **'ENHANCED'**
+  String get galleryBadgeEnhanced;
+
+  /// No description provided for @galleryBadgeBgRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'BG REMOVED'**
+  String get galleryBadgeBgRemoved;
+
+  /// No description provided for @galleryBadgeUpscaled.
+  ///
+  /// In en, this message translates to:
+  /// **'UPSCALED'**
+  String get galleryBadgeUpscaled;
+
+  /// No description provided for @galleryBgRemovalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'BG REMOVAL FAILED'**
+  String get galleryBgRemovalFailed;
+
+  /// No description provided for @naiUpscaleTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Image too large for NAI upscale ({width}x{height} exceeds 2048px limit per side)'**
+  String naiUpscaleTooLarge(int width, int height);
+
+  /// No description provided for @naiRemovingBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'REMOVING BACKGROUND...'**
+  String get naiRemovingBackground;
+
+  /// No description provided for @naiBgRemovalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'NAI BG REMOVAL FAILED'**
+  String get naiBgRemovalFailed;
+
+  /// No description provided for @directorToolsFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'FROM GALLERY'**
+  String get directorToolsFromGallery;
+
+  /// No description provided for @settingsBgRemovalBackend.
+  ///
+  /// In en, this message translates to:
+  /// **'BG Removal Backend'**
+  String get settingsBgRemovalBackend;
+
+  /// No description provided for @settingsBgRemovalBackendDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose between local ML model or NovelAI API for background removal'**
+  String get settingsBgRemovalBackendDesc;
+
+  /// No description provided for @importDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'IMPORT METADATA'**
+  String get importDialogTitle;
+
+  /// No description provided for @importCategoryPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt'**
+  String get importCategoryPrompt;
+
+  /// No description provided for @importCategoryNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative Prompt'**
+  String get importCategoryNegative;
+
+  /// No description provided for @importCategoryCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'Characters'**
+  String get importCategoryCharacters;
+
+  /// No description provided for @importCategorySeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Seed'**
+  String get importCategorySeed;
+
+  /// No description provided for @importCategoryStyles.
+  ///
+  /// In en, this message translates to:
+  /// **'Styles'**
+  String get importCategoryStyles;
+
+  /// No description provided for @importCategorySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings (Resolution, Sampler, Scale)'**
+  String get importCategorySettings;
+
+  /// No description provided for @importActionImport.
+  ///
+  /// In en, this message translates to:
+  /// **'IMPORT'**
+  String get importActionImport;
+
+  /// No description provided for @importNothingAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No importable metadata found'**
+  String get importNothingAvailable;
+
+  /// No description provided for @settingsCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits'**
+  String get settingsCredits;
+
+  /// No description provided for @settingsSpecialThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Special Thanks'**
+  String get settingsSpecialThanks;
+
+  /// No description provided for @settingsAnonTesters.
+  ///
+  /// In en, this message translates to:
+  /// **'...and all anonymous bug testers'**
+  String get settingsAnonTesters;
 }
 
 class _AppLocalizationsDelegate

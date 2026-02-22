@@ -91,8 +91,9 @@ class TagSuggestionHelper {
           typeName: 'category_shortcut',
         );
         final List<DanbooruTag> results = [shortcut];
-        // Also include normal suggestions if >= 3 chars
-        if (currentWord.length >= 3) {
+        // Also include normal suggestions if >= min length
+        final catMinLength = TagService.containsNonAscii(currentWord) ? 1 : 3;
+        if (currentWord.length >= catMinLength) {
           results.addAll(tagService.getSuggestions(currentWord));
         }
         return TagSuggestionResult(
@@ -102,7 +103,8 @@ class TagSuggestionHelper {
       }
     }
 
-    if (currentWord.length >= 3) {
+    final minLength = TagService.containsNonAscii(currentWord) ? 1 : 3;
+    if (currentWord.length >= minLength) {
       return TagSuggestionResult(
         suggestions: tagService.getSuggestions(currentWord),
         query: currentWord,
@@ -149,7 +151,8 @@ class TagSuggestionHelper {
       }
     }
 
-    final newBeforeCursor = "$prefix$spacer$categoryPrefix${tag.tag}, ";
+    final insertText = tag.matchedAlias ?? tag.tag;
+    final newBeforeCursor = "$prefix$spacer$categoryPrefix$insertText, ";
     controller.value = TextEditingValue(
       text: newBeforeCursor + afterCursor,
       selection: TextSelection.collapsed(offset: newBeforeCursor.length),

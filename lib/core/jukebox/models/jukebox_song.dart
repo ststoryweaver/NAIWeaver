@@ -21,6 +21,8 @@ class JukeboxSong {
   final String? filePath;
   final bool isKaraoke;
   final int? durationSeconds;
+  final bool isRecommended;
+  final int? recommendedProgram;
 
   const JukeboxSong({
     required this.id,
@@ -31,6 +33,8 @@ class JukeboxSong {
     this.filePath,
     this.isKaraoke = false,
     this.durationSeconds,
+    this.isRecommended = false,
+    this.recommendedProgram,
   });
 
   String get categoryLabel => category.name.toUpperCase();
@@ -44,6 +48,8 @@ class JukeboxSong {
         'filePath': filePath,
         'isKaraoke': isKaraoke,
         'durationSeconds': durationSeconds,
+        'isRecommended': isRecommended,
+        'recommendedProgram': recommendedProgram,
       };
 
   factory JukeboxSong.fromJson(Map<String, dynamic> json) {
@@ -56,6 +62,8 @@ class JukeboxSong {
       filePath: json['filePath'] as String?,
       isKaraoke: json['isKaraoke'] as bool? ?? false,
       durationSeconds: json['durationSeconds'] as int?,
+      isRecommended: json['isRecommended'] as bool? ?? false,
+      recommendedProgram: json['recommendedProgram'] as int?,
     );
   }
 }

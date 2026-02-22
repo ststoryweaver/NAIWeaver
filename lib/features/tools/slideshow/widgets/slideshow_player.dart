@@ -406,17 +406,7 @@ class _SlideshowPlayerState extends State<SlideshowPlayer>
                                     context: context,
                                     builder: (context) => Dialog.fullscreen(
                                       backgroundColor: Colors.black,
-                                      child: Scaffold(
-                                        backgroundColor: Colors.black,
-                                        appBar: AppBar(
-                                          backgroundColor: Colors.black,
-                                          leading: IconButton(
-                                            icon: const Icon(Icons.close, color: Colors.white70),
-                                            onPressed: () => Navigator.pop(context),
-                                          ),
-                                        ),
-                                        body: const JukeboxPanel(),
-                                      ),
+                                      child: const JukeboxPanel(),
                                     ),
                                   );
                                 },

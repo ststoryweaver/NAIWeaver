@@ -102,15 +102,41 @@ class TagSuggestionOverlay extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Text(
-                              tag.tag,
-                              style: TextStyle(
-                                color: color,
-                                fontSize: t.fontSize(10),
-                                fontWeight: FontWeight.bold,
-                                shadows: const [Shadow(color: Colors.black54, blurRadius: 1)],
+                            if (tag.matchedAlias != null) ...[
+                              Text(
+                                tag.matchedAlias!,
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: t.fontSize(10),
+                                  fontWeight: FontWeight.bold,
+                                  shadows: const [Shadow(color: Colors.black54, blurRadius: 1)],
+                                ),
                               ),
-                            ),
+                              Text(
+                                ' → ',
+                                style: TextStyle(
+                                  color: color.withValues(alpha: 0.5),
+                                  fontSize: t.fontSize(9),
+                                ),
+                              ),
+                              Text(
+                                tag.tag,
+                                style: TextStyle(
+                                  color: color.withValues(alpha: 0.6),
+                                  fontSize: t.fontSize(9),
+                                  shadows: const [Shadow(color: Colors.black54, blurRadius: 1)],
+                                ),
+                              ),
+                            ] else
+                              Text(
+                                tag.tag,
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: t.fontSize(10),
+                                  fontWeight: FontWeight.bold,
+                                  shadows: const [Shadow(color: Colors.black54, blurRadius: 1)],
+                                ),
+                              ),
                             if (tag.typeName != 'category_shortcut') ...[
                               const SizedBox(width: 4),
                               Text(

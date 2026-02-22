@@ -136,7 +136,7 @@ class _DirectorToolsEditorState extends State<DirectorToolsEditor> {
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'FROM GALLERY',
+                    context.l.directorToolsFromGallery,
                     style: TextStyle(
                       color: t.textDisabled,
                       fontSize: t.fontSize(9),
@@ -233,10 +233,12 @@ class _DirectorToolsEditorState extends State<DirectorToolsEditor> {
                     expand: false,
                     builder: (_, scrollController) => ListenableBuilder(
                       listenable: notifier,
-                      builder: (_, _) => SingleChildScrollView(
+                      builder: (sheetContext, _) => SingleChildScrollView(
                         controller: scrollController,
                         child: Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
+                          padding: EdgeInsets.only(
+                            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+                          ),
                           child: _buildConfigPanel(context, notifier),
                         ),
                       ),

@@ -98,6 +98,7 @@ class MLModelRegistry {
       tier: MLPerformanceTier.balanced,
       deviceTier: MLDeviceTier.both,
       pairedModelId: 'sam21_tiny_decoder',
+      platformFlags: {'windows', 'linux', 'macos', 'ios'},
     ),
     MLModelEntry(
       id: 'sam21_tiny_decoder',
@@ -111,6 +112,7 @@ class MLModelRegistry {
       tier: MLPerformanceTier.balanced,
       deviceTier: MLDeviceTier.both,
       pairedModelId: 'sam21_tiny_encoder',
+      platformFlags: {'windows', 'linux', 'macos', 'ios'},
     ),
   ];
 

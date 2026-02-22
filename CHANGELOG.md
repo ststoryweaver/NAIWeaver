@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.5.1
+
+### Tag Alias System
+- Type in Japanese, Korean, Chinese, or other languages and see alias-matched tag suggestions
+- Suggestions display as `alias → english_tag` for clear context
+- Aliases auto-inserted into prompt for readability
+- Automatic resolution to English Danbooru tags at generation time (prompt, negative prompt, character prompts)
+- Weight syntax preserved: `{女の子}` → `{1girl}`
+- CJK-aware minimum query length (1 character) across all tag suggestion fields
+
+### Selective Metadata Import
+- New import dialog when importing metadata from gallery images
+- Choose which categories to import: Prompt, Negative Prompt, Characters, Seed, Styles, Settings
+- Unavailable categories auto-detected and greyed out
+- Drag-and-drop import unchanged (imports all)
+
+### ML Inference
+- Graceful GPU provider fallback (CUDA → DirectML → CPU) when DLLs missing
+- TensorRT provider removed (unstable, superseded by CUDA)
+
+### Gallery
+- NAI API background removal via image detail view
+- Post-processing badge detection (NAI Upscale, Director Tools, Enhanced, BG Removed, Upscaled)
+
+### Tag Database
+- High-frequency tag list refreshed with updated counts
+- Aliases merged from latest Danbooru export
+
+### Bug Fixes
+- Web build: kIsWeb guards in gallery export, image detail, pack manager
+- Director Tools keyboard inset no longer pushes editor content
+- Mobile layout overflow fixes
+
+### Other
+- Easter egg improvements
+- Full EN and JA localization for all new features
+- debugPrint cleanup (error-path only)
+- Code quality: comparison-based shouldRepaint, extracted duplicated helpers
+
 ## v0.5.0 — The Tools Update
 
 ### On-Device ML Processing

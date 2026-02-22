@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'models/channel_info.dart';
+import 'models/note_block.dart';
 import 'synth/midi_synthesizer.dart';
 
 /// A single MIDI event scheduled for playback.
@@ -83,6 +85,42 @@ class MidiSequencer {
 
   MidiSequencer(this._synth);
 
+  /// Public getter for the event timeline.
+  List<ScheduledMidiEvent> get events => List.unmodifiable(_events);
+
+  /// Tempo multiplier getter/setter for game tempo control.
+  double get tempoMultiplier => _tempoMultiplier;
+  set tempoMultiplier(double value) {
+    _tempoMultiplier = value.clamp(0.25, 4.0);
+  }
+
+  /// Build NoteBlock list by pairing noteOn with noteOff events.
+  List<NoteBlock> buildNoteBlocks({int? filterChannel}) {
+    final blocks = <NoteBlock>[];
+    final activeNotes = <(int, int), ScheduledMidiEvent>{};
+
+    for (final event in _events) {
+      if (filterChannel != null && event.channel != filterChannel) continue;
+      if (event.type == 0x90 && event.data2 > 0) {
+        activeNotes[(event.channel, event.data1)] = event;
+      } else if (event.type == 0x80 ||
+          (event.type == 0x90 && event.data2 == 0)) {
+        final start = activeNotes.remove((event.channel, event.data1));
+        if (start != null) {
+          blocks.add(NoteBlock(
+            note: event.data1,
+            channel: event.channel,
+            velocity: start.data2,
+            startMicros: start.absoluteTimeMicros,
+            endMicros: event.absoluteTimeMicros,
+            colorIndex: event.data1 % 12,
+          ));
+        }
+      }
+    }
+    return blocks..sort((a, b) => a.startMicros.compareTo(b.startMicros));
+  }
+
   /// Load and parse a MIDI file from bytes.
   Future<void> load(Uint8List midiBytes) async {
     stop();
@@ -93,7 +131,6 @@ class MidiSequencer {
       _duration = result.duration;
       _eventIndex = 0;
       _pauseOffsetMicros = 0;
-      debugPrint('MidiSequencer: Loaded ${_events.length} events, ${_lyrics.length} lyric lines, duration=${_duration.inSeconds}s');
     } catch (e) {
       debugPrint('MidiSequencer: Failed to parse MIDI: $e');
       _events = [];
@@ -167,11 +204,6 @@ class MidiSequencer {
     }
   }
 
-  /// Set tempo multiplier (1.0 = normal, 0.5 = half speed, 2.0 = double speed).
-  void setTempo(double multiplier) {
-    _tempoMultiplier = multiplier.clamp(0.25, 4.0);
-  }
-
   void _tick(Timer timer) {
     if (_state != SequencerState.playing) return;
 
@@ -214,6 +246,102 @@ class MidiSequencer {
           onLyric!(evt.text!, Duration(microseconds: evt.absoluteTimeMicros));
         }
     }
+  }
+
+  /// Analyze all channels in the loaded MIDI for game song detail.
+  List<ChannelInfo> analyzeChannels() {
+    if (_events.isEmpty) return [];
+
+    final noteCountPerChannel = <int, int>{};
+    final minNotePerChannel = <int, int>{};
+    final maxNotePerChannel = <int, int>{};
+    final programPerChannel = <int, int>{};
+    final firstTimeMicros = <int, int>{};
+    final lastTimeMicros = <int, int>{};
+
+    for (final evt in _events) {
+      if (evt.type == 0xC0) {
+        programPerChannel[evt.channel] = evt.data1;
+      }
+      if (evt.type == 0x90 && evt.data2 > 0) {
+        final ch = evt.channel;
+        noteCountPerChannel[ch] = (noteCountPerChannel[ch] ?? 0) + 1;
+        final curMin = minNotePerChannel[ch];
+        if (curMin == null || evt.data1 < curMin) {
+          minNotePerChannel[ch] = evt.data1;
+        }
+        final curMax = maxNotePerChannel[ch];
+        if (curMax == null || evt.data1 > curMax) {
+          maxNotePerChannel[ch] = evt.data1;
+        }
+        if (!firstTimeMicros.containsKey(ch)) {
+          firstTimeMicros[ch] = evt.absoluteTimeMicros;
+        }
+        lastTimeMicros[ch] = evt.absoluteTimeMicros;
+      }
+    }
+
+    final result = <ChannelInfo>[];
+    for (final ch in noteCountPerChannel.keys.toList()..sort()) {
+      final count = noteCountPerChannel[ch]!;
+      final first = firstTimeMicros[ch] ?? 0;
+      final last = lastTimeMicros[ch] ?? 0;
+      final durationSec = (last - first) / 1e6;
+      final density = durationSec > 0 ? count / durationSec : 0.0;
+      final program = programPerChannel[ch] ?? 0;
+
+      result.add(ChannelInfo(
+        channel: ch,
+        programNumber: program,
+        instrumentName: ch == 9 ? 'Drums' : _gmInstrumentName(program),
+        noteCount: count,
+        minNote: minNotePerChannel[ch] ?? 0,
+        maxNote: maxNotePerChannel[ch] ?? 127,
+        noteDensity: density,
+        isDrums: ch == 9,
+      ));
+    }
+
+    return result;
+  }
+
+  static String _gmInstrumentName(int program) {
+    const names = [
+      'Acoustic Grand Piano', 'Bright Acoustic Piano', 'Electric Grand Piano',
+      'Honky-tonk Piano', 'Electric Piano 1', 'Electric Piano 2', 'Harpsichord',
+      'Clavi', 'Celesta', 'Glockenspiel', 'Music Box', 'Vibraphone',
+      'Marimba', 'Xylophone', 'Tubular Bells', 'Dulcimer', 'Drawbar Organ',
+      'Percussive Organ', 'Rock Organ', 'Church Organ', 'Reed Organ',
+      'Accordion', 'Harmonica', 'Tango Accordion', 'Nylon Guitar',
+      'Steel Guitar', 'Jazz Guitar', 'Clean Electric Guitar',
+      'Muted Electric Guitar', 'Overdriven Guitar', 'Distortion Guitar',
+      'Guitar Harmonics', 'Acoustic Bass', 'Electric Bass (Finger)',
+      'Electric Bass (Pick)', 'Fretless Bass', 'Slap Bass 1', 'Slap Bass 2',
+      'Synth Bass 1', 'Synth Bass 2', 'Violin', 'Viola', 'Cello',
+      'Contrabass', 'Tremolo Strings', 'Pizzicato Strings', 'Orchestral Harp',
+      'Timpani', 'String Ensemble 1', 'String Ensemble 2', 'SynthStrings 1',
+      'SynthStrings 2', 'Choir Aahs', 'Voice Oohs', 'Synth Voice',
+      'Orchestra Hit', 'Trumpet', 'Trombone', 'Tuba', 'Muted Trumpet',
+      'French Horn', 'Brass Section', 'SynthBrass 1', 'SynthBrass 2',
+      'Soprano Sax', 'Alto Sax', 'Tenor Sax', 'Baritone Sax', 'Oboe',
+      'English Horn', 'Bassoon', 'Clarinet', 'Piccolo', 'Flute', 'Recorder',
+      'Pan Flute', 'Blown Bottle', 'Shakuhachi', 'Whistle', 'Ocarina',
+      'Lead 1 (Square)', 'Lead 2 (Sawtooth)', 'Lead 3 (Calliope)',
+      'Lead 4 (Chiff)', 'Lead 5 (Charang)', 'Lead 6 (Voice)',
+      'Lead 7 (Fifths)', 'Lead 8 (Bass + Lead)', 'Pad 1 (New Age)',
+      'Pad 2 (Warm)', 'Pad 3 (Polysynth)', 'Pad 4 (Choir)',
+      'Pad 5 (Bowed)', 'Pad 6 (Metallic)', 'Pad 7 (Halo)',
+      'Pad 8 (Sweep)', 'FX 1 (Rain)', 'FX 2 (Soundtrack)',
+      'FX 3 (Crystal)', 'FX 4 (Atmosphere)', 'FX 5 (Brightness)',
+      'FX 6 (Goblins)', 'FX 7 (Echoes)', 'FX 8 (Sci-fi)', 'Sitar',
+      'Banjo', 'Shamisen', 'Koto', 'Kalimba', 'Bag pipe', 'Fiddle',
+      'Shanai', 'Tinkle Bell', 'Agogo', 'Steel Drums', 'Woodblock',
+      'Taiko Drum', 'Melodic Tom', 'Synth Drum', 'Reverse Cymbal',
+      'Guitar Fret Noise', 'Breath Noise', 'Seashore', 'Bird Tweet',
+      'Telephone Ring', 'Helicopter', 'Applause', 'Gunshot',
+    ];
+    if (program < 0 || program >= names.length) return 'Unknown';
+    return names[program];
   }
 
   void dispose() {

@@ -228,7 +228,8 @@ class WildcardNotifier extends ChangeNotifier {
     final lastDelimiter = beforeCursor.lastIndexOf(RegExp(r'[,|\n]'));
     final currentWord = beforeCursor.substring(lastDelimiter + 1).trimLeft();
 
-    if (currentWord.length >= 3) {
+    final minLength = TagService.containsNonAscii(currentWord) ? 1 : 3;
+    if (currentWord.length >= minLength) {
       final suggestions = tagService.getSuggestions(currentWord);
       _state = _state.copyWith(
         currentTagQuery: currentWord,
@@ -263,7 +264,8 @@ class WildcardNotifier extends ChangeNotifier {
       if (lastChar == ',') separator = ' ';
     }
 
-    final newBeforeCursor = "$prefix$separator${tag.tag}\n";
+    final insertText = tag.matchedAlias ?? tag.tag;
+    final newBeforeCursor = "$prefix$separator$insertText\n";
     editorController.value = TextEditingValue(
       text: newBeforeCursor + afterCursor,
       selection: TextSelection.collapsed(offset: newBeforeCursor.length),

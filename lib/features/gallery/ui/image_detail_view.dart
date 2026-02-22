@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
@@ -25,6 +26,7 @@ import '../../tools/slideshow/models/slideshow_config.dart';
 import '../../tools/slideshow/providers/slideshow_notifier.dart';
 import '../../tools/slideshow/widgets/slideshow_player.dart';
 import '../../tools/tools_hub_screen.dart';
+import 'import_metadata_dialog.dart';
 import '../../../core/ml/ml_notifier.dart';
 import '../../../core/ml/widgets/ml_processing_overlay.dart';
 import '../../../core/ml/widgets/bg_removal_overlay.dart';
@@ -191,20 +193,35 @@ class _ImageDetailViewState extends State<ImageDetailView>
     }
   }
 
+  /// Jump to the newly inserted image at index 0 after post-processing saves.
+  void _jumpToNewImage() {
+    setState(() {
+      _currentIndex = 0;
+      _isLoadingMetadata = true;
+      _promptExpanded = false;
+      _isZoomed = false;
+      _showScrollIndicator = true;
+    });
+    _pageController.jumpToPage(0);
+    _loadMetadata();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkActionOverflow());
+  }
+
   /// Returns (label, color) for post-processed images based on filename prefix.
   (String, Color)? _getPostProcessingBadge(GalleryItem item) {
     final name = p.basename(item.file.path);
     final t = context.tRead;
-    if (name.startsWith('NAI_UP_')) return ('NAI UPSCALE', t.accentEdit);
+    final l = context.l;
+    if (name.startsWith('NAI_UP_')) return (l.galleryBadgeNaiUpscale, t.accentEdit);
     if (name.startsWith('DT_')) {
       // Parse tool name from DT_{tool}_ prefix
       final parts = name.split('_');
       final toolName = parts.length >= 3 ? parts[1].toUpperCase() : 'TOOL';
-      return ('DIRECTOR: $toolName', t.accent);
+      return (l.galleryBadgeDirectorTool(toolName), t.accent);
     }
-    if (name.startsWith('ENH_')) return ('ENHANCED', t.accentSuccess);
-    if (name.startsWith('BG_')) return ('BG REMOVED', t.accentEdit);
-    if (name.startsWith('UP_')) return ('UPSCALED', t.accent);
+    if (name.startsWith('ENH_')) return (l.galleryBadgeEnhanced, t.accentSuccess);
+    if (name.startsWith('BG_')) return (l.galleryBadgeBgRemoved, t.accentEdit);
+    if (name.startsWith('UP_')) return (l.galleryBadgeUpscaled, t.accent);
     return null;
   }
 
@@ -290,7 +307,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
       final sourceFile = item.file;
       final fileName = p.basename(sourceFile.path);
 
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         final hasAccess = await Gal.hasAccess();
         if (!hasAccess) await Gal.requestAccess();
         var bytes = await sourceFile.readAsBytes();
@@ -344,7 +361,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
     if (!mounted) return;
 
     if (result == null) {
-      showErrorSnackBar(context, 'BG REMOVAL FAILED');
+      showErrorSnackBar(context, context.l.galleryBgRemovalFailed);
       return;
     }
 
@@ -371,6 +388,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
       await gallery.saveMLResultWithMetadata(saved, outputName, sourceBytes: bytes);
       if (mounted) {
         showAppSnackBar(context, context.l.mlBgRemovedSavedAs(outputName));
+        _jumpToNewImage();
       }
     }
   }
@@ -396,7 +414,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
 
     if (mounted) {
       final gen = context.read<GenerationNotifier>();
-      Navigator.push(
+      final saved = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder: (_) => UpscaleComparisonView(
@@ -404,12 +422,15 @@ class _ImageDetailViewState extends State<ImageDetailView>
             upscaledBytes: result,
             outputName: outputName,
             autoSave: gen.state.autoSaveImages,
-            onSave: () {
-              gallery.saveMLResultWithMetadata(result, outputName, sourceBytes: bytes);
+            onSave: () async {
+              await gallery.saveMLResultWithMetadata(result, outputName, sourceBytes: bytes);
             },
           ),
         ),
       );
+      if (saved == true && mounted) {
+        _jumpToNewImage();
+      }
     }
   }
 
@@ -433,7 +454,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
     final scale = NovelAIService.bestUpscaleScale(w, h);
     if (scale == null) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'Image too large for NAI upscale (${w}x$h exceeds 2048px limit per side)');
+      showErrorSnackBar(context, context.l.naiUpscaleTooLarge(w, h));
       return;
     }
 
@@ -472,7 +493,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
       final timestamp = generateTimestamp();
       final outputName = 'NAI_UP_${baseName}_$timestamp.png';
 
-      Navigator.push(
+      final saved = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder: (_) => UpscaleComparisonView(
@@ -480,12 +501,15 @@ class _ImageDetailViewState extends State<ImageDetailView>
             upscaledBytes: result,
             outputName: outputName,
             autoSave: gen.state.autoSaveImages,
-            onSave: () {
-              gallery.saveMLResultWithMetadata(result, outputName, sourceBytes: bytes);
+            onSave: () async {
+              await gallery.saveMLResultWithMetadata(result, outputName, sourceBytes: bytes);
             },
           ),
         ),
       );
+      if (saved == true && mounted) {
+        _jumpToNewImage();
+      }
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -524,7 +548,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text('REMOVING BACKGROUND...', style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
+              Text(ctx.l.naiRemovingBackground, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
             ],
           ),
         );
@@ -564,12 +588,13 @@ class _ImageDetailViewState extends State<ImageDetailView>
         await gallery.saveMLResultWithMetadata(saved, outputName, sourceBytes: bytes);
         if (mounted) {
           showAppSnackBar(context, context.l.mlBgRemovedSavedAs(outputName));
+          _jumpToNewImage();
         }
       }
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop();
-      showErrorSnackBar(context, 'NAI BG REMOVAL FAILED');
+      showErrorSnackBar(context, context.l.naiBgRemovalFailed);
     }
   }
 
@@ -890,8 +915,13 @@ class _ImageDetailViewState extends State<ImageDetailView>
                                     label: context.l.galleryPrompt.toUpperCase(),
                                     color: t.accent,
                                     mobile: mobile,
-                                    onTap: () {
-                                      context.read<GenerationNotifier>().importImageMetadata(item.file);
+                                    onTap: () async {
+                                      final notifier = context.read<GenerationNotifier>();
+                                      final result = await notifier.parseImageMetadata(item.file);
+                                      if (!context.mounted) return;
+                                      final categories = await showImportMetadataDialog(context, result: result);
+                                      if (categories == null || !context.mounted) return;
+                                      notifier.applyImportedMetadata(result, categories);
                                       Navigator.pop(context);
                                       Navigator.pop(context);
                                     },

@@ -204,10 +204,12 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                   optionsBuilder: (TextEditingValue textEditingValue) {
                     if (textEditingValue.text.isEmpty) return const Iterable<DanbooruTag>.empty();
                     final lastPart = textEditingValue.text.split(',').last.trim();
-                    if (lastPart.length < 2) return const Iterable<DanbooruTag>.empty();
+                    final minLength = TagService.containsNonAscii(lastPart) ? 1 : 2;
+                    if (lastPart.length < minLength) return const Iterable<DanbooruTag>.empty();
                     return tagService.getSuggestions(lastPart);
                   },
-                  displayStringForOption: (DanbooruTag option) => option.tag,
+                  displayStringForOption: (DanbooruTag option) =>
+                      option.matchedAlias != null ? '${option.matchedAlias} → ${option.tag}' : option.tag,
                   fieldViewBuilder: (context, controller, autocompFocusNode, onFieldSubmitted) {
                     final t = context.t;
                     return TextField(
@@ -227,11 +229,12 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                   },
                   optionsViewBuilder: (context, onSelected, options) {
                     return _buildOptionsView(context, (option) {
+                      final insertText = option.matchedAlias ?? option.tag;
                       final currentText = _appearanceControllers[index]!.text;
                       final lastComma = currentText.lastIndexOf(',');
                       final newText = lastComma == -1
-                          ? option.tag
-                          : '${currentText.substring(0, lastComma + 1)} ${option.tag}';
+                          ? insertText
+                          : '${currentText.substring(0, lastComma + 1)} $insertText';
                       notifier.updateAppearance(index, '$newText, ');
                     }, options);
                   },
@@ -247,10 +250,12 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
           optionsBuilder: (TextEditingValue textEditingValue) {
             if (textEditingValue.text.isEmpty) return const Iterable<DanbooruTag>.empty();
             final lastPart = textEditingValue.text.split(',').last.trim();
-            if (lastPart.length < 2) return const Iterable<DanbooruTag>.empty();
+            final minLength = TagService.containsNonAscii(lastPart) ? 1 : 2;
+            if (lastPart.length < minLength) return const Iterable<DanbooruTag>.empty();
             return tagService.getSuggestions(lastPart);
           },
-          displayStringForOption: (DanbooruTag option) => option.tag,
+          displayStringForOption: (DanbooruTag option) =>
+              option.matchedAlias != null ? '${option.matchedAlias} → ${option.tag}' : option.tag,
           fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
             final t = context.t;
             return TextField(
@@ -270,11 +275,12 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
           },
           optionsViewBuilder: (context, onSelected, options) {
             return _buildOptionsView(context, (option) {
+              final insertText = option.matchedAlias ?? option.tag;
               final currentText = _globalController.text;
               final lastComma = currentText.lastIndexOf(',');
               final newText = lastComma == -1
-                  ? option.tag
-                  : '${currentText.substring(0, lastComma + 1)} ${option.tag}';
+                  ? insertText
+                  : '${currentText.substring(0, lastComma + 1)} $insertText';
               notifier.updateGlobalInjection('$newText, ');
             }, options);
           },
@@ -319,10 +325,19 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(option.tag,
-                          style: TextStyle(color: color, fontSize: t.fontSize(9), fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        child: option.matchedAlias != null
+                            ? Text.rich(
+                                TextSpan(children: [
+                                  TextSpan(text: option.matchedAlias, style: TextStyle(color: color, fontSize: t.fontSize(9), fontWeight: FontWeight.bold)),
+                                  TextSpan(text: ' → ', style: TextStyle(color: color.withValues(alpha: 0.5), fontSize: t.fontSize(8))),
+                                  TextSpan(text: option.tag, style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: t.fontSize(8))),
+                                ]),
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : Text(option.tag,
+                                style: TextStyle(color: color, fontSize: t.fontSize(9), fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                       ),
                       const SizedBox(width: 4),
                       Text(NumberFormat.compact().format(option.count),

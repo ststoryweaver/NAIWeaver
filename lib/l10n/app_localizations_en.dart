@@ -2703,6 +2703,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get comparisonAfter => 'After';
 
   @override
+  String get comparisonSideBySide => 'Side by side';
+
+  @override
+  String get comparisonSliderMode => 'Slider mode';
+
+  @override
   String get settingsBgRemovalButton => 'BG Removal Button';
 
   @override
@@ -2754,4 +2760,337 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeColorUpscale => 'Upscale';
+
+  @override
+  String get jukeboxSynthUnavailable => 'Synthesizer unavailable';
+
+  @override
+  String get jukeboxImport => 'IMPORT';
+
+  @override
+  String get jukeboxKeyboard => 'KEYBOARD';
+
+  @override
+  String get jukeboxGame => 'GAME';
+
+  @override
+  String get jukeboxEnd => 'END';
+
+  @override
+  String get jukeboxTempo => 'TEMPO';
+
+  @override
+  String get jukeboxKeyboardHint =>
+      'KEYS: A-L  SHARPS: W,E,T,Y,U,O,P  OCTAVE: Z/X';
+
+  @override
+  String get jukeboxGameResults => 'RESULTS';
+
+  @override
+  String get jukeboxGameScore => 'SCORE';
+
+  @override
+  String get jukeboxGameMaxCombo => 'MAX COMBO';
+
+  @override
+  String get jukeboxGameAccuracy => 'ACCURACY';
+
+  @override
+  String get jukeboxGamePerfect => 'PERFECT';
+
+  @override
+  String get jukeboxGameGreat => 'GREAT';
+
+  @override
+  String get jukeboxGameGood => 'GOOD';
+
+  @override
+  String get jukeboxGameMiss => 'MISS';
+
+  @override
+  String get jukeboxHighScores => 'HIGH SCORES';
+
+  @override
+  String jukeboxQueueCount(int count) {
+    return 'QUEUE ($count)';
+  }
+
+  @override
+  String get jukeboxStyle => 'STYLE';
+
+  @override
+  String get jukeboxGameModeTooltip => 'Game Mode';
+
+  @override
+  String get jukeboxEndGameTooltip => 'End Game';
+
+  @override
+  String get jukeboxImportTooltip => 'Import';
+
+  @override
+  String get jukeboxShuffleAllTooltip => 'Shuffle All';
+
+  @override
+  String get jukeboxPlayAllTooltip => 'Play All';
+
+  @override
+  String get jukeboxKeyboardTooltip => 'Keyboard';
+
+  @override
+  String get jukeboxGameMode => 'GAME MODE';
+
+  @override
+  String get jukeboxNoSongs => 'NO SONGS';
+
+  @override
+  String get jukeboxRecommendedBadge => 'REC';
+
+  @override
+  String get jukeboxAnalyzing => 'ANALYZING...';
+
+  @override
+  String get jukeboxNoScoresYet => 'No scores yet';
+
+  @override
+  String get jukeboxSelectInstrument => 'SELECT INSTRUMENT';
+
+  @override
+  String get jukeboxWatch => 'WATCH';
+
+  @override
+  String get jukeboxPlayGame => 'PLAY GAME';
+
+  @override
+  String jukeboxChannelLabel(int channel) {
+    return 'CH $channel';
+  }
+
+  @override
+  String jukeboxCombo(int count) {
+    return '$count COMBO';
+  }
+
+  @override
+  String get jukeboxPressOnTheLine => 'PRESS ON THE LINE';
+
+  @override
+  String get jukeboxGradePerfect => 'PERFECT';
+
+  @override
+  String get jukeboxGradeGreat => 'GREAT';
+
+  @override
+  String get jukeboxGradeGood => 'GOOD';
+
+  @override
+  String get jukeboxGradeMiss => 'MISS';
+
+  @override
+  String get jukeboxDifficultyEasy => 'EASY';
+
+  @override
+  String get jukeboxDifficultyMedium => 'MEDIUM';
+
+  @override
+  String get jukeboxDifficultyHard => 'HARD';
+
+  @override
+  String get jukeboxDifficultyExtreme => 'EXTREME';
+
+  @override
+  String get jukeboxInstrumentAcousticGrandPiano => 'Acoustic Grand Piano';
+
+  @override
+  String get jukeboxInstrumentElectricPiano => 'Electric Piano';
+
+  @override
+  String get jukeboxInstrumentHarpsichord => 'Harpsichord';
+
+  @override
+  String get jukeboxInstrumentVibraphone => 'Vibraphone';
+
+  @override
+  String get jukeboxInstrumentXylophone => 'Xylophone';
+
+  @override
+  String get jukeboxInstrumentChurchOrgan => 'Church Organ';
+
+  @override
+  String get jukeboxInstrumentNylonGuitar => 'Nylon Guitar';
+
+  @override
+  String get jukeboxInstrumentSteelGuitar => 'Steel Guitar';
+
+  @override
+  String get jukeboxInstrumentCleanElectricGuitar => 'Clean Electric Guitar';
+
+  @override
+  String get jukeboxInstrumentDistortionGuitar => 'Distortion Guitar';
+
+  @override
+  String get jukeboxInstrumentAcousticBass => 'Acoustic Bass';
+
+  @override
+  String get jukeboxInstrumentElectricBassFinger => 'Electric Bass (Finger)';
+
+  @override
+  String get jukeboxInstrumentViolin => 'Violin';
+
+  @override
+  String get jukeboxInstrumentCello => 'Cello';
+
+  @override
+  String get jukeboxInstrumentOrchestralHarp => 'Orchestral Harp';
+
+  @override
+  String get jukeboxInstrumentStringEnsemble => 'String Ensemble';
+
+  @override
+  String get jukeboxInstrumentTrumpet => 'Trumpet';
+
+  @override
+  String get jukeboxInstrumentFrenchHorn => 'French Horn';
+
+  @override
+  String get jukeboxInstrumentAltoSax => 'Alto Sax';
+
+  @override
+  String get jukeboxInstrumentFlute => 'Flute';
+
+  @override
+  String get jukeboxInstrumentSquareLeadSynth => 'Square Lead (Synth)';
+
+  @override
+  String get jukeboxInstrumentLeadVoice => 'Lead 6 (Voice)';
+
+  @override
+  String get jukeboxKaraokeBadge => 'KAR';
+
+  @override
+  String get jukeboxDeleteCustomSongTooltip => 'Delete custom song';
+
+  @override
+  String get jukeboxDeleteSong => 'DELETE SONG';
+
+  @override
+  String jukeboxDeleteSongConfirm(String title) {
+    return 'Delete $title? This will remove the file from disk.';
+  }
+
+  @override
+  String get jukeboxStyleHighlight => 'HIGHLIGHT';
+
+  @override
+  String get jukeboxStyleUpcoming => 'UPCOMING';
+
+  @override
+  String get jukeboxStyleNextLine => 'NEXT LINE';
+
+  @override
+  String get jukeboxStyleGlow => 'GLOW';
+
+  @override
+  String get jukeboxVisualizer => 'VISUALIZER';
+
+  @override
+  String get jukeboxVizIntensity => 'INTENSITY';
+
+  @override
+  String get jukeboxVizSpeed => 'SPEED';
+
+  @override
+  String get jukeboxVizDensity => 'DENSITY';
+
+  @override
+  String get jukeboxFontSize => 'SIZE';
+
+  @override
+  String get jukeboxResetToDefaults => 'RESET TO DEFAULTS';
+
+  @override
+  String jukeboxRepeatMode(String mode) {
+    return 'REPEAT: $mode';
+  }
+
+  @override
+  String jukeboxShuffleStatus(String status) {
+    return 'SHUFFLE: $status';
+  }
+
+  @override
+  String get galleryBadgeNaiUpscale => 'NAI UPSCALE';
+
+  @override
+  String galleryBadgeDirectorTool(String tool) {
+    return 'DIRECTOR: $tool';
+  }
+
+  @override
+  String get galleryBadgeEnhanced => 'ENHANCED';
+
+  @override
+  String get galleryBadgeBgRemoved => 'BG REMOVED';
+
+  @override
+  String get galleryBadgeUpscaled => 'UPSCALED';
+
+  @override
+  String get galleryBgRemovalFailed => 'BG REMOVAL FAILED';
+
+  @override
+  String naiUpscaleTooLarge(int width, int height) {
+    return 'Image too large for NAI upscale (${width}x$height exceeds 2048px limit per side)';
+  }
+
+  @override
+  String get naiRemovingBackground => 'REMOVING BACKGROUND...';
+
+  @override
+  String get naiBgRemovalFailed => 'NAI BG REMOVAL FAILED';
+
+  @override
+  String get directorToolsFromGallery => 'FROM GALLERY';
+
+  @override
+  String get settingsBgRemovalBackend => 'BG Removal Backend';
+
+  @override
+  String get settingsBgRemovalBackendDesc =>
+      'Choose between local ML model or NovelAI API for background removal';
+
+  @override
+  String get importDialogTitle => 'IMPORT METADATA';
+
+  @override
+  String get importCategoryPrompt => 'Prompt';
+
+  @override
+  String get importCategoryNegative => 'Negative Prompt';
+
+  @override
+  String get importCategoryCharacters => 'Characters';
+
+  @override
+  String get importCategorySeed => 'Seed';
+
+  @override
+  String get importCategoryStyles => 'Styles';
+
+  @override
+  String get importCategorySettings => 'Settings (Resolution, Sampler, Scale)';
+
+  @override
+  String get importActionImport => 'IMPORT';
+
+  @override
+  String get importNothingAvailable => 'No importable metadata found';
+
+  @override
+  String get settingsCredits => 'Credits';
+
+  @override
+  String get settingsSpecialThanks => 'Special Thanks';
+
+  @override
+  String get settingsAnonTesters => '...and all anonymous bug testers';
 }

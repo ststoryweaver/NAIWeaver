@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
@@ -65,7 +66,7 @@ void main() {
   final wildcardService = WildcardService(wildcardDir: paths.wildcardDir);
 
   JukeboxAudioHandler? audioHandler;
-  if (Platform.isAndroid || Platform.isIOS) {
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     try {
       audioHandler = await AudioService.init(
         builder: () => JukeboxAudioHandler(),

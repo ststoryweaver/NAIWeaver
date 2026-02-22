@@ -228,6 +228,26 @@ class QuickActionOverlay extends StatelessWidget {
         return;
       }
 
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          final t = ctx.tRead;
+          return AlertDialog(
+            backgroundColor: t.surfaceHigh,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(l.naiUpscaling, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
+              ],
+            ),
+          );
+        },
+      );
+
       final result = await service.upscaleImage(
         imageBase64: base64Encode(sourceBytes),
         width: decoded.$1,
@@ -236,10 +256,12 @@ class QuickActionOverlay extends StatelessWidget {
       );
 
       if (context.mounted) {
+        Navigator.of(context).pop();
         _showUpscaleComparison(context, sourceBytes, result, autoSave);
       }
     } catch (e) {
       if (context.mounted) {
+        Navigator.of(context).pop();
         showErrorSnackBar(context, l.naiUpscaleFailed);
       }
     }
@@ -253,6 +275,26 @@ class QuickActionOverlay extends StatelessWidget {
       final decoded = await compute(_decodeImageDimensions, sourceBytes);
       if (decoded == null || !context.mounted) return;
 
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          final t = ctx.tRead;
+          return AlertDialog(
+            backgroundColor: t.surfaceHigh,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(l.mlRemovingBg, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
+              ],
+            ),
+          );
+        },
+      );
+
       final result = await service.augmentImage(
         imageBase64: base64Encode(sourceBytes),
         width: decoded.$1,
@@ -261,6 +303,7 @@ class QuickActionOverlay extends StatelessWidget {
       );
 
       if (context.mounted) {
+        Navigator.of(context).pop();
         final gallery = context.read<GalleryNotifier>();
         final timestamp = generateTimestamp();
         await gallery.saveMLResult(result, 'BG_gen_$timestamp.png');
@@ -270,6 +313,7 @@ class QuickActionOverlay extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
+        Navigator.of(context).pop();
         showErrorSnackBar(context, 'NAI BG REMOVAL FAILED');
       }
     }
@@ -287,8 +331,8 @@ class QuickActionOverlay extends StatelessWidget {
           upscaledBytes: result,
           outputName: outputName,
           autoSave: autoSave,
-          onSave: () {
-            gallery.saveMLResultWithMetadata(result, outputName,
+          onSave: () async {
+            await gallery.saveMLResultWithMetadata(result, outputName,
                 sourceBytes: sourceBytes);
           },
         ),

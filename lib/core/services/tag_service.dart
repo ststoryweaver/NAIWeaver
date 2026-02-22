@@ -9,6 +9,8 @@ class DanbooruTag {
   final String typeName;
   final bool isFavorite;
   final List<String> examplePaths;
+  final List<String> aliases;
+  final String? matchedAlias;
 
   DanbooruTag({
     required this.tag,
@@ -16,6 +18,8 @@ class DanbooruTag {
     this.typeName = 'general',
     this.isFavorite = false,
     this.examplePaths = const [],
+    this.aliases = const [],
+    this.matchedAlias,
   });
 
   DanbooruTag copyWith({
@@ -24,6 +28,8 @@ class DanbooruTag {
     String? typeName,
     bool? isFavorite,
     List<String>? examplePaths,
+    List<String>? aliases,
+    String? Function()? matchedAlias,
   }) {
     return DanbooruTag(
       tag: tag ?? this.tag,
@@ -31,6 +37,8 @@ class DanbooruTag {
       typeName: typeName ?? this.typeName,
       isFavorite: isFavorite ?? this.isFavorite,
       examplePaths: examplePaths ?? this.examplePaths,
+      aliases: aliases ?? this.aliases,
+      matchedAlias: matchedAlias != null ? matchedAlias() : this.matchedAlias,
     );
   }
 
@@ -44,6 +52,10 @@ class DanbooruTag {
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      aliases: (json['aliases'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
   }
 
@@ -54,6 +66,7 @@ class DanbooruTag {
       'type_name': typeName,
       'is_favorite': isFavorite,
       'example_paths': examplePaths,
+      'aliases': aliases,
     };
   }
 }
@@ -63,6 +76,7 @@ class TagService {
   List<DanbooruTag> _tags = [];
   bool _isLoaded = false;
   Set<String>? _tagSet;
+  Map<String, int>? _aliasToTagIndex;
 
   Set<String> get tagSet {
     _tagSet ??= _tags.map((t) => t.tag.toLowerCase()).toSet();
@@ -70,6 +84,14 @@ class TagService {
   }
 
   bool hasTag(String tag) => tagSet.contains(tag.toLowerCase().trim());
+
+  /// Returns true if any codeUnit in [s] is > 127 (non-ASCII, e.g. CJK).
+  static bool containsNonAscii(String s) {
+    for (int i = 0; i < s.length; i++) {
+      if (s.codeUnitAt(i) > 127) return true;
+    }
+    return false;
+  }
 
   TagService({required this.filePath});
 
@@ -83,6 +105,7 @@ class TagService {
         _tags = await compute(_parseTags, content);
         _tags.sort((a, b) => b.count.compareTo(a.count));
         _tagSet = null;
+        _buildAliasIndex();
         _isLoaded = true;
         return;
       }
@@ -94,16 +117,32 @@ class TagService {
 
       // Using compute for heavy JSON parsing to keep UI responsive
       _tags = await compute(_parseTags, await file.readAsString());
-      
+
       // Sort tags by count descending for faster suggestion ranking
       _tags.sort((a, b) => b.count.compareTo(a.count));
-      
+
       _tagSet = null;
+      _buildAliasIndex();
       _isLoaded = true;
       debugPrint("Loaded ${_tags.length} tags.");
     } catch (e) {
       debugPrint("Error loading tags: $e");
     }
+  }
+
+  void _buildAliasIndex() {
+    final index = <String, int>{};
+    final tags = tagSet; // ensure tagSet is built
+    for (int i = 0; i < _tags.length; i++) {
+      for (final alias in _tags[i].aliases) {
+        final lowerAlias = alias.toLowerCase();
+        // English tag names always take priority over aliases
+        if (!tags.contains(lowerAlias)) {
+          index.putIfAbsent(lowerAlias, () => i);
+        }
+      }
+    }
+    _aliasToTagIndex = index;
   }
 
   static List<DanbooruTag> _parseTags(String jsonString) {
@@ -112,11 +151,13 @@ class TagService {
   }
 
   List<DanbooruTag> getSuggestions(String query, {int limit = 20}) {
-    if (!_isLoaded || query.length < 3) return [];
+    final minLength = containsNonAscii(query) ? 1 : 3;
+    if (!_isLoaded || query.length < minLength) return [];
 
     final lowercaseQuery = query.toLowerCase();
+    final seenTags = <String>{};
 
-    // Match tags that start with the query OR contain a word starting with it
+    // Tier 1: English tag prefix/contains matches
     final List<DanbooruTag> prefixMatches = [];
     final List<DanbooruTag> wordMatches = [];
 
@@ -124,8 +165,31 @@ class TagService {
       final lowerTag = tag.tag.toLowerCase();
       if (lowerTag.startsWith(lowercaseQuery)) {
         prefixMatches.add(tag);
+        seenTags.add(lowerTag);
       } else if (lowerTag.contains(lowercaseQuery)) {
         wordMatches.add(tag);
+        seenTags.add(lowerTag);
+      }
+    }
+
+    // Tier 2: Alias prefix/contains matches
+    final List<DanbooruTag> aliasMatches = [];
+    if (_aliasToTagIndex != null) {
+      for (final entry in _aliasToTagIndex!.entries) {
+        final alias = entry.key;
+        final tagIndex = entry.value;
+        if (alias.startsWith(lowercaseQuery) || alias.contains(lowercaseQuery)) {
+          final tag = _tags[tagIndex];
+          if (!seenTags.contains(tag.tag.toLowerCase())) {
+            // Find the original-cased alias for display
+            final originalAlias = tag.aliases.firstWhere(
+              (a) => a.toLowerCase() == alias,
+              orElse: () => alias,
+            );
+            aliasMatches.add(tag.copyWith(matchedAlias: () => originalAlias));
+            seenTags.add(tag.tag.toLowerCase());
+          }
+        }
       }
     }
 
@@ -138,9 +202,9 @@ class TagService {
 
     prefixMatches.sort(compareTag);
     wordMatches.sort(compareTag);
+    aliasMatches.sort(compareTag);
 
-    // Prefix matches first, then word matches
-    return [...prefixMatches, ...wordMatches].take(limit).toList();
+    return [...prefixMatches, ...wordMatches, ...aliasMatches].take(limit).toList();
   }
 
   List<DanbooruTag> getTagsByCategory(String query, String category, {int limit = 20}) {
@@ -156,6 +220,8 @@ class TagService {
           .toList();
     }
 
+    final seenTags = <String>{};
+
     // Non-empty query → prefix/contains matching within category, favorites first
     final List<DanbooruTag> prefixMatches = [];
     final List<DanbooruTag> wordMatches = [];
@@ -165,8 +231,31 @@ class TagService {
       final lowerTag = tag.tag.toLowerCase();
       if (lowerTag.startsWith(lowerQuery)) {
         prefixMatches.add(tag);
+        seenTags.add(lowerTag);
       } else if (lowerTag.contains(lowerQuery)) {
         wordMatches.add(tag);
+        seenTags.add(lowerTag);
+      }
+    }
+
+    // Alias matches within category
+    final List<DanbooruTag> aliasMatches = [];
+    if (_aliasToTagIndex != null) {
+      for (final entry in _aliasToTagIndex!.entries) {
+        final alias = entry.key;
+        final tagIndex = entry.value;
+        if (alias.startsWith(lowerQuery) || alias.contains(lowerQuery)) {
+          final tag = _tags[tagIndex];
+          if (tag.typeName.toLowerCase() != lowerCategory) continue;
+          if (!seenTags.contains(tag.tag.toLowerCase())) {
+            final originalAlias = tag.aliases.firstWhere(
+              (a) => a.toLowerCase() == alias,
+              orElse: () => alias,
+            );
+            aliasMatches.add(tag.copyWith(matchedAlias: () => originalAlias));
+            seenTags.add(tag.tag.toLowerCase());
+          }
+        }
       }
     }
 
@@ -178,8 +267,96 @@ class TagService {
 
     prefixMatches.sort(compareTag);
     wordMatches.sort(compareTag);
+    aliasMatches.sort(compareTag);
 
-    return [...prefixMatches, ...wordMatches].take(limit).toList();
+    return [...prefixMatches, ...wordMatches, ...aliasMatches].take(limit).toList();
+  }
+
+  /// Resolves alias text in a prompt to English Danbooru tag names.
+  ///
+  /// Splits on `,` and `|`, preserves delimiters and whitespace,
+  /// strips weight brackets before lookup, re-wraps after.
+  String resolveAliases(String prompt) {
+    if (!_isLoaded || _aliasToTagIndex == null || prompt.isEmpty) return prompt;
+
+    final buffer = StringBuffer();
+    final segmentPattern = RegExp(r'[,|]');
+    int start = 0;
+
+    while (start < prompt.length) {
+      final match = segmentPattern.matchAsPrefix(prompt, start) ??
+          _findNextDelimiter(prompt, start, segmentPattern);
+
+      final int segEnd;
+      final String? delimiter;
+      if (match != null && match.start == start) {
+        // Current position is a delimiter
+        buffer.write(prompt[start]);
+        start++;
+        continue;
+      }
+
+      // Find next delimiter
+      final nextDelim = segmentPattern.firstMatch(prompt.substring(start));
+      if (nextDelim != null) {
+        segEnd = start + nextDelim.start;
+        delimiter = prompt[segEnd];
+      } else {
+        segEnd = prompt.length;
+        delimiter = null;
+      }
+
+      final segment = prompt.substring(start, segEnd);
+      buffer.write(_resolveSegment(segment));
+      if (delimiter != null) buffer.write(delimiter);
+      start = segEnd + (delimiter != null ? 1 : 0);
+    }
+
+    return buffer.toString();
+  }
+
+  Match? _findNextDelimiter(String prompt, int start, RegExp pattern) {
+    final sub = prompt.substring(start);
+    return pattern.firstMatch(sub);
+  }
+
+  String _resolveSegment(String segment) {
+    // Preserve leading/trailing whitespace
+    final leading = segment.length - segment.trimLeft().length;
+    final trailing = segment.length - segment.trimRight().length;
+    final leadingWs = segment.substring(0, leading);
+    final trailingWs = trailing > 0 ? segment.substring(segment.length - trailing) : '';
+    final trimmed = segment.trim();
+    if (trimmed.isEmpty) return segment;
+
+    // Strip weight brackets from both ends
+    String core = trimmed;
+    String prefixBrackets = '';
+    String suffixBrackets = '';
+    while (core.isNotEmpty && (core[0] == '{' || core[0] == '[')) {
+      prefixBrackets += core[0];
+      core = core.substring(1);
+    }
+    while (core.isNotEmpty && (core[core.length - 1] == '}' || core[core.length - 1] == ']')) {
+      suffixBrackets = core[core.length - 1] + suffixBrackets;
+      core = core.substring(0, core.length - 1);
+    }
+    core = core.trim();
+    if (core.isEmpty) return segment;
+
+    final lowerCore = core.toLowerCase();
+
+    // If it's already a known English tag, pass through
+    if (tagSet.contains(lowerCore)) return segment;
+
+    // If it's a known alias, replace with English tag
+    final tagIndex = _aliasToTagIndex![lowerCore];
+    if (tagIndex != null) {
+      final englishTag = _tags[tagIndex].tag;
+      return '$leadingWs$prefixBrackets$englishTag$suffixBrackets$trailingWs';
+    }
+
+    return segment;
   }
 
   List<DanbooruTag> getFavorites({String? category}) {

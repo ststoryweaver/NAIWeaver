@@ -2655,6 +2655,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get comparisonAfter => 'アフター';
 
   @override
+  String get comparisonSideBySide => '並べて表示';
+
+  @override
+  String get comparisonSliderMode => 'スライダーモード';
+
+  @override
   String get settingsBgRemovalButton => '背景除去ボタン';
 
   @override
@@ -2702,4 +2708,336 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themeColorUpscale => 'アップスケール';
+
+  @override
+  String get jukeboxSynthUnavailable => 'シンセサイザーが利用できません';
+
+  @override
+  String get jukeboxImport => 'インポート';
+
+  @override
+  String get jukeboxKeyboard => 'キーボード';
+
+  @override
+  String get jukeboxGame => 'ゲーム';
+
+  @override
+  String get jukeboxEnd => '終了';
+
+  @override
+  String get jukeboxTempo => 'テンポ';
+
+  @override
+  String get jukeboxKeyboardHint => 'キー: A-L  シャープ: W,E,T,Y,U,O,P  オクターブ: Z/X';
+
+  @override
+  String get jukeboxGameResults => '結果';
+
+  @override
+  String get jukeboxGameScore => 'スコア';
+
+  @override
+  String get jukeboxGameMaxCombo => '最大コンボ';
+
+  @override
+  String get jukeboxGameAccuracy => '精度';
+
+  @override
+  String get jukeboxGamePerfect => 'パーフェクト';
+
+  @override
+  String get jukeboxGameGreat => 'グレート';
+
+  @override
+  String get jukeboxGameGood => 'グッド';
+
+  @override
+  String get jukeboxGameMiss => 'ミス';
+
+  @override
+  String get jukeboxHighScores => 'ハイスコア';
+
+  @override
+  String jukeboxQueueCount(int count) {
+    return 'キュー ($count)';
+  }
+
+  @override
+  String get jukeboxStyle => 'スタイル';
+
+  @override
+  String get jukeboxGameModeTooltip => 'ゲームモード';
+
+  @override
+  String get jukeboxEndGameTooltip => 'ゲーム終了';
+
+  @override
+  String get jukeboxImportTooltip => 'インポート';
+
+  @override
+  String get jukeboxShuffleAllTooltip => 'すべてシャッフル';
+
+  @override
+  String get jukeboxPlayAllTooltip => 'すべて再生';
+
+  @override
+  String get jukeboxKeyboardTooltip => 'キーボード';
+
+  @override
+  String get jukeboxGameMode => 'ゲームモード';
+
+  @override
+  String get jukeboxNoSongs => '曲がありません';
+
+  @override
+  String get jukeboxRecommendedBadge => '推奨';
+
+  @override
+  String get jukeboxAnalyzing => '分析中...';
+
+  @override
+  String get jukeboxNoScoresYet => 'スコアなし';
+
+  @override
+  String get jukeboxSelectInstrument => '楽器を選択';
+
+  @override
+  String get jukeboxWatch => '観る';
+
+  @override
+  String get jukeboxPlayGame => 'プレイ';
+
+  @override
+  String jukeboxChannelLabel(int channel) {
+    return 'CH $channel';
+  }
+
+  @override
+  String jukeboxCombo(int count) {
+    return '$count コンボ';
+  }
+
+  @override
+  String get jukeboxPressOnTheLine => 'ラインに合わせて押す';
+
+  @override
+  String get jukeboxGradePerfect => 'パーフェクト';
+
+  @override
+  String get jukeboxGradeGreat => 'グレート';
+
+  @override
+  String get jukeboxGradeGood => 'グッド';
+
+  @override
+  String get jukeboxGradeMiss => 'ミス';
+
+  @override
+  String get jukeboxDifficultyEasy => 'イージー';
+
+  @override
+  String get jukeboxDifficultyMedium => 'ノーマル';
+
+  @override
+  String get jukeboxDifficultyHard => 'ハード';
+
+  @override
+  String get jukeboxDifficultyExtreme => 'エクストリーム';
+
+  @override
+  String get jukeboxInstrumentAcousticGrandPiano => 'アコースティックグランドピアノ';
+
+  @override
+  String get jukeboxInstrumentElectricPiano => 'エレクトリックピアノ';
+
+  @override
+  String get jukeboxInstrumentHarpsichord => 'ハープシコード';
+
+  @override
+  String get jukeboxInstrumentVibraphone => 'ビブラフォン';
+
+  @override
+  String get jukeboxInstrumentXylophone => 'シロフォン';
+
+  @override
+  String get jukeboxInstrumentChurchOrgan => 'チャーチオルガン';
+
+  @override
+  String get jukeboxInstrumentNylonGuitar => 'ナイロンギター';
+
+  @override
+  String get jukeboxInstrumentSteelGuitar => 'スチールギター';
+
+  @override
+  String get jukeboxInstrumentCleanElectricGuitar => 'クリーンエレキギター';
+
+  @override
+  String get jukeboxInstrumentDistortionGuitar => 'ディストーションギター';
+
+  @override
+  String get jukeboxInstrumentAcousticBass => 'アコースティックベース';
+
+  @override
+  String get jukeboxInstrumentElectricBassFinger => 'エレキベース（フィンガー）';
+
+  @override
+  String get jukeboxInstrumentViolin => 'バイオリン';
+
+  @override
+  String get jukeboxInstrumentCello => 'チェロ';
+
+  @override
+  String get jukeboxInstrumentOrchestralHarp => 'オーケストラルハープ';
+
+  @override
+  String get jukeboxInstrumentStringEnsemble => '弦楽アンサンブル';
+
+  @override
+  String get jukeboxInstrumentTrumpet => 'トランペット';
+
+  @override
+  String get jukeboxInstrumentFrenchHorn => 'フレンチホルン';
+
+  @override
+  String get jukeboxInstrumentAltoSax => 'アルトサックス';
+
+  @override
+  String get jukeboxInstrumentFlute => 'フルート';
+
+  @override
+  String get jukeboxInstrumentSquareLeadSynth => 'スクエアリード（シンセ）';
+
+  @override
+  String get jukeboxInstrumentLeadVoice => 'リード6（ボイス）';
+
+  @override
+  String get jukeboxKaraokeBadge => 'KAR';
+
+  @override
+  String get jukeboxDeleteCustomSongTooltip => 'カスタム曲を削除';
+
+  @override
+  String get jukeboxDeleteSong => '曲を削除';
+
+  @override
+  String jukeboxDeleteSongConfirm(String title) {
+    return '「$title」を削除しますか？ファイルがディスクから削除されます。';
+  }
+
+  @override
+  String get jukeboxStyleHighlight => 'ハイライト';
+
+  @override
+  String get jukeboxStyleUpcoming => '次の歌詞';
+
+  @override
+  String get jukeboxStyleNextLine => '次の行';
+
+  @override
+  String get jukeboxStyleGlow => 'グロー';
+
+  @override
+  String get jukeboxVisualizer => 'ビジュアライザー';
+
+  @override
+  String get jukeboxVizIntensity => '強度';
+
+  @override
+  String get jukeboxVizSpeed => '速度';
+
+  @override
+  String get jukeboxVizDensity => '密度';
+
+  @override
+  String get jukeboxFontSize => 'サイズ';
+
+  @override
+  String get jukeboxResetToDefaults => 'デフォルトに戻す';
+
+  @override
+  String jukeboxRepeatMode(String mode) {
+    return 'リピート: $mode';
+  }
+
+  @override
+  String jukeboxShuffleStatus(String status) {
+    return 'シャッフル: $status';
+  }
+
+  @override
+  String get galleryBadgeNaiUpscale => 'NAIアップスケール';
+
+  @override
+  String galleryBadgeDirectorTool(String tool) {
+    return 'ディレクター: $tool';
+  }
+
+  @override
+  String get galleryBadgeEnhanced => 'エンハンス済み';
+
+  @override
+  String get galleryBadgeBgRemoved => '背景除去済み';
+
+  @override
+  String get galleryBadgeUpscaled => 'アップスケール済み';
+
+  @override
+  String get galleryBgRemovalFailed => '背景除去に失敗';
+
+  @override
+  String naiUpscaleTooLarge(int width, int height) {
+    return '画像がNAIアップスケールには大きすぎます（${width}x$heightは1辺2048px制限を超過）';
+  }
+
+  @override
+  String get naiRemovingBackground => '背景を除去中...';
+
+  @override
+  String get naiBgRemovalFailed => 'NAI背景除去に失敗';
+
+  @override
+  String get directorToolsFromGallery => 'ギャラリーから';
+
+  @override
+  String get settingsBgRemovalBackend => '背景除去バックエンド';
+
+  @override
+  String get settingsBgRemovalBackendDesc =>
+      'ローカルMLモデルまたはNovelAI APIから背景除去方法を選択';
+
+  @override
+  String get importDialogTitle => 'メタデータのインポート';
+
+  @override
+  String get importCategoryPrompt => 'プロンプト';
+
+  @override
+  String get importCategoryNegative => 'ネガティブプロンプト';
+
+  @override
+  String get importCategoryCharacters => 'キャラクター';
+
+  @override
+  String get importCategorySeed => 'シード';
+
+  @override
+  String get importCategoryStyles => 'スタイル';
+
+  @override
+  String get importCategorySettings => '設定（解像度・サンプラー・スケール）';
+
+  @override
+  String get importActionImport => 'インポート';
+
+  @override
+  String get importNothingAvailable => 'インポート可能なメタデータがありません';
+
+  @override
+  String get settingsCredits => 'クレジット';
+
+  @override
+  String get settingsSpecialThanks => 'スペシャルサンクス';
+
+  @override
+  String get settingsAnonTesters => '…そして全ての匿名バグテスターの皆さん';
 }

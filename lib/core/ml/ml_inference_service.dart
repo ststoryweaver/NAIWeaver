@@ -39,17 +39,13 @@ class MLInferenceService {
     }
 
     final hasGpu = providers.any((p) =>
-        p.contains('TensorRT') ||
-        p.contains('Tensor_RT') ||
         p.contains('CUDA') ||
         p.contains('DirectML') ||
         p.contains('CoreML') ||
         p.contains('NNAPI'));
 
     String activeProvider = 'CPU';
-    if (providers.any((p) => p.contains('TensorRT') || p.contains('Tensor_RT'))) {
-      activeProvider = 'TensorRT';
-    } else if (providers.any((p) => p.contains('CUDA'))) {
+    if (providers.any((p) => p.contains('CUDA'))) {
       activeProvider = 'CUDA';
     } else if (providers.any((p) => p.contains('DirectML'))) {
       activeProvider = 'DirectML';
@@ -108,36 +104,48 @@ class MLInferenceService {
 
     final modelPath = MLStorageService.modelPath(mlModelsDir, entry);
 
+    List<OrtProvider> providers;
     try {
-      List<OrtProvider> providers;
-      try {
-        final available = await _ort.getAvailableProviders();
-        providers = _selectProviders(available, skipNnapi: skipNnapi);
-      } catch (_) {
-        providers = [OrtProvider.CPU];
-      }
-
-      final options = OrtSessionOptions(
-        intraOpNumThreads: 4,
-        providers: providers,
-      );
-
-      final session = await _ort.createSession(modelPath, options: options);
-
-      _sessions[modelId] = _CachedSession(
-        modelId: modelId,
-        session: session,
-        config: config,
-      );
-      _sessionOrder.add(modelId);
-
-      debugPrint('ML: Loaded model $modelId with providers: $providers');
-      debugPrint('ML: Inputs: ${session.inputNames}, Outputs: ${session.outputNames}');
-      return true;
-    } catch (e) {
-      debugPrint('ML: Failed to load model $modelId: $e');
-      return false;
+      final available = await _ort.getAvailableProviders();
+      providers = _selectProviders(available, skipNnapi: skipNnapi);
+    } catch (_) {
+      providers = [OrtProvider.CPU];
     }
+
+    // Try creating session, falling back by removing GPU providers that fail
+    // (e.g. CUDA reports available but toolkit DLLs are missing)
+    while (providers.isNotEmpty) {
+      try {
+        final options = OrtSessionOptions(
+          intraOpNumThreads: 4,
+          providers: providers,
+        );
+
+        final session = await _ort.createSession(modelPath, options: options);
+
+        _sessions[modelId] = _CachedSession(
+          modelId: modelId,
+          session: session,
+          config: config,
+        );
+        _sessionOrder.add(modelId);
+
+        debugPrint('ML: Loaded model $modelId with providers: $providers');
+        debugPrint('ML: Inputs: ${session.inputNames}, Outputs: ${session.outputNames}');
+        return true;
+      } catch (e) {
+        final failedProvider = providers.first;
+        if (failedProvider == OrtProvider.CPU) {
+          debugPrint('ML: Failed to load model $modelId: $e');
+          return false;
+        }
+        debugPrint('ML: Provider $failedProvider failed, falling back: $e');
+        providers = providers.where((p) => p != failedProvider).toList();
+      }
+    }
+
+    debugPrint('ML: No providers available for model $modelId');
+    return false;
   }
 
   Future<MLInferenceResult?> runInference({
@@ -341,9 +349,6 @@ class MLInferenceService {
   List<OrtProvider> _selectProviders(List<OrtProvider> available, {bool skipNnapi = false}) {
     final preferred = <OrtProvider>[];
 
-    if (available.contains(OrtProvider.TENSOR_RT)) {
-      preferred.add(OrtProvider.TENSOR_RT);
-    }
     if (available.contains(OrtProvider.CUDA)) {
       preferred.add(OrtProvider.CUDA);
     }

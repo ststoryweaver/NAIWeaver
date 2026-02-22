@@ -62,7 +62,6 @@ class FluidSynthSynthesizer implements MidiSynthesizer {
     }
 
     _initialized = true;
-    debugPrint('FluidSynth: Initialized successfully');
   }
 
   @override
@@ -81,7 +80,6 @@ class FluidSynthSynthesizer implements MidiSynthesizer {
       return;
     }
     _currentSfId = sfId;
-    debugPrint('FluidSynth: Loaded soundfont $path (id=$sfId)');
   }
 
   @override
@@ -150,6 +148,5 @@ class FluidSynthSynthesizer implements MidiSynthesizer {
     }
     _currentSfId = null;
     _initialized = false;
-    debugPrint('FluidSynth: Disposed');
   }
 }

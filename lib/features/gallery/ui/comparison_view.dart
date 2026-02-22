@@ -5,6 +5,7 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/comparison_slider.dart';
+import '../../../core/widgets/side_by_side_comparison.dart';
 import '../../../l10n/app_localizations.dart';
 import '../providers/gallery_notifier.dart';
 
@@ -26,6 +27,7 @@ class _ComparisonViewState extends State<ComparisonView> {
   Uint8List? _leftBytes;
   Uint8List? _rightBytes;
   bool _loading = true;
+  bool _sideBySide = false;
 
   @override
   void initState() {
@@ -98,6 +100,17 @@ class _ComparisonViewState extends State<ComparisonView> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: Icon(
+              _sideBySide ? Icons.compare : Icons.view_column,
+              size: mobile ? 22 : 16,
+              color: t.textDisabled,
+            ),
+            tooltip: _sideBySide
+                ? l.comparisonSliderMode
+                : l.comparisonSideBySide,
+            onPressed: () => setState(() => _sideBySide = !_sideBySide),
+          ),
+          IconButton(
             icon: Icon(Icons.swap_horiz, size: mobile ? 22 : 16, color: t.textDisabled),
             tooltip: 'Swap',
             onPressed: _swap,
@@ -109,12 +122,19 @@ class _ComparisonViewState extends State<ComparisonView> {
           Expanded(
             child: _loading
                 ? Center(child: CircularProgressIndicator(color: t.accent))
-                : ComparisonSlider(
-                    beforeBytes: _leftBytes!,
-                    afterBytes: _rightBytes!,
-                    beforeLabel: l.comparisonBefore.toUpperCase(),
-                    afterLabel: l.comparisonAfter.toUpperCase(),
-                  ),
+                : _sideBySide
+                    ? SideBySideComparison(
+                        beforeBytes: _leftBytes!,
+                        afterBytes: _rightBytes!,
+                        beforeLabel: l.comparisonBefore.toUpperCase(),
+                        afterLabel: l.comparisonAfter.toUpperCase(),
+                      )
+                    : ComparisonSlider(
+                        beforeBytes: _leftBytes!,
+                        afterBytes: _rightBytes!,
+                        beforeLabel: l.comparisonBefore.toUpperCase(),
+                        afterLabel: l.comparisonAfter.toUpperCase(),
+                      ),
           ),
           if (!_loading) _buildMetadataBar(mobile),
         ],

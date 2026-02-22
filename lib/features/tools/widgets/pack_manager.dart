@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
@@ -398,7 +399,7 @@ class _ExportDialogState extends State<_ExportDialog> {
       );
 
       if (savePath != null) {
-        if (!Platform.isAndroid) {
+        if (kIsWeb || !Platform.isAndroid) {
           await File(savePath).writeAsBytes(packBytes);
         }
         if (mounted) {
@@ -834,7 +835,7 @@ class _GalleryExportDialogState extends State<_GalleryExportDialog> {
       );
 
       if (savePath != null) {
-        if (!Platform.isAndroid) {
+        if (kIsWeb || !Platform.isAndroid) {
           await File(savePath).writeAsBytes(zipBytes);
         }
         if (mounted) {

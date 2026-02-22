@@ -4,6 +4,7 @@ import '../../../../core/jukebox/providers/jukebox_notifier.dart';
 import '../../../../core/theme/vision_tokens.dart';
 import '../../../../core/widgets/color_swatch_row.dart';
 import '../../../../core/widgets/vision_slider.dart';
+import '../../../../core/l10n/l10n_extensions.dart';
 
 /// Karaoke style customization: colors, visualizer style, intensity sliders,
 /// font scale, and a reset button.
@@ -15,12 +16,13 @@ class JukeboxStyleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Highlight color
         ColorSwatchRow(
-          label: 'HIGHLIGHT',
+          label: l.jukeboxStyleHighlight,
           current: jukebox.karaokeHighlightColor,
           themeDefault: t.accent,
           onChanged: (c) => jukebox.setKaraokeHighlightColor(c),
@@ -29,7 +31,7 @@ class JukeboxStyleSection extends StatelessWidget {
         const SizedBox(height: 10),
         // Upcoming color
         ColorSwatchRow(
-          label: 'UPCOMING',
+          label: l.jukeboxStyleUpcoming,
           current: jukebox.karaokeUpcomingColor,
           themeDefault: t.textPrimary,
           onChanged: (c) => jukebox.setKaraokeUpcomingColor(c),
@@ -38,7 +40,7 @@ class JukeboxStyleSection extends StatelessWidget {
         const SizedBox(height: 10),
         // Next line color
         ColorSwatchRow(
-          label: 'NEXT LINE',
+          label: l.jukeboxStyleNextLine,
           current: jukebox.karaokeNextLineColor,
           themeDefault: t.textMinimal,
           onChanged: (c) => jukebox.setKaraokeNextLineColor(c),
@@ -47,7 +49,7 @@ class JukeboxStyleSection extends StatelessWidget {
         const SizedBox(height: 10),
         // Glow color
         ColorSwatchRow(
-          label: 'GLOW',
+          label: l.jukeboxStyleGlow,
           current: jukebox.visualizerColor,
           themeDefault: t.accent,
           onChanged: (c) => jukebox.setVisualizerColor(c),
@@ -56,7 +58,7 @@ class JukeboxStyleSection extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Visualizer style chips
-        Text('VISUALIZER',
+        Text(l.jukeboxVisualizer,
             style: TextStyle(
                 color: t.textDisabled,
                 fontSize: t.fontSize(7),
@@ -98,18 +100,18 @@ class JukeboxStyleSection extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Intensity / Speed / Density sliders
-        _buildVizSlider('INTENSITY', jukebox.vizIntensity, (v) => jukebox.setVizIntensity(v)),
+        _buildVizSlider(l.jukeboxVizIntensity, jukebox.vizIntensity, (v) => jukebox.setVizIntensity(v)),
         const SizedBox(height: 4),
-        _buildVizSlider('SPEED', jukebox.vizSpeed, (v) => jukebox.setVizSpeed(v)),
+        _buildVizSlider(l.jukeboxVizSpeed, jukebox.vizSpeed, (v) => jukebox.setVizSpeed(v)),
         const SizedBox(height: 4),
-        _buildVizSlider('DENSITY', jukebox.vizDensity, (v) => jukebox.setVizDensity(v)),
+        _buildVizSlider(l.jukeboxVizDensity, jukebox.vizDensity, (v) => jukebox.setVizDensity(v)),
 
         const SizedBox(height: 16),
 
         // Font scale slider
         Row(
           children: [
-            Text('SIZE',
+            Text(l.jukeboxFontSize,
                 style: TextStyle(
                     color: t.textDisabled,
                     fontSize: t.fontSize(7),
@@ -141,7 +143,7 @@ class JukeboxStyleSection extends StatelessWidget {
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             ),
-            child: Text('RESET TO DEFAULTS',
+            child: Text(l.jukeboxResetToDefaults,
                 style: TextStyle(
                     color: t.textDisabled,
                     fontSize: t.fontSize(7),
@@ -189,6 +191,7 @@ class JukeboxSettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l;
     return Column(
       children: [
         // Repeat
@@ -206,7 +209,7 @@ class JukeboxSettingsSection extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'REPEAT: ${jukebox.repeatMode.name.toUpperCase()}',
+              l.jukeboxRepeatMode(jukebox.repeatMode.name.toUpperCase()),
               style: TextStyle(
                   color: t.textDisabled,
                   fontSize: t.fontSize(8),
@@ -230,7 +233,7 @@ class JukeboxSettingsSection extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'SHUFFLE: ${jukebox.shuffle ? "ON" : "OFF"}',
+              l.jukeboxShuffleStatus(jukebox.shuffle ? l.jukeboxOn : l.jukeboxOff),
               style: TextStyle(
                   color: t.textDisabled,
                   fontSize: t.fontSize(8),
@@ -253,6 +256,7 @@ class JukeboxMobileSettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l;
     return Row(
       children: [
         IconButton(
@@ -286,7 +290,7 @@ class JukeboxMobileSettingsRow extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(
-          jukebox.shuffle ? 'ON' : 'OFF',
+          jukebox.shuffle ? l.jukeboxOn : l.jukeboxOff,
           style: TextStyle(
               color: t.textDisabled,
               fontSize: t.fontSize(7),

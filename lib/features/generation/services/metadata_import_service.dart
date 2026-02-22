@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import '../../../core/utils/image_utils.dart';
 import '../models/nai_character.dart';
 
+/// Categories of metadata that can be selectively imported.
+enum ImportCategory { prompt, negativePrompt, characters, seed, styles, settings }
+
 /// Result of parsing image metadata from a PNG file.
 class MetadataImportResult {
   final String prompt;
@@ -42,6 +45,18 @@ class MetadataImportResult {
     this.autoPositioning,
     required this.imageBytes,
   });
+
+  /// Determines which import categories have data in this result.
+  Set<ImportCategory> get availableCategories {
+    final cats = <ImportCategory>{};
+    if (prompt.isNotEmpty) cats.add(ImportCategory.prompt);
+    if (negativePrompt.isNotEmpty) cats.add(ImportCategory.negativePrompt);
+    if (characters.isNotEmpty) cats.add(ImportCategory.characters);
+    if (seed != null) cats.add(ImportCategory.seed);
+    if (activeStyleNames != null && activeStyleNames!.isNotEmpty) cats.add(ImportCategory.styles);
+    if (width != null || scale != null || steps != null || sampler != null) cats.add(ImportCategory.settings);
+    return cats;
+  }
 }
 
 /// Service that extracts metadata from PNG image files and returns a

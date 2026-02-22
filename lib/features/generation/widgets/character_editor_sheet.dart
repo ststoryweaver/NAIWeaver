@@ -67,7 +67,8 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
     }
     final parts = text.split(',');
     final lastPart = parts.last.trim();
-    if (lastPart.length < 2) {
+    final minLength = TagService.containsNonAscii(lastPart) ? 1 : 2;
+    if (lastPart.length < minLength) {
       if (_promptSuggestions.isNotEmpty) setState(() => _promptSuggestions = []);
       return;
     }
@@ -84,7 +85,8 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
     }
     final parts = text.split(',');
     final lastPart = parts.last.trim();
-    if (lastPart.length < 2) {
+    final minLength = TagService.containsNonAscii(lastPart) ? 1 : 2;
+    if (lastPart.length < minLength) {
       if (_ucSuggestions.isNotEmpty) setState(() => _ucSuggestions = []);
       return;
     }
@@ -93,12 +95,13 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
   }
 
   void _onTagSelected(TextEditingController controller, DanbooruTag tag) {
+    final insertText = tag.matchedAlias ?? tag.tag;
     final currentText = controller.text;
     final parts = currentText.split(',');
     parts.removeLast();
     final newText = parts.isEmpty
-        ? '${tag.tag}, '
-        : '${parts.join(',')}, ${tag.tag}, ';
+        ? '$insertText, '
+        : '${parts.join(',')}, $insertText, ';
     controller.text = newText;
     controller.selection = TextSelection.fromPosition(
       TextPosition(offset: newText.length),

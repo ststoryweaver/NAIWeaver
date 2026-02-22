@@ -88,6 +88,18 @@ Token-based theming with 8 built-in themes (OLED Dark, Soft Dark, Midnight, Past
 - A NovelAI API key (subscription required)
 - Flutter SDK ^3.10.7 (stable channel)
 
+### GPU Acceleration (Optional)
+
+On-device ML features (background removal, upscaling, segmentation) work on CPU out of the box. For faster inference on NVIDIA GPUs, install:
+
+1. **CUDA Toolkit 12.x** — [download](https://developer.nvidia.com/cuda-downloads)
+2. **cuDNN 9.x** — [download](https://developer.nvidia.com/cudnn-downloads) (free NVIDIA account required)
+   - Copy cuDNN DLLs into your CUDA Toolkit `bin` directory, or add cuDNN's `bin` to your system PATH
+
+Ensure `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.x\bin` is on your system PATH, then restart the app.
+
+If CUDA is not installed, the app automatically falls back to **DirectML** (Windows) or **CPU**.
+
 ## Quick Start
 
 ```bash

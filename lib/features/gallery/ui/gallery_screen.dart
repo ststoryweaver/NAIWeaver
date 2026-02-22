@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:gal/gal.dart';
@@ -178,7 +179,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Future<void> _bulkExport(List<GalleryItem> selectedItems) async {
     final t = context.tRead;
     try {
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         final hasAccess = await Gal.hasAccess();
         if (!hasAccess) await Gal.requestAccess();
         int saved = 0;

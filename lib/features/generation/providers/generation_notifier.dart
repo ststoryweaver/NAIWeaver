@@ -602,8 +602,9 @@ class GenerationNotifier extends ChangeNotifier {
 
     try {
       final processedPrompt = await _wildcardProcessor.process(promptController.text);
+      final resolvedPrompt = _tagService.resolveAliases(processedPrompt);
 
-      String finalPrompt = processedPrompt;
+      String finalPrompt = resolvedPrompt;
       if (_galleryNotifier?.demoMode == true) {
         final demoPos = _prefs.demoPositivePrefix;
         if (demoPos.isNotEmpty) {
@@ -648,7 +649,7 @@ class GenerationNotifier extends ChangeNotifier {
         combinedPrefix = "fur dataset, ${combinedPrefix ?? ''}";
       }
 
-      String baseNegative = negativePromptController.text;
+      String baseNegative = _tagService.resolveAliases(negativePromptController.text);
       if (_galleryNotifier?.demoMode == true) {
         final demoNeg = _prefs.demoNegativePrefix;
         if (demoNeg.isNotEmpty) {
@@ -674,7 +675,10 @@ class GenerationNotifier extends ChangeNotifier {
         seed: seed,
         promptPrefix: combinedPrefix,
         promptSuffix: combinedSuffix,
-        characters: _state.characters,
+        characters: _state.characters.map((c) => c.copyWith(
+          prompt: _tagService.resolveAliases(c.prompt),
+          uc: _tagService.resolveAliases(c.uc),
+        )).toList(),
         interactions: _state.interactions,
         useCoords: _state.characters.isNotEmpty ? !_state.autoPositioning : false,
         directorRefImages: dirPayload?.images,
@@ -775,41 +779,58 @@ class GenerationNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Parse metadata from a PNG file without applying it to state.
+  Future<MetadataImportResult> parseImageMetadata(File file) async {
+    return _metadataImportService.parseImageMetadata(
+      file, smartStyleImport: _prefs.smartStyleImport);
+  }
+
+  /// Apply a parsed metadata result, importing only the selected categories.
+  void applyImportedMetadata(MetadataImportResult result, Set<ImportCategory> categories) {
+    if (categories.contains(ImportCategory.prompt)) {
+      promptController.value = TextEditingValue(
+        text: result.prompt,
+        selection: TextSelection.collapsed(offset: result.prompt.length),
+      );
+    }
+    if (categories.contains(ImportCategory.negativePrompt)) {
+      negativePromptController.value = TextEditingValue(
+        text: result.negativePrompt,
+        selection: TextSelection.collapsed(offset: result.negativePrompt.length),
+      );
+    }
+    if (categories.contains(ImportCategory.seed) && result.seed != null) {
+      seedController.text = result.seed!;
+    }
+
+    _state = _state.copyWith(
+      width: categories.contains(ImportCategory.settings) ? result.width : null,
+      height: categories.contains(ImportCategory.settings) ? result.height : null,
+      scale: categories.contains(ImportCategory.settings) ? result.scale : null,
+      steps: categories.contains(ImportCategory.settings) ? result.steps : null,
+      sampler: categories.contains(ImportCategory.settings) ? result.sampler : null,
+      smea: categories.contains(ImportCategory.settings) ? result.smea : null,
+      smeaDyn: categories.contains(ImportCategory.settings) ? result.smeaDyn : null,
+      decrisper: categories.contains(ImportCategory.settings) ? result.decrisper : null,
+      randomizeSeed: categories.contains(ImportCategory.seed) ? false : null,
+      generatedImage: result.imageBytes,
+      activeStyleNames: categories.contains(ImportCategory.styles) ? result.activeStyleNames : null,
+      isStyleEnabled: categories.contains(ImportCategory.styles) ? result.isStyleEnabled : null,
+      characters: categories.contains(ImportCategory.characters) ? result.characters : null,
+      interactions: categories.contains(ImportCategory.characters) ? result.interactions : null,
+      autoPositioning: categories.contains(ImportCategory.characters) ? result.autoPositioning : null,
+    );
+    notifyListeners();
+  }
+
+  /// Import all metadata from a PNG file (used by drag-and-drop).
   Future<void> importImageMetadata(File file) async {
     _state = _state.copyWith(isLoading: true);
     notifyListeners();
 
     try {
-      final result = await _metadataImportService.parseImageMetadata(
-        file, smartStyleImport: _prefs.smartStyleImport);
-
-      promptController.value = TextEditingValue(
-        text: result.prompt,
-        selection: TextSelection.collapsed(offset: result.prompt.length),
-      );
-      negativePromptController.value = TextEditingValue(
-        text: result.negativePrompt,
-        selection: TextSelection.collapsed(offset: result.negativePrompt.length),
-      );
-      if (result.seed != null) seedController.text = result.seed!;
-
-      _state = _state.copyWith(
-        width: result.width,
-        height: result.height,
-        scale: result.scale,
-        steps: result.steps,
-        sampler: result.sampler,
-        smea: result.smea,
-        smeaDyn: result.smeaDyn,
-        decrisper: result.decrisper,
-        randomizeSeed: false,
-        generatedImage: result.imageBytes,
-        activeStyleNames: result.activeStyleNames,
-        isStyleEnabled: result.isStyleEnabled,
-        characters: result.characters,
-        interactions: result.interactions,
-        autoPositioning: result.autoPositioning,
-      );
+      final result = await parseImageMetadata(file);
+      applyImportedMetadata(result, ImportCategory.values.toSet());
     } catch (e) {
       debugPrint("Metadata extraction error: $e");
       rethrow;

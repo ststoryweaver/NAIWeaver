@@ -172,6 +172,10 @@ class _AppSettingsState extends State<AppSettings> {
             const SizedBox(height: 12),
             _buildUpdateCheckButton(t),
           ],
+          const SizedBox(height: 32),
+          _buildHeader(l.settingsCredits.toUpperCase(), t),
+          const SizedBox(height: 16),
+          _buildCreditsSection(t),
         ],
       ),
     );
@@ -1043,6 +1047,54 @@ class _AppSettingsState extends State<AppSettings> {
     }
     posCtrl.dispose();
     negCtrl.dispose();
+  }
+
+  Widget _buildCreditsSection(VisionTokens t) {
+    final l = context.l;
+    const names = ['Brudda', 'Uragan', 'Glockamoli', 'Perry Argoneco', 'Deadly Ham'];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: t.borderMedium),
+        borderRadius: BorderRadius.circular(4),
+        color: t.borderSubtle,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.settingsSpecialThanks.toUpperCase(),
+            style: TextStyle(
+              color: t.secondaryText,
+              fontSize: t.fontSize(10),
+              letterSpacing: 2,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final name in names)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: t.headerText,
+                  fontSize: t.fontSize(11),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Text(
+            l.settingsAnonTesters,
+            style: TextStyle(
+              color: t.textTertiary,
+              fontSize: t.fontSize(10),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildGithubButton(VisionTokens t) {

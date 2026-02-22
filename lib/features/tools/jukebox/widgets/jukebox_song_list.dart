@@ -5,6 +5,7 @@ import '../../../../core/jukebox/providers/jukebox_notifier.dart';
 import '../../../../core/theme/vision_tokens.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import 'jukebox_now_playing.dart';
+import '../../../../core/l10n/l10n_extensions.dart';
 
 /// Category filter chip row for the song browser.
 class JukeboxCategoryChips extends StatelessWidget {
@@ -28,7 +29,7 @@ class JukeboxCategoryChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _chip(null, 'ALL'),
+            _chip(null, context.l.jukeboxCategoryAll),
             ...SongCategory.values.map((cat) =>
                 _chip(cat, JukeboxRegistry.categoryDisplayName(cat))),
           ],
@@ -127,6 +128,20 @@ class JukeboxSongList extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (song.isRecommended)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    margin: const EdgeInsets.only(right: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Text(context.l.jukeboxRecommendedBadge,
+                        style: TextStyle(
+                            color: const Color(0xFFFFD700),
+                            fontSize: t.fontSize(6),
+                            fontWeight: FontWeight.bold)),
+                  ),
                 if (song.isKaraoke)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -135,7 +150,7 @@ class JukeboxSongList extends StatelessWidget {
                       color: t.accent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(2),
                     ),
-                    child: Text('KAR',
+                    child: Text(context.l.jukeboxKaraokeBadge,
                         style: TextStyle(
                             color: t.accent,
                             fontSize: t.fontSize(6),
@@ -156,7 +171,7 @@ class JukeboxSongList extends StatelessWidget {
                     onPressed: () => _confirmDeleteCustomSong(context, song),
                     constraints: const BoxConstraints(),
                     padding: const EdgeInsets.all(4),
-                    tooltip: 'Delete custom song',
+                    tooltip: context.l.jukeboxDeleteCustomSongTooltip,
                   ),
                 IconButton(
                   icon: Icon(Icons.add, size: 14, color: t.textDisabled),
@@ -165,7 +180,7 @@ class JukeboxSongList extends StatelessWidget {
                   },
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(4),
-                  tooltip: 'Add to queue',
+                  tooltip: context.l.jukeboxAddToQueue,
                 ),
               ],
             ),
@@ -178,8 +193,8 @@ class JukeboxSongList extends StatelessWidget {
   Future<void> _confirmDeleteCustomSong(BuildContext context, JukeboxSong song) async {
     final confirm = await showConfirmDialog(
       context,
-      title: 'DELETE SONG',
-      message: 'Delete ${song.title}? This will remove the file from disk.',
+      title: context.l.jukeboxDeleteSong,
+      message: context.l.jukeboxDeleteSongConfirm(song.title),
       confirmLabel: 'DELETE',
       confirmColor: t.accentDanger,
     );
@@ -201,7 +216,7 @@ class JukeboxQueue extends StatelessWidget {
     if (jukebox.queue.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(16),
-        child: Text('QUEUE IS EMPTY',
+        child: Text(context.l.jukeboxQueueEmpty,
             style: TextStyle(
                 color: t.textMinimal,
                 fontSize: t.fontSize(8),

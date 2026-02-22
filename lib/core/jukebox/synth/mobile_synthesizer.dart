@@ -18,14 +18,12 @@ class MobileSynthesizer implements MidiSynthesizer {
   @override
   Future<void> initialize() async {
     if (!Platform.isAndroid && !Platform.isIOS) {
-      debugPrint('MobileSynthesizer: Not a mobile platform, skipping');
       return;
     }
 
     try {
       _midiPro = MidiPro();
       _initialized = true;
-      debugPrint('MobileSynthesizer: Initialized');
     } catch (e) {
       debugPrint('MobileSynthesizer: Init failed: $e');
     }
@@ -36,7 +34,6 @@ class MobileSynthesizer implements MidiSynthesizer {
     if (!_initialized || _midiPro == null) return;
     try {
       _sfId = await _midiPro!.loadSoundfontFile(filePath: path);
-      debugPrint('MobileSynthesizer: Loaded soundfont $path (sfId=$_sfId)');
     } catch (e) {
       debugPrint('MobileSynthesizer: Failed to load soundfont: $e');
     }
@@ -91,6 +88,5 @@ class MobileSynthesizer implements MidiSynthesizer {
     _midiPro = null;
     _initialized = false;
     _sfId = -1;
-    debugPrint('MobileSynthesizer: Disposed');
   }
 }

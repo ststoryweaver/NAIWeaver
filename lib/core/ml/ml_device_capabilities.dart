@@ -21,7 +21,6 @@ class MLDeviceCapabilities {
 
   String get providerLabel {
     if (hasGpuAcceleration) {
-      if (activeProvider.contains('TensorRT')) return 'GPU: TensorRT';
       if (activeProvider.contains('CUDA')) return 'GPU: CUDA';
       if (activeProvider.contains('DirectML')) return 'GPU: DirectML';
       if (activeProvider.contains('CoreML')) return 'GPU: CoreML';
@@ -88,9 +87,6 @@ class MLDeviceCapabilities {
     if (platform.isEmpty) return true;
     return entry.platformFlags.contains(platform);
   }
-
-  bool get supportsTensorRT =>
-      availableProviders.any((p) => p.contains('TensorRT') || p.contains('Tensor_RT'));
 
   bool isDesktopOnlyOnMobile(MLModelEntry entry) {
     return entry.deviceTier == MLDeviceTier.desktop && recommendedTier == MLDeviceTier.mobile;

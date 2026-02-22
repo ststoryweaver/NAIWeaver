@@ -121,17 +121,7 @@ class _SlideshowLauncherState extends State<SlideshowLauncher> {
                     context: context,
                     builder: (ctx) => Dialog.fullscreen(
                       backgroundColor: Colors.black,
-                      child: Scaffold(
-                        backgroundColor: Colors.black,
-                        appBar: AppBar(
-                          backgroundColor: Colors.black,
-                          leading: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white70),
-                            onPressed: () => Navigator.pop(ctx),
-                          ),
-                        ),
-                        body: const JukeboxPanel(),
-                      ),
+                      child: const JukeboxPanel(),
                     ),
                   );
                 },

@@ -4,13 +4,14 @@ import '../../theme/theme_extensions.dart';
 import '../../utils/app_snackbar.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/comparison_slider.dart';
+import '../../widgets/side_by_side_comparison.dart';
 import '../../../l10n/app_localizations.dart';
 
 class UpscaleComparisonView extends StatefulWidget {
   final Uint8List originalBytes;
   final Uint8List upscaledBytes;
   final String outputName;
-  final VoidCallback onSave;
+  final Future<void> Function() onSave;
   final bool autoSave;
 
   const UpscaleComparisonView({
@@ -28,6 +29,7 @@ class UpscaleComparisonView extends StatefulWidget {
 
 class _UpscaleComparisonViewState extends State<UpscaleComparisonView> {
   bool _saved = false;
+  bool _sideBySide = false;
 
   @override
   void initState() {
@@ -39,9 +41,10 @@ class _UpscaleComparisonViewState extends State<UpscaleComparisonView> {
     }
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
     if (_saved) return;
-    widget.onSave();
+    await widget.onSave();
+    if (!mounted) return;
     setState(() => _saved = true);
     showAppSnackBar(context, 'SAVED: ${widget.outputName}');
   }
@@ -61,7 +64,7 @@ class _UpscaleComparisonViewState extends State<UpscaleComparisonView> {
         leading: IconButton(
           icon: Icon(Icons.close,
               size: mobile ? 22 : 16, color: t.textSecondary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _saved),
         ),
         title: Text(
           'UPSCALE COMPARE',
@@ -74,6 +77,17 @@ class _UpscaleComparisonViewState extends State<UpscaleComparisonView> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(
+              _sideBySide ? Icons.compare : Icons.view_column,
+              size: mobile ? 22 : 16,
+              color: t.textDisabled,
+            ),
+            tooltip: _sideBySide
+                ? l.comparisonSliderMode
+                : l.comparisonSideBySide,
+            onPressed: () => setState(() => _sideBySide = !_sideBySide),
+          ),
           if (!widget.autoSave)
             TextButton(
               onPressed: _saved ? null : _handleSave,
@@ -90,12 +104,19 @@ class _UpscaleComparisonViewState extends State<UpscaleComparisonView> {
           const SizedBox(width: 4),
         ],
       ),
-      body: ComparisonSlider(
-        beforeBytes: widget.originalBytes,
-        afterBytes: widget.upscaledBytes,
-        beforeLabel: l.comparisonBefore.toUpperCase(),
-        afterLabel: l.comparisonAfter.toUpperCase(),
-      ),
+      body: _sideBySide
+          ? SideBySideComparison(
+              beforeBytes: widget.originalBytes,
+              afterBytes: widget.upscaledBytes,
+              beforeLabel: l.comparisonBefore.toUpperCase(),
+              afterLabel: l.comparisonAfter.toUpperCase(),
+            )
+          : ComparisonSlider(
+              beforeBytes: widget.originalBytes,
+              afterBytes: widget.upscaledBytes,
+              beforeLabel: l.comparisonBefore.toUpperCase(),
+              afterLabel: l.comparisonAfter.toUpperCase(),
+            ),
     );
   }
 }
