@@ -177,6 +177,143 @@ Uint8List? convertToPngPreservingMetadata(Map<String, dynamic> data) {
   return Uint8List.fromList(encoder.encode(image));
 }
 
+/// Extracts the original creation date from image metadata (EXIF for JPEG/WEBP).
+/// Falls back to the provided file stat date if no metadata date is found.
+/// Designed to run in an isolate via compute().
+String extractOriginalDate(Map<String, dynamic> data) {
+  final bytes = data['bytes'] as Uint8List;
+  final statModified = data['statModified'] as String;
+
+  // 1. Try EXIF (works for JPEG/WEBP)
+  if (!isPng(bytes)) {
+    try {
+      final image = img.decodeImage(bytes);
+      if (image != null) {
+        // DateTimeOriginal (0x9003) → DateTimeDigitized (0x9004) → DateTime (0x0132)
+        final dto = image.exif.exifIfd[0x9003]?.toString();
+        final dtd = image.exif.exifIfd[0x9004]?.toString();
+        final dt = image.exif.imageIfd[0x0132]?.toString();
+        final exifStr = dto ?? dtd ?? dt;
+        if (exifStr != null) {
+          final parsed = _parseExifDate(exifStr);
+          if (parsed != null) return parsed.toIso8601String();
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. For PNGs, check for an existing OriginalDate text chunk
+  if (isPng(bytes)) {
+    final metadata = _extractPngTextChunks(bytes);
+    if (metadata != null && metadata.containsKey('OriginalDate')) {
+      final origDate = DateTime.tryParse(metadata['OriginalDate']!);
+      if (origDate != null) return origDate.toIso8601String();
+    }
+  }
+
+  // 3. Fall back to file stat
+  return statModified;
+}
+
+/// Parses EXIF date format "YYYY:MM:DD HH:MM:SS" into a DateTime.
+DateTime? _parseExifDate(String exifDate) {
+  try {
+    final parts = exifDate.split(' ');
+    if (parts.length != 2) return null;
+    final dateParts = parts[0].split(':');
+    final timeParts = parts[1].split(':');
+    if (dateParts.length != 3 || timeParts.length != 3) return null;
+    return DateTime(
+      int.parse(dateParts[0]),
+      int.parse(dateParts[1]),
+      int.parse(dateParts[2]),
+      int.parse(timeParts[0]),
+      int.parse(timeParts[1]),
+      int.parse(timeParts[2]),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Injects an OriginalDate tEXt chunk into PNG bytes without re-encoding pixels.
+/// Designed to run in an isolate via compute().
+Uint8List injectOriginalDate(Map<String, dynamic> data) {
+  final bytes = data['bytes'] as Uint8List;
+  final date = data['date'] as String;
+  return _insertPngTextChunk(bytes, 'OriginalDate', date);
+}
+
+/// Inserts a tEXt chunk into PNG bytes before the first IDAT chunk.
+Uint8List _insertPngTextChunk(Uint8List bytes, String key, String value) {
+  if (!isPng(bytes)) return bytes;
+
+  // Build tEXt chunk data: keyword \0 text
+  final keyBytes = latin1.encode(key);
+  final valueBytes = latin1.encode(value);
+  final chunkData = Uint8List(keyBytes.length + 1 + valueBytes.length);
+  chunkData.setRange(0, keyBytes.length, keyBytes);
+  chunkData[keyBytes.length] = 0;
+  chunkData.setRange(keyBytes.length + 1, chunkData.length, valueBytes);
+
+  // Compute CRC over type + data
+  const chunkType = [0x74, 0x45, 0x58, 0x74]; // 'tEXt'
+  final crc = _pngCrc32([...chunkType, ...chunkData]);
+
+  // Build full chunk: length(4) + type(4) + data + crc(4)
+  final len = chunkData.length;
+  final fullChunk = Uint8List(12 + len);
+  fullChunk[0] = (len >> 24) & 0xFF;
+  fullChunk[1] = (len >> 16) & 0xFF;
+  fullChunk[2] = (len >> 8) & 0xFF;
+  fullChunk[3] = len & 0xFF;
+  fullChunk[4] = 0x74; fullChunk[5] = 0x45;
+  fullChunk[6] = 0x58; fullChunk[7] = 0x74;
+  fullChunk.setRange(8, 8 + len, chunkData);
+  fullChunk[8 + len] = (crc >> 24) & 0xFF;
+  fullChunk[8 + len + 1] = (crc >> 16) & 0xFF;
+  fullChunk[8 + len + 2] = (crc >> 8) & 0xFF;
+  fullChunk[8 + len + 3] = crc & 0xFF;
+
+  // Find insertion point: before first IDAT chunk
+  var offset = 8; // Skip PNG signature
+  while (offset + 12 <= bytes.length) {
+    final chunkLen = (bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3];
+    final type = String.fromCharCodes(bytes, offset + 4, offset + 8);
+    if (type == 'IDAT') {
+      final result = Uint8List(bytes.length + fullChunk.length);
+      result.setRange(0, offset, bytes);
+      result.setRange(offset, offset + fullChunk.length, fullChunk);
+      result.setRange(
+          offset + fullChunk.length, result.length,
+          Uint8List.sublistView(bytes, offset));
+      return result;
+    }
+    offset += 12 + chunkLen;
+  }
+
+  return bytes;
+}
+
+/// Computes CRC-32 for PNG chunk validation.
+int _pngCrc32(List<int> data) {
+  int crc = 0xFFFFFFFF;
+  for (final byte in data) {
+    crc ^= byte;
+    for (int i = 0; i < 8; i++) {
+      if ((crc & 1) != 0) {
+        crc = (crc >> 1) ^ 0xEDB88320;
+      } else {
+        crc >>= 1;
+      }
+    }
+  }
+  return (crc ^ 0xFFFFFFFF) & 0xFFFFFFFF;
+}
+
 /// Parses the JSON from a PNG Comment chunk.
 /// Tries direct decode first, falls back to trimming trailing garbage.
 Map<String, dynamic>? parseCommentJson(String comment) {

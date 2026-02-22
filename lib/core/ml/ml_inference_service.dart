@@ -192,12 +192,16 @@ class MLInferenceService {
     } finally {
       try {
         await inputTensor?.dispose();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('MLInferenceService.runInference: dispose inputTensor: $e');
+      }
       if (outputs != null) {
         for (final v in outputs.values) {
           try {
             await v.dispose();
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('MLInferenceService.runInference: dispose output: $e');
+          }
         }
       }
     }
@@ -248,13 +252,17 @@ class MLInferenceService {
       for (final v in inputTensors.values) {
         try {
           await v.dispose();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('MLInferenceService.runMultiInputInference: dispose inputTensor: $e');
+        }
       }
       if (outputs != null) {
         for (final v in outputs.values) {
           try {
             await v.dispose();
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('MLInferenceService.runMultiInputInference: dispose output: $e');
+          }
         }
       }
     }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../tag_service.dart';
+import '../services/tag_service.dart';
 import '../services/wildcard_service.dart';
 
 class TagSuggestionResult {

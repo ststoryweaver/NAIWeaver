@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../tag_service.dart';
+import '../services/tag_service.dart';
 import '../theme/theme_extensions.dart';
 
 /// Shared tag suggestion overlay used across the main generation screen

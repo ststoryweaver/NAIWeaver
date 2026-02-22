@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../l10n/l10n_extensions.dart';
+import '../../l10n/app_localizations.dart';
 import '../theme/theme_extensions.dart';
+import '../theme/vision_tokens.dart';
 import '../../features/gallery/ui/gallery_screen.dart';
 import '../../features/tools/tools_hub_screen.dart';
 
@@ -66,7 +68,7 @@ void showHelpDialog(BuildContext context) {
   );
 }
 
-Widget _sectionHeader(dynamic t, String label) {
+Widget _sectionHeader(VisionTokens t, String label) {
   return Text(
     label,
     style: TextStyle(
@@ -78,7 +80,7 @@ Widget _sectionHeader(dynamic t, String label) {
   );
 }
 
-Widget _shortcutRow(dynamic t, String syntax, String description) {
+Widget _shortcutRow(VisionTokens t, String syntax, String description) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: Row(
@@ -110,7 +112,7 @@ Widget _shortcutRow(dynamic t, String syntax, String description) {
   );
 }
 
-Widget _featureRow(BuildContext context, dynamic t, _Feature feature) {
+Widget _featureRow(BuildContext context, VisionTokens t, _Feature feature) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 5),
     child: Row(
@@ -172,7 +174,7 @@ class _Shortcut {
   const _Shortcut(this.syntax, this.description);
 }
 
-List<_Shortcut> _getShortcuts(dynamic l) => [
+List<_Shortcut> _getShortcuts(AppLocalizations l) => [
   _Shortcut('__name__', l.helpShortcutWildcard),
   _Shortcut('__', l.helpShortcutWildcardBrowse),
   _Shortcut('/f', l.helpShortcutFavorites),
@@ -190,7 +192,7 @@ class _Feature {
   const _Feature(this.name, this.description, this.navigate);
 }
 
-List<_Feature> _getFeatures(dynamic l) => [
+List<_Feature> _getFeatures(AppLocalizations l) => [
   _Feature(l.helpFeatureGallery, l.helpFeatureGalleryDesc, (ctx) {
     Navigator.push(ctx, MaterialPageRoute(builder: (_) => const GalleryScreen()));
   }),
