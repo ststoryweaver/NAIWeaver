@@ -175,6 +175,7 @@ These projects were great resources and inspiration:
 - [novelai-python](https://github.com/LlmKira/novelai-python) by [@LlmKira](https://github.com/LlmKira) — NovelAI API Python SDK
 - [NAI_UI_2](https://github.com/EctoplasmicNeko/NAI_UI_2) by [@EctoplasmicNeko](https://github.com/EctoplasmicNeko) — NovelAI desktop app with additional features
 - [ComfyUI_NAIDGenerator](https://github.com/bedovyy/ComfyUI_NAIDGenerator) by [@bedovyy](https://github.com/bedovyy) — NovelAI Diffusion generator for ComfyUI
+- Special thanks to Glockamoli and his TamperMonkey script for the comparison tool
 
 ## License
 
