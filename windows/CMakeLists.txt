@@ -53,6 +53,38 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# --- ONNX Runtime GPU (CUDA) build override ---
+# Download the GPU-enabled ONNX Runtime so flutter_onnxruntime picks up CUDA support.
+set(ORT_VERSION "1.22.0")
+set(ORT_GPU_ZIP "onnxruntime-win-x64-gpu-${ORT_VERSION}.zip")
+set(ORT_GPU_URL "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/${ORT_GPU_ZIP}")
+set(ORT_GPU_DIR "${CMAKE_BINARY_DIR}/ort_gpu")
+set(ORT_GPU_EXTRACT_DIR "${ORT_GPU_DIR}/onnxruntime-win-x64-gpu-${ORT_VERSION}")
+
+if(NOT EXISTS "${ORT_GPU_EXTRACT_DIR}")
+  message(STATUS "Downloading ONNX Runtime GPU ${ORT_VERSION}...")
+  file(DOWNLOAD "${ORT_GPU_URL}" "${ORT_GPU_DIR}/${ORT_GPU_ZIP}"
+    SHOW_PROGRESS
+    STATUS ORT_DOWNLOAD_STATUS)
+  list(GET ORT_DOWNLOAD_STATUS 0 ORT_DOWNLOAD_ERROR)
+  if(ORT_DOWNLOAD_ERROR)
+    message(WARNING "Failed to download ONNX Runtime GPU: ${ORT_DOWNLOAD_STATUS}")
+  else()
+    message(STATUS "Extracting ONNX Runtime GPU...")
+    file(ARCHIVE_EXTRACT INPUT "${ORT_GPU_DIR}/${ORT_GPU_ZIP}"
+      DESTINATION "${ORT_GPU_DIR}")
+  endif()
+endif()
+
+if(EXISTS "${ORT_GPU_EXTRACT_DIR}")
+  # Point flutter_onnxruntime at the GPU build instead of CPU
+  set(ONNXRUNTIME_ROOT_DIR "${ORT_GPU_EXTRACT_DIR}" CACHE PATH "" FORCE)
+  # Clear stale cached paths so find_library/find_path re-evaluate
+  unset(ONNXRUNTIME_LIBRARY CACHE)
+  unset(ONNXRUNTIME_INCLUDE_DIR CACHE)
+  message(STATUS "ONNX Runtime GPU root: ${ORT_GPU_EXTRACT_DIR}")
+endif()
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
@@ -106,3 +138,24 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# FluidSynth DLL for MIDI Jukebox
+set(FLUIDSYNTH_DLL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dlls")
+if(EXISTS "${FLUIDSYNTH_DLL_DIR}")
+  file(GLOB FLUIDSYNTH_DLLS "${FLUIDSYNTH_DLL_DIR}/*.dll")
+  if(FLUIDSYNTH_DLLS)
+    install(FILES ${FLUIDSYNTH_DLLS}
+      DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+      COMPONENT Runtime)
+  endif()
+endif()
+
+# ONNX Runtime GPU DLLs (onnxruntime.dll, providers_shared, providers_cuda)
+if(EXISTS "${ORT_GPU_EXTRACT_DIR}/lib")
+  file(GLOB ORT_GPU_DLLS "${ORT_GPU_EXTRACT_DIR}/lib/*.dll")
+  if(ORT_GPU_DLLS)
+    install(FILES ${ORT_GPU_DLLS}
+      DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+      COMPONENT Runtime)
+  endif()
+endif()
