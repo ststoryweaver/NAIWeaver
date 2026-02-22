@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/tag_suggestion_overlay.dart';
-import '../../../styles.dart';
+import '../../../core/services/styles.dart';
 import '../../generation/providers/generation_notifier.dart';
 import '../providers/style_notifier.dart';
 
@@ -516,58 +517,31 @@ class _StyleEditorContentState extends State<_StyleEditorContent> {
     );
   }
 
-  void _showDeleteConfirm(BuildContext context, StyleNotifier notifier, PromptStyle style, VisionTokens t) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final l = context.l;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(l.styleDeleteTitle, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-          content: Text(l.styleDeleteConfirm(style.name), style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(11))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                notifier.deleteStyle(style);
-                Navigator.pop(context);
-              },
-              child: Text(l.commonDelete, style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(9))),
-            ),
-          ],
-        );
-      },
+  Future<void> _showDeleteConfirm(BuildContext context, StyleNotifier notifier, PromptStyle style, VisionTokens t) async {
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.styleDeleteTitle,
+      message: l.styleDeleteConfirm(style.name),
+      confirmLabel: l.commonDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.deleteStyle(style);
+    }
   }
 
-  void _showOverwriteConfirm(BuildContext context, StyleNotifier notifier, VisionTokens t) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final l = context.l;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(l.styleOverwriteTitle, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-          content: Text(l.styleOverwriteConfirm(notifier.nameController.text),
-              style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(11))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                notifier.saveStyle();
-                Navigator.pop(context);
-              },
-              child: Text(l.commonOverwrite, style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(9))),
-            ),
-          ],
-        );
-      },
+  Future<void> _showOverwriteConfirm(BuildContext context, StyleNotifier notifier, VisionTokens t) async {
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.styleOverwriteTitle,
+      message: l.styleOverwriteConfirm(notifier.nameController.text),
+      confirmLabel: l.commonOverwrite,
+      confirmColor: t.textPrimary,
     );
+    if (confirm == true) {
+      notifier.saveStyle();
+    }
   }
 }

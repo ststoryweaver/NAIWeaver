@@ -6,6 +6,9 @@ import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/vision_slider.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../generation/providers/generation_notifier.dart';
 import '../../../core/utils/responsive.dart';
 import '../providers/tag_library_notifier.dart';
@@ -127,7 +130,7 @@ class TagLibraryManager extends StatelessWidget {
                 _buildFilterChip(
                   label: context.l.tagLibFavorites,
                   isSelected: state.showFavoritesOnly,
-                  color: Colors.redAccent,
+                  color: t.accentDanger,
                   onSelected: () => notifier.toggleFavoritesOnly(),
                   t: t,
                 ),
@@ -329,31 +332,18 @@ class TagLibraryManager extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, TagLibraryNotifier notifier, dynamic tag, VisionTokens t) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final l = context.l;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(l.tagLibDeleteTag, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-          content: Text(l.tagLibRemoveConfirm(tag.tag), style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(11))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                notifier.deleteTag(tag);
-                Navigator.pop(context);
-              },
-              child: Text(l.commonDelete, style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(9))),
-            ),
-          ],
-        );
-      },
+  Future<void> _confirmDelete(BuildContext context, TagLibraryNotifier notifier, dynamic tag, VisionTokens t) async {
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.tagLibDeleteTag,
+      message: l.tagLibRemoveConfirm(tag.tag),
+      confirmLabel: l.commonDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.deleteTag(tag);
+    }
   }
 
   void _showQuickPreview(BuildContext context, String tag) {
@@ -515,20 +505,13 @@ class _TagExamplesOverlay extends StatelessWidget {
                       child: IconButton(
                         icon: Icon(Icons.delete, color: t.accentDanger),
                         onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) {
-                              final l = context.l;
-                              return AlertDialog(
-                              backgroundColor: t.surfaceHigh,
-                              title: Text(l.tagLibDeleteExample, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-                              content: Text(l.tagLibDeleteExampleConfirm, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(11))),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9)))),
-                                TextButton(onPressed: () => Navigator.pop(context, true), child: Text(l.commonDelete, style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(9)))),
-                              ],
-                            );
-                            },
+                          final l = context.l;
+                          final confirm = await showConfirmDialog(
+                            context,
+                            title: l.tagLibDeleteExample,
+                            message: l.tagLibDeleteExampleConfirm,
+                            confirmLabel: l.commonDelete,
+                            confirmColor: t.accentDanger,
                           );
                           if (confirm == true) {
                             await notifier.deleteExample(tag.tag, path);
@@ -677,13 +660,7 @@ class _QuickTagPreviewDialogState extends State<_QuickTagPreviewDialog> {
                   onPressed: () async {
                     await context.read<TagLibraryNotifier>().saveExample(widget.tag, _imageBytes!);
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(context.l.tagLibExampleSaved, style: const TextStyle(fontSize: 10, letterSpacing: 2)),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
+                      showAppSnackBar(context, context.l.tagLibExampleSaved);
                     }
                   },
                   icon: Icon(Icons.save, size: 14, color: t.accentSuccess),
@@ -900,21 +877,18 @@ class _TagPreviewSettingsPanelState extends State<_TagPreviewSettingsPanel> {
       children: [
         Text("$label: ${value.toStringAsFixed(0)}",
             style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8))),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: 1,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-          ),
-          child: Slider(
-            value: value.clamp(min, max),
-            min: min,
-            max: max,
-            divisions: ((max - min) / step).toInt(),
-            onChanged: onChanged,
-            activeColor: t.textPrimary,
-            inactiveColor: t.textMinimal,
-          ),
+        VisionSlider(
+          value: value.clamp(min, max),
+          onChanged: onChanged,
+          min: min,
+          max: max,
+          divisions: ((max - min) / step).toInt(),
+          activeColor: t.textPrimary,
+          inactiveColor: t.textMinimal,
+          thumbColor: t.textPrimary,
+          thumbRadius: 4,
+          overlayRadius: 10,
+          trackHeight: 1,
         ),
       ],
     );

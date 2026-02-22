@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/services/wildcard_service.dart';
-import '../../../tag_service.dart';
-import '../../../wildcard_processor.dart';
+import '../../../core/services/tag_service.dart';
+import '../../../core/services/wildcard_processor.dart';
 
 class WildcardState {
   final List<File> files;

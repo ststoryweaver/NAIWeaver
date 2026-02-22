@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/tag_suggestion_overlay.dart';
-import '../../../wildcard_processor.dart';
+import '../../../core/services/wildcard_processor.dart';
 import '../providers/wildcard_notifier.dart';
 
 class WildcardManager extends StatefulWidget {
@@ -400,7 +401,7 @@ class _WildcardManagerState extends State<WildcardManager> {
     );
   }
 
-  String _modeLabel(WildcardMode mode, dynamic l) {
+  String _modeLabel(WildcardMode mode, AppLocalizations l) {
     switch (mode) {
       case WildcardMode.random:
         return l.wildcardModeRandom;

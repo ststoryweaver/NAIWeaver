@@ -7,9 +7,11 @@ import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/services/pack_service.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/theme/vision_tokens.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../presets.dart';
-import '../../../styles.dart';
+import '../../../core/services/presets.dart';
+import '../../../core/services/styles.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../../generation/providers/generation_notifier.dart';
 import '../providers/wildcard_notifier.dart';
@@ -140,7 +142,6 @@ class _PackManagerState extends State<PackManager> {
   }
 
   Future<void> _importPack(BuildContext context) async {
-    final t = context.tRead;
     final l = context.l;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -157,10 +158,7 @@ class _PackManagerState extends State<PackManager> {
       contents = PackService.importPack(bytes);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l.packFailedRead(e.toString()), style: TextStyle(color: t.accentDanger)),
-          backgroundColor: t.surfaceHigh,
-        ));
+        showErrorSnackBar(context, context.l.packFailedRead(e.toString()));
       }
       return;
     }
@@ -346,14 +344,14 @@ class _ExportDialogState extends State<_ExportDialog> {
     );
   }
 
-  Widget _sectionHeader(String text, dynamic t) {
+  Widget _sectionHeader(String text, VisionTokens t) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(text, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 2, fontWeight: FontWeight.bold)),
     );
   }
 
-  Widget _checkTile(String name, bool checked, ValueChanged<bool?> onChanged, dynamic t, bool mobile) {
+  Widget _checkTile(String name, bool checked, ValueChanged<bool?> onChanged, VisionTokens t, bool mobile) {
     return SizedBox(
       height: mobile ? 36 : 28,
       child: CheckboxListTile(
@@ -405,20 +403,12 @@ class _ExportDialogState extends State<_ExportDialog> {
         }
         if (mounted) {
           Navigator.pop(context);
-          final t = context.tRead;
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l.packExportSuccess, style: TextStyle(color: t.accentSuccess)),
-            backgroundColor: t.surfaceHigh,
-          ));
+          showAppSnackBar(context, context.l.packExportSuccess);
         }
       }
     } catch (e) {
       if (mounted) {
-        final t = context.tRead;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l.packExportFailed(e.toString()), style: TextStyle(color: t.accentDanger)),
-          backgroundColor: t.surfaceHigh,
-        ));
+        showErrorSnackBar(context, context.l.packExportFailed(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -518,14 +508,14 @@ class _ImportDialogState extends State<_ImportDialog> {
     );
   }
 
-  Widget _sectionHeader(String text, dynamic t) {
+  Widget _sectionHeader(String text, VisionTokens t) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(text, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 2, fontWeight: FontWeight.bold)),
     );
   }
 
-  Widget _checkTile(String name, bool checked, ValueChanged<bool?> onChanged, dynamic t, bool mobile) {
+  Widget _checkTile(String name, bool checked, ValueChanged<bool?> onChanged, VisionTokens t, bool mobile) {
     return SizedBox(
       height: mobile ? 36 : 28,
       child: CheckboxListTile(
@@ -629,19 +619,11 @@ class _ImportDialogState extends State<_ImportDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        final t = context.tRead;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l.packImportSuccess, style: TextStyle(color: t.accentSuccess)),
-          backgroundColor: t.surfaceHigh,
-        ));
+        showAppSnackBar(context, context.l.packImportSuccess);
       }
     } catch (e) {
       if (mounted) {
-        final t = context.tRead;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l.packImportFailed(e.toString()), style: TextStyle(color: t.accentDanger)),
-          backgroundColor: t.surfaceHigh,
-        ));
+        showErrorSnackBar(context, context.l.packImportFailed(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _importing = false);
@@ -806,14 +788,14 @@ class _GalleryExportDialogState extends State<_GalleryExportDialog> {
     );
   }
 
-  Widget _sectionHeader(String text, dynamic t) {
+  Widget _sectionHeader(String text, VisionTokens t) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(text, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 2, fontWeight: FontWeight.bold)),
     );
   }
 
-  Widget _checkTile(String name, bool checked, ValueChanged<bool?> onChanged, dynamic t, bool mobile) {
+  Widget _checkTile(String name, bool checked, ValueChanged<bool?> onChanged, VisionTokens t, bool mobile) {
     return SizedBox(
       height: mobile ? 36 : 28,
       child: CheckboxListTile(
@@ -857,21 +839,13 @@ class _GalleryExportDialogState extends State<_GalleryExportDialog> {
         }
         if (mounted) {
           Navigator.pop(context);
-          final t = context.tRead;
           final count = _countImages(gallery);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l.packExportedToZip(count), style: TextStyle(color: t.accentSuccess)),
-            backgroundColor: t.surfaceHigh,
-          ));
+          showAppSnackBar(context, context.l.packExportedToZip(count));
         }
       }
     } catch (e) {
       if (mounted) {
-        final t = context.tRead;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l.packExportFailed(e.toString()), style: TextStyle(color: t.accentDanger)),
-          backgroundColor: t.surfaceHigh,
-        ));
+        showErrorSnackBar(context, context.l.packExportFailed(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _exporting = false);

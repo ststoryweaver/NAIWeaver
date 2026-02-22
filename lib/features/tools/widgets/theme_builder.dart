@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../core/theme/app_theme_config.dart';
 import '../../../core/theme/theme_notifier.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/color_picker_dialog.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 
-Map<String, String> _sectionDisplayNames(dynamic l) => {
+Map<String, String> _sectionDisplayNames(AppLocalizations l) => {
   'dimensions_seed': l.themeSectionDimSeed,
   'steps_scale': l.themeSectionStepsScale,
   'sampler_post': l.themeSectionSamplerPost,
@@ -256,6 +259,8 @@ class _ThemeBuilderState extends State<ThemeBuilder> {
                 _buildColorRow(l.themeColorAccentDanger, config.accentDanger, (c) => _updateConfig(themeNotifier, config.copyWith(accentDanger: c)), t),
                 _buildColorRow(l.themeColorLogo, config.logoColor, (c) => _updateConfig(themeNotifier, config.copyWith(logoColor: c)), t),
                 _buildColorRow(l.themeColorCascade, config.accentCascade, (c) => _updateConfig(themeNotifier, config.copyWith(accentCascade: c)), t),
+                _buildColorRow(l.themeColorBgRemoval, config.accentBgRemoval, (c) => _updateConfig(themeNotifier, config.copyWith(accentBgRemoval: c)), t),
+                _buildColorRow(l.themeColorUpscale, config.accentUpscale, (c) => _updateConfig(themeNotifier, config.copyWith(accentUpscale: c)), t),
                 const SizedBox(height: 24),
 
                 // References
@@ -265,6 +270,10 @@ class _ThemeBuilderState extends State<ThemeBuilder> {
                 _buildColorRow(l.themeColorRefCharacter, config.accentRefCharacter, (c) => _updateConfig(themeNotifier, config.copyWith(accentRefCharacter: c)), t),
                 _buildColorRow(l.themeColorRefStyle, config.accentRefStyle, (c) => _updateConfig(themeNotifier, config.copyWith(accentRefStyle: c)), t),
                 _buildColorRow(l.themeColorRefCharStyle, config.accentRefCharStyle, (c) => _updateConfig(themeNotifier, config.copyWith(accentRefCharStyle: c)), t),
+                _buildColorRow(l.themeColorFavorite, config.accentFavorite, (c) => _updateConfig(themeNotifier, config.copyWith(accentFavorite: c)), t),
+                _buildColorRow(l.themeColorCharacter, config.accentCharacter, (c) => _updateConfig(themeNotifier, config.copyWith(accentCharacter: c)), t),
+                _buildColorRow(l.themeColorPositive, config.positiveIndicator, (c) => _updateConfig(themeNotifier, config.copyWith(positiveIndicator: c)), t),
+                _buildColorRow(l.themeColorNegative, config.negativeIndicator, (c) => _updateConfig(themeNotifier, config.copyWith(negativeIndicator: c)), t),
                 const SizedBox(height: 24),
 
                 // Font
@@ -641,31 +650,18 @@ class _ThemeBuilderState extends State<ThemeBuilder> {
     );
   }
 
-  void _showDeleteConfirm(BuildContext context, ThemeNotifier themeNotifier, AppThemeConfig theme, VisionTokens t) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final l = context.l;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(l.themeDeleteTitle, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-          content: Text(l.themeDeleteConfirm(theme.name), style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(11))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                themeNotifier.deleteUserTheme(theme.id);
-                Navigator.pop(context);
-              },
-              child: Text(l.commonDelete, style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(9))),
-            ),
-          ],
-        );
-      },
+  Future<void> _showDeleteConfirm(BuildContext context, ThemeNotifier themeNotifier, AppThemeConfig theme, VisionTokens t) async {
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.themeDeleteTitle,
+      message: l.themeDeleteConfirm(theme.name),
+      confirmLabel: l.commonDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      themeNotifier.deleteUserTheme(theme.id);
+    }
   }
 
   void _updateConfig(ThemeNotifier themeNotifier, AppThemeConfig config) {
@@ -719,9 +715,7 @@ class _ThemeBuilderState extends State<ThemeBuilder> {
         });
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l.themeCreateFailed(e.toString()))),
-        );
+        showErrorSnackBar(context, l.themeCreateFailed(e.toString()));
       }
     }
   }

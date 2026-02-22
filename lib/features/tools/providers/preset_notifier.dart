@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/wildcard_service.dart';
 import '../../../core/utils/tag_suggestion_helper.dart';
-import '../../../presets.dart';
-import '../../../tag_service.dart';
+import '../../../core/services/presets.dart';
+import '../../../core/services/tag_service.dart';
 import '../../director_ref/models/director_reference.dart';
 import '../../generation/models/nai_character.dart';
 

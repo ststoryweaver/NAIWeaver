@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/vision_slider.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/tag_suggestion_overlay.dart';
-import '../../../presets.dart';
+import '../../../core/services/presets.dart';
 import '../../director_ref/models/director_reference.dart';
 import '../../director_ref/services/reference_image_processor.dart';
 import '../../generation/models/nai_character.dart';
@@ -107,6 +109,7 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
           if (notifier.state.isModified)
             IconButton(
               icon: Icon(Icons.save_outlined, size: 20, color: t.textPrimary),
+              tooltip: context.l.commonSave,
               onPressed: () {
                 if (notifier.hasNameConflict()) {
                   _showOverwriteConfirm(context, notifier, t);
@@ -258,12 +261,14 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
                         if (isSelected) ...[
                           IconButton(
                             icon: Icon(Icons.copy, size: 12, color: t.textDisabled),
+                            tooltip: context.l.presetDuplicate,
                             onPressed: () => notifier.duplicatePreset(preset),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                           ),
                           IconButton(
                             icon: Icon(Icons.delete_outline, size: 12, color: t.textDisabled),
+                            tooltip: context.l.commonDelete,
                             onPressed: () => _showDeleteConfirm(context, notifier, preset, t),
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -457,6 +462,7 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
                 divisions: 49,
                 onChanged: (v) => notifier.updateCurrentPreset(steps: v),
                 t: t,
+                warnAbove: 28,
               ),
             ),
           ],
@@ -497,7 +503,9 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
     int? divisions,
     required Function(double) onChanged,
     required VisionTokens t,
+    double? warnAbove,
   }) {
+    final isWarning = warnAbove != null && value > warnAbove;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -505,25 +513,20 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1)),
-            Text(value.toInt().toString(), style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(9), fontWeight: FontWeight.bold)),
+            Text(value.toInt().toString(), style: TextStyle(color: isWarning ? t.accentDanger : t.textSecondary, fontSize: t.fontSize(9), fontWeight: FontWeight.bold)),
           ],
         ),
-        SliderTheme(
-          data: SliderThemeData(
-            trackHeight: 2,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-            activeTrackColor: t.textPrimary.withValues(alpha: 0.2),
-            inactiveTrackColor: t.borderSubtle,
-            thumbColor: t.textPrimary,
-          ),
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: divisions,
-            onChanged: onChanged,
-          ),
+        VisionSlider(
+          value: value,
+          onChanged: onChanged,
+          min: min,
+          max: max,
+          divisions: divisions,
+          activeColor: isWarning ? t.accentDanger.withValues(alpha: 0.4) : t.textPrimary.withValues(alpha: 0.2),
+          inactiveColor: t.borderSubtle,
+          thumbColor: isWarning ? t.accentDanger : t.textPrimary,
+          thumbRadius: 6,
+          overlayRadius: 12,
         ),
       ],
     );
@@ -909,58 +912,31 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
     );
   }
 
-  void _showDeleteConfirm(BuildContext context, PresetNotifier notifier, GenerationPreset preset, VisionTokens t) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final l = context.l;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(l.presetDeleteTitle, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-          content: Text(l.presetDeleteConfirm(preset.name), style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(11))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                notifier.deletePreset(preset);
-                Navigator.pop(context);
-              },
-              child: Text(l.commonDelete, style: TextStyle(color: t.accentDanger, fontSize: t.fontSize(9))),
-            ),
-          ],
-        );
-      },
+  Future<void> _showDeleteConfirm(BuildContext context, PresetNotifier notifier, GenerationPreset preset, VisionTokens t) async {
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.presetDeleteTitle,
+      message: l.presetDeleteConfirm(preset.name),
+      confirmLabel: l.commonDelete,
+      confirmColor: t.accentDanger,
     );
+    if (confirm == true) {
+      notifier.deletePreset(preset);
+    }
   }
 
-  void _showOverwriteConfirm(BuildContext context, PresetNotifier notifier, VisionTokens t) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final l = context.l;
-        return AlertDialog(
-          backgroundColor: t.surfaceHigh,
-          title: Text(l.presetOverwriteTitle, style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
-          content: Text(l.presetOverwriteConfirm(notifier.nameController.text),
-              style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(11))),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.commonCancel, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(9))),
-            ),
-            TextButton(
-              onPressed: () {
-                notifier.savePreset();
-                Navigator.pop(context);
-              },
-              child: Text(l.commonOverwrite, style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(9))),
-            ),
-          ],
-        );
-      },
+  Future<void> _showOverwriteConfirm(BuildContext context, PresetNotifier notifier, VisionTokens t) async {
+    final l = context.l;
+    final confirm = await showConfirmDialog(
+      context,
+      title: l.presetOverwriteTitle,
+      message: l.presetOverwriteConfirm(notifier.nameController.text),
+      confirmLabel: l.commonOverwrite,
+      confirmColor: t.textPrimary,
     );
+    if (confirm == true) {
+      notifier.savePreset();
+    }
   }
 }

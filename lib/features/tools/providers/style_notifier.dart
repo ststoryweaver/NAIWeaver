@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/wildcard_service.dart';
 import '../../../core/utils/tag_suggestion_helper.dart';
-import '../../../styles.dart';
-import '../../../tag_service.dart';
+import '../../../core/services/styles.dart';
+import '../../../core/services/tag_service.dart';
 
 class StyleState {
   final List<PromptStyle> styles;

@@ -4,6 +4,7 @@ import '../../core/l10n/l10n_extensions.dart';
 import '../../core/services/preferences_service.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/theme/theme_extensions.dart';
+import '../../core/theme/vision_tokens.dart';
 import 'widgets/wildcard_manager.dart';
 import 'widgets/preset_manager.dart';
 import 'widgets/style_editor.dart';
@@ -14,7 +15,10 @@ import 'widgets/pack_manager.dart';
 import 'slideshow/widgets/slideshow_launcher.dart';
 import 'cascade/widgets/cascade_editor.dart';
 import 'img2img/widgets/img2img_editor.dart';
+import 'director_tools/widgets/director_tools_editor.dart';
+import 'enhance/widgets/enhance_editor.dart';
 import 'widgets/references_manager.dart';
+import 'ml/widgets/ml_models_manager.dart';
 
 class ToolsHubScreen extends StatefulWidget {
   final String? initialToolId;
@@ -57,7 +61,10 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
       ToolItem(id: 'director_ref', name: l.toolsReferences.toUpperCase(), icon: Icons.photo_library),
       ToolItem(id: 'cascade', name: l.toolsCascadeEditor.toUpperCase(), icon: Icons.movie_filter),
       ToolItem(id: 'img2img', name: l.toolsImg2imgEditor.toUpperCase(), icon: Icons.brush),
+      ToolItem(id: 'director_tools', name: l.toolsDirectorTools.toUpperCase(), icon: Icons.auto_fix_high),
+      ToolItem(id: 'enhance', name: l.toolsEnhance.toUpperCase(), icon: Icons.hd),
       ToolItem(id: 'slideshow', name: l.toolsSlideshow.toUpperCase(), icon: Icons.slideshow),
+      ToolItem(id: 'ml_models', name: l.mlModels.toUpperCase(), icon: Icons.psychology),
       ToolItem(id: 'packs', name: l.toolsPacks.toUpperCase(), icon: Icons.inventory_2),
       ToolItem(id: 'theme', name: l.toolsTheme.toUpperCase(), icon: Icons.palette),
       ToolItem(id: 'settings', name: l.toolsSettings.toUpperCase(), icon: Icons.settings),
@@ -96,6 +103,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
             ? [
                 IconButton(
                   icon: Icon(Icons.menu, size: 22, color: t.secondaryText),
+                  tooltip: l.commonMenu,
                   onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                 ),
               ]
@@ -113,27 +121,32 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
                       child: Text(l.toolsTitle.toUpperCase(), style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(10), letterSpacing: 2, fontWeight: FontWeight.bold)),
                     ),
                     Divider(height: 1, color: t.borderMedium),
-                    ...tools.map((tool) {
-                      final isActive = _activeToolId == tool.id;
-                      return ListTile(
-                        leading: Icon(tool.icon, size: 20, color: isActive ? t.accent : t.secondaryText),
-                        title: Text(
-                          tool.name,
-                          style: TextStyle(
-                            fontSize: t.fontSize(12),
-                            letterSpacing: 2,
-                            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                            color: isActive ? t.accent : t.secondaryText,
-                          ),
-                        ),
-                        selected: isActive,
-                        selectedTileColor: t.borderSubtle,
-                        onTap: () {
-                          _selectTool(tool.id);
-                          Navigator.pop(context); // close drawer
-                        },
-                      );
-                    }),
+                    Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.zero,
+                        children: tools.map((tool) {
+                          final isActive = _activeToolId == tool.id;
+                          return ListTile(
+                            leading: Icon(tool.icon, size: 20, color: isActive ? t.accent : t.secondaryText),
+                            title: Text(
+                              tool.name,
+                              style: TextStyle(
+                                fontSize: t.fontSize(12),
+                                letterSpacing: 2,
+                                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                                color: isActive ? t.accent : t.secondaryText,
+                              ),
+                            ),
+                            selected: isActive,
+                            selectedTileColor: t.borderSubtle,
+                            onTap: () {
+                              _selectTool(tool.id);
+                              Navigator.pop(context); // close drawer
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -153,7 +166,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
     );
   }
 
-  Widget _buildSidebar(dynamic t, List<ToolItem> tools) {
+  Widget _buildSidebar(VisionTokens t, List<ToolItem> tools) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: _isSidebarExpanded ? 180 : 56,
@@ -167,6 +180,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
               size: 16,
               color: t.secondaryText,
             ),
+            tooltip: _isSidebarExpanded ? context.l.sidebarCollapse : context.l.sidebarExpand,
             onPressed: () => setState(() => _isSidebarExpanded = !_isSidebarExpanded),
           ),
           const SizedBox(height: 16),
@@ -181,7 +195,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
     );
   }
 
-  Widget _buildSidebarItem(ToolItem tool, dynamic t) {
+  Widget _buildSidebarItem(ToolItem tool, VisionTokens t) {
     final bool isActive = _activeToolId == tool.id;
     return InkWell(
       onTap: () => _selectTool(tool.id),
@@ -239,8 +253,14 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
         return const CascadeEditor();
       case 'img2img':
         return const Img2ImgEditor();
+      case 'director_tools':
+        return const DirectorToolsEditor();
+      case 'enhance':
+        return const EnhanceEditor();
       case 'slideshow':
         return const SlideshowLauncher();
+      case 'ml_models':
+        return const MLModelsManager();
       case 'packs':
         return const PackManager();
       case 'theme':

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../tag_service.dart';
+import '../../../core/services/tag_service.dart';
 
 class TagPreviewSettings {
   final String positivePrompt;

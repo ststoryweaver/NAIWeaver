@@ -11,6 +11,8 @@ import '../../../core/services/path_service.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/update_service.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/theme/vision_tokens.dart';
+import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/pin_lock_gate.dart';
 import '../../gallery/providers/gallery_notifier.dart';
@@ -89,11 +91,47 @@ class _AppSettingsState extends State<AppSettings> {
           const SizedBox(height: 16),
           _buildAnlasTrackerToggle(t),
           const SizedBox(height: 12),
+          _buildShowTooltipsToggle(t),
+          const SizedBox(height: 12),
           _buildShelfToggle(
             label: l.settingsEditButton.toUpperCase(),
             description: l.settingsEditButtonDesc,
             value: state.showEditButton,
             onChanged: (_) => notifier.toggleShowEditButton(),
+            t: t,
+          ),
+          const SizedBox(height: 12),
+          _buildShelfToggle(
+            label: l.settingsBgRemovalButton.toUpperCase(),
+            description: l.settingsBgRemovalButtonDesc,
+            value: state.showBgRemovalButton,
+            onChanged: (_) => notifier.toggleShowBgRemovalButton(),
+            t: t,
+          ),
+          const SizedBox(height: 12),
+          _buildShelfToggle(
+            label: l.settingsUpscaleButton.toUpperCase(),
+            description: l.settingsUpscaleButtonDesc,
+            value: state.showUpscaleButton,
+            onChanged: (_) => notifier.toggleShowUpscaleButton(),
+            t: t,
+          ),
+          const SizedBox(height: 12),
+          _buildUpscaleBackendDropdown(t),
+          const SizedBox(height: 12),
+          _buildShelfToggle(
+            label: l.settingsEnhanceButton.toUpperCase(),
+            description: l.settingsEnhanceButtonDesc,
+            value: state.showEnhanceButton,
+            onChanged: (_) => notifier.toggleShowEnhanceButton(),
+            t: t,
+          ),
+          const SizedBox(height: 12),
+          _buildShelfToggle(
+            label: l.settingsDirectorToolsButton.toUpperCase(),
+            description: l.settingsDirectorToolsButtonDesc,
+            value: state.showDirectorToolsButton,
+            onChanged: (_) => notifier.toggleShowDirectorToolsButton(),
             t: t,
           ),
           const SizedBox(height: 12),
@@ -141,7 +179,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildHeader(String title, dynamic t) {
+  Widget _buildHeader(String title, VisionTokens t) {
     return Text(
       title,
       style: TextStyle(
@@ -153,7 +191,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildApiKeyField(GenerationNotifier notifier, dynamic t) {
+  Widget _buildApiKeyField(GenerationNotifier notifier, VisionTokens t) {
     final l = context.l;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,7 +233,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildAutoSaveToggle(GenerationNotifier notifier, bool value, dynamic t) {
+  Widget _buildAutoSaveToggle(GenerationNotifier notifier, bool value, VisionTokens t) {
     final l = context.l;
     return Row(
       children: [
@@ -227,7 +265,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildOutputFolderRow(dynamic t) {
+  Widget _buildOutputFolderRow(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
     return StatefulBuilder(
@@ -333,7 +371,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildStripMetadataToggle(dynamic t) {
+  Widget _buildStripMetadataToggle(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
     return StatefulBuilder(
@@ -378,7 +416,7 @@ class _AppSettingsState extends State<AppSettings> {
     required String description,
     required bool value,
     required Function(bool) onChanged,
-    required dynamic t,
+    required VisionTokens t,
   }) {
     return Row(
       children: [
@@ -410,7 +448,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildAnlasTrackerToggle(dynamic t) {
+  Widget _buildAnlasTrackerToggle(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
     return StatefulBuilder(
@@ -450,7 +488,47 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildCharEditorModeToggle(GenerationNotifier notifier, GenerationState state, dynamic t) {
+  Widget _buildShowTooltipsToggle(VisionTokens t) {
+    final prefs = context.read<PreferencesService>();
+    final l = context.l;
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.settingsShowTooltips.toUpperCase(),
+                    style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l.settingsShowTooltipsDesc,
+                    style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: prefs.showTooltips,
+              onChanged: (val) async {
+                await prefs.setShowTooltips(val);
+                setLocalState(() {});
+              },
+              activeThumbColor: t.accent,
+              activeTrackColor: t.borderStrong,
+              inactiveThumbColor: t.textDisabled,
+              inactiveTrackColor: t.borderSubtle,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCharEditorModeToggle(GenerationNotifier notifier, GenerationState state, VisionTokens t) {
     final l = context.l;
     return _buildShelfToggle(
       label: l.settingsCharEditorMode.toUpperCase(),
@@ -464,7 +542,59 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildSmartStyleImportToggle(dynamic t) {
+  Widget _buildUpscaleBackendDropdown(VisionTokens t) {
+    final prefs = context.read<PreferencesService>();
+    final l = context.l;
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        final current = prefs.upscaleBackend;
+        return Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.settingsUpscaleBackend.toUpperCase(),
+                    style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l.settingsUpscaleBackendDesc,
+                    style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+                  ),
+                ],
+              ),
+            ),
+            DropdownButton<String>(
+              value: current,
+              dropdownColor: t.surfaceHigh,
+              underline: const SizedBox.shrink(),
+              style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(10), letterSpacing: 1),
+              items: [
+                DropdownMenuItem(
+                  value: 'ml',
+                  child: Text(l.settingsUpscaleBackendMl.toUpperCase(), style: TextStyle(fontSize: t.fontSize(10))),
+                ),
+                DropdownMenuItem(
+                  value: 'novelai',
+                  child: Text(l.settingsUpscaleBackendNovelai.toUpperCase(), style: TextStyle(fontSize: t.fontSize(10))),
+                ),
+              ],
+              onChanged: (val) async {
+                if (val != null) {
+                  await prefs.setUpscaleBackend(val);
+                  setLocalState(() {});
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSmartStyleImportToggle(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
     return StatefulBuilder(
@@ -504,7 +634,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildRememberSessionToggle(dynamic t) {
+  Widget _buildRememberSessionToggle(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
     return StatefulBuilder(
@@ -548,7 +678,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildImg2ImgImportPromptToggle(dynamic t) {
+  Widget _buildImg2ImgImportPromptToggle(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
     return StatefulBuilder(
@@ -588,7 +718,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildDefaultSaveAlbumDropdown(dynamic t) {
+  Widget _buildDefaultSaveAlbumDropdown(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final gallery = context.watch<GalleryNotifier>();
     final l = context.l;
@@ -642,7 +772,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildLanguageDropdown(dynamic t) {
+  Widget _buildLanguageDropdown(VisionTokens t) {
     final localeNotifier = context.watch<LocaleNotifier>();
     final l = context.l;
     return Row(
@@ -683,7 +813,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildThemeBuilderButton(dynamic t) {
+  Widget _buildThemeBuilderButton(VisionTokens t) {
     final l = context.l;
     return InkWell(
       onTap: () {
@@ -719,7 +849,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildPinLockSection(dynamic t) {
+  Widget _buildPinLockSection(VisionTokens t) {
     final prefs = context.read<PreferencesService>();
     final l = context.l;
     return StatefulBuilder(
@@ -781,15 +911,7 @@ class _AppSettingsState extends State<AppSettings> {
                     final canCheck = await auth.canCheckBiometrics || await auth.isDeviceSupported();
                     if (!canCheck) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              l.settingsBiometricsUnavailable,
-                              style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(11)),
-                            ),
-                            backgroundColor: t.surfaceHigh,
-                          ),
-                        );
+                        showErrorSnackBar(context, l.settingsBiometricsUnavailable);
                       }
                       return;
                     }
@@ -806,7 +928,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Widget _buildDemoModeSection(dynamic t) {
+  Widget _buildDemoModeSection(VisionTokens t) {
     final gallery = context.watch<GalleryNotifier>();
     final prefs = context.read<PreferencesService>();
     final l = context.l;
@@ -886,7 +1008,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  Future<void> _showDemoPrefixSettings(PreferencesService prefs, dynamic t) async {
+  Future<void> _showDemoPrefixSettings(PreferencesService prefs, VisionTokens t) async {
     final posCtrl = TextEditingController(text: prefs.demoPositivePrefix);
     final negCtrl = TextEditingController(text: prefs.demoNegativePrefix);
     final l = context.l;
@@ -977,7 +1099,7 @@ class _AppSettingsState extends State<AppSettings> {
     negCtrl.dispose();
   }
 
-  Widget _buildGithubButton(dynamic t) {
+  Widget _buildGithubButton(VisionTokens t) {
     final l = context.l;
     return InkWell(
       onTap: () {
@@ -1009,7 +1131,7 @@ class _AppSettingsState extends State<AppSettings> {
       ),
     );
   }
-  Widget _buildUpdateCheckButton(dynamic t) {
+  Widget _buildUpdateCheckButton(VisionTokens t) {
     final l = context.l;
     return InkWell(
       onTap: _isCheckingUpdate
@@ -1024,30 +1146,12 @@ class _AppSettingsState extends State<AppSettings> {
                 if (!mounted) return;
 
                 if (result.error != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        l.settingsUpdateCheckFailed,
-                        style: TextStyle(
-                            color: t.textPrimary, fontSize: t.fontSize(11)),
-                      ),
-                      backgroundColor: t.surfaceHigh,
-                    ),
-                  );
+                  showErrorSnackBar(context, l.settingsUpdateCheckFailed);
                 } else if (result.updateAvailable) {
                   _showUpdateDialog(
                       t, result.latestVersion!, result.releaseUrl!);
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        l.settingsUpToDate,
-                        style: TextStyle(
-                            color: t.textPrimary, fontSize: t.fontSize(11)),
-                      ),
-                      backgroundColor: t.surfaceHigh,
-                    ),
-                  );
+                  showAppSnackBar(context, l.settingsUpToDate);
                 }
               } finally {
                 if (mounted) setState(() => _isCheckingUpdate = false);
@@ -1090,7 +1194,7 @@ class _AppSettingsState extends State<AppSettings> {
     );
   }
 
-  void _showUpdateDialog(dynamic t, String version, String releaseUrl) {
+  void _showUpdateDialog(VisionTokens t, String version, String releaseUrl) {
     final l = context.l;
     showDialog(
       context: context,
@@ -1138,7 +1242,7 @@ class _AppSettingsState extends State<AppSettings> {
 }
 
 class _SetPinDialog extends StatefulWidget {
-  final dynamic t;
+  final VisionTokens t;
   const _SetPinDialog({required this.t});
 
   @override
@@ -1237,7 +1341,7 @@ class _SetPinDialogState extends State<_SetPinDialog> {
 
 class _VerifyPinDialog extends StatefulWidget {
   final PreferencesService prefs;
-  final dynamic t;
+  final VisionTokens t;
   const _VerifyPinDialog({required this.prefs, required this.t});
 
   @override
