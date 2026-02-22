@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import 'core/services/wildcard_service.dart';
+import 'wildcard_service.dart';
 
 enum WildcardMode { random, sequential, shuffle, weighted }
 

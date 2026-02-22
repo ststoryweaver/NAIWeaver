@@ -1,37 +1,30 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'preferences/gallery_preferences.dart';
+import 'preferences/jukebox_preferences.dart';
+import 'preferences/ml_preferences.dart';
+import 'preferences/security_preferences.dart';
+
 class PreferencesService {
-  static const String _keyApiKey = 'nai_api_key';
+  // — General key constants (remaining after domain split) —
   static const String _keyAutoSave = 'nai_auto_save';
   static const String _keyShowDirectorRefShelf = 'show_director_ref_shelf';
   static const String _keyShowVibeTransferShelf = 'show_vibe_transfer_shelf';
   static const String _keyBrightTheme = 'bright_theme';
-  static const String _keyGalleryFavorites = 'gallery_favorites';
   static const String _keyActiveThemeId = 'active_theme_id';
   static const String _keyActiveThemeJson = 'active_theme_json';
   static const String _keyUserThemes = 'user_themes';
-  static const String _keyPinEnabled = 'pin_lock_enabled';
-  static const String _keyPinHash = 'pin_lock_hash';
-  static const String _keyPinSalt = 'pin_lock_salt';
-  static const String _keyPinOnResume = 'pin_lock_on_resume';
-  static const String _keyPinBiometric = 'pin_biometric_enabled';
-  static const String _keyDemoSafe = 'gallery_demo_safe';
-  static const String _keyDemoMode = 'demo_mode_active';
-  static const String _keyDemoPositivePrefix = 'demo_positive_prefix';
-  static const String _keyDemoNegativePrefix = 'demo_negative_prefix';
-  static const String _keyGalleryAlbums = 'gallery_albums';
   static const String _keyLastToolId = 'tools_last_tool_id';
-  static const String _keyGalleryGridColumns = 'gallery_grid_columns';
   static const String _keyShowEditButton = 'show_edit_button';
-  static const String _keyStripMetadata = 'strip_metadata_on_export';
-  static const String _keyPinVersion = 'pin_hash_version';
+  static const String _keyShowBgRemovalButton = 'show_bg_removal_button';
+  static const String _keyShowUpscaleButton = 'show_upscale_button';
+  static const String _keyShowEnhanceButton = 'show_enhance_button';
+  static const String _keyShowDirectorToolsButton = 'show_director_tools_button';
   static const String _keySettingsSectionOrder = 'settings_section_order';
   static const String _keySmartStyleImport = 'smart_style_import';
   static const String _keyRememberSession = 'remember_session';
-  static const String _keyDefaultSaveAlbumId = 'default_save_album_id';
-  static const String _keySlideshowConfigs = 'slideshow_configs';
-  static const String _keyDefaultSlideshowId = 'default_slideshow_id';
   static const String _keyLocale = 'app_locale';
   static const String _keyFurryMode = 'furry_mode';
   static const String _keyImg2ImgImportPrompt = 'img2img_import_prompt';
@@ -41,30 +34,32 @@ class PreferencesService {
   static const String _keyCustomResolutions = 'custom_resolutions';
   static const String _keyCharacterEditorMode = 'character_editor_mode';
   static const String _keyCharacterPresets = 'character_presets';
-
-  static const String _secureKeyApiKey = 'nai_api_key_secure';
+  static const String _keyShowTooltips = 'show_tooltips';
 
   final SharedPreferences _prefs;
-  final FlutterSecureStorage _secure;
 
-  PreferencesService(this._prefs, this._secure);
+  late final ValueNotifier<bool> tooltipVisibilityNotifier;
+
+  // — Domain-specific preference sub-classes —
+  late final JukeboxPreferences jukebox;
+  late final GalleryPreferences gallery;
+  late final SecurityPreferences security;
+  late final MlPreferences ml;
+
+  PreferencesService(this._prefs, FlutterSecureStorage secure) {
+    jukebox = JukeboxPreferences(_prefs);
+    gallery = GalleryPreferences(_prefs);
+    security = SecurityPreferences(_prefs, secure);
+    ml = MlPreferences(_prefs);
+    tooltipVisibilityNotifier = ValueNotifier(showTooltips);
+  }
 
   /// Migrates API key from plaintext SharedPreferences to encrypted secure storage.
-  Future<void> migrateApiKey() async {
-    final plaintext = _prefs.getString(_keyApiKey) ?? '';
-    if (plaintext.isNotEmpty) {
-      await _secure.write(key: _secureKeyApiKey, value: plaintext);
-      await _prefs.remove(_keyApiKey);
-    }
-  }
+  Future<void> migrateApiKey() => security.migrateApiKey();
 
-  Future<String> getApiKey() async {
-    return await _secure.read(key: _secureKeyApiKey) ?? '';
-  }
+  Future<String> getApiKey() => security.getApiKey();
 
-  Future<void> setApiKey(String value) async {
-    await _secure.write(key: _secureKeyApiKey, value: value);
-  }
+  Future<void> setApiKey(String value) => security.setApiKey(value);
 
   bool get autoSaveImages => _prefs.getBool(_keyAutoSave) ?? true;
 
@@ -90,13 +85,6 @@ class PreferencesService {
     await _prefs.setBool(_keyBrightTheme, value);
   }
 
-  Set<String> get favorites =>
-      (_prefs.getStringList(_keyGalleryFavorites) ?? []).toSet();
-
-  Future<void> setFavorites(Set<String> value) async {
-    await _prefs.setStringList(_keyGalleryFavorites, value.toList());
-  }
-
   String get activeThemeId => _prefs.getString(_keyActiveThemeId) ?? '';
 
   Future<void> setActiveThemeId(String value) async {
@@ -115,89 +103,12 @@ class PreferencesService {
     await _prefs.setString(_keyUserThemes, value);
   }
 
-  // — PIN Lock —
-
-  bool get pinEnabled => _prefs.getBool(_keyPinEnabled) ?? false;
-
-  Future<void> setPinEnabled(bool value) async {
-    await _prefs.setBool(_keyPinEnabled, value);
-  }
-
-  String get pinHash => _prefs.getString(_keyPinHash) ?? '';
-
-  Future<void> setPinHash(String value) async {
-    await _prefs.setString(_keyPinHash, value);
-  }
-
-  String get pinSalt => _prefs.getString(_keyPinSalt) ?? '';
-
-  Future<void> setPinSalt(String value) async {
-    await _prefs.setString(_keyPinSalt, value);
-  }
-
-  bool get pinLockOnResume => _prefs.getBool(_keyPinOnResume) ?? false;
-
-  Future<void> setPinLockOnResume(bool value) async {
-    await _prefs.setBool(_keyPinOnResume, value);
-  }
-
-  bool get pinBiometricEnabled => _prefs.getBool(_keyPinBiometric) ?? false;
-
-  Future<void> setPinBiometricEnabled(bool value) async {
-    await _prefs.setBool(_keyPinBiometric, value);
-  }
-
-  // — Demo Mode —
-
-  Set<String> get demoSafe =>
-      (_prefs.getStringList(_keyDemoSafe) ?? []).toSet();
-
-  Future<void> setDemoSafe(Set<String> value) async {
-    await _prefs.setStringList(_keyDemoSafe, value.toList());
-  }
-
-  bool get demoMode => _prefs.getBool(_keyDemoMode) ?? false;
-
-  Future<void> setDemoMode(bool value) async {
-    await _prefs.setBool(_keyDemoMode, value);
-  }
-
-  String get demoPositivePrefix =>
-      _prefs.getString(_keyDemoPositivePrefix) ?? 'safe';
-
-  Future<void> setDemoPositivePrefix(String value) async {
-    await _prefs.setString(_keyDemoPositivePrefix, value);
-  }
-
-  String get demoNegativePrefix =>
-      _prefs.getString(_keyDemoNegativePrefix) ?? 'nsfw, explicit';
-
-  Future<void> setDemoNegativePrefix(String value) async {
-    await _prefs.setString(_keyDemoNegativePrefix, value);
-  }
-
-  // — Gallery Albums —
-
-  String get galleryAlbums => _prefs.getString(_keyGalleryAlbums) ?? '';
-
-  Future<void> setGalleryAlbums(String value) async {
-    await _prefs.setString(_keyGalleryAlbums, value);
-  }
-
   // — Tools Hub —
 
   String? get lastToolId => _prefs.getString(_keyLastToolId);
 
   Future<void> setLastToolId(String value) async {
     await _prefs.setString(_keyLastToolId, value);
-  }
-
-  // — Gallery Grid —
-
-  int? get galleryGridColumns => _prefs.getInt(_keyGalleryGridColumns);
-
-  Future<void> setGalleryGridColumns(int value) async {
-    await _prefs.setInt(_keyGalleryGridColumns, value);
   }
 
   // — Edit Button —
@@ -208,20 +119,36 @@ class PreferencesService {
     await _prefs.setBool(_keyShowEditButton, value);
   }
 
-  // — Export Privacy —
+  // — BG Removal Button —
 
-  bool get stripMetadataOnExport => _prefs.getBool(_keyStripMetadata) ?? false;
+  bool get showBgRemovalButton => _prefs.getBool(_keyShowBgRemovalButton) ?? true;
 
-  Future<void> setStripMetadataOnExport(bool value) async {
-    await _prefs.setBool(_keyStripMetadata, value);
+  Future<void> setShowBgRemovalButton(bool value) async {
+    await _prefs.setBool(_keyShowBgRemovalButton, value);
   }
 
-  // — PIN Hash Version —
+  // — Upscale Button —
 
-  int get pinHashVersion => _prefs.getInt(_keyPinVersion) ?? 1;
+  bool get showUpscaleButton => _prefs.getBool(_keyShowUpscaleButton) ?? true;
 
-  Future<void> setPinHashVersion(int value) async {
-    await _prefs.setInt(_keyPinVersion, value);
+  Future<void> setShowUpscaleButton(bool value) async {
+    await _prefs.setBool(_keyShowUpscaleButton, value);
+  }
+
+  // — Enhance Button —
+
+  bool get showEnhanceButton => _prefs.getBool(_keyShowEnhanceButton) ?? false;
+
+  Future<void> setShowEnhanceButton(bool value) async {
+    await _prefs.setBool(_keyShowEnhanceButton, value);
+  }
+
+  // — Director Tools Button —
+
+  bool get showDirectorToolsButton => _prefs.getBool(_keyShowDirectorToolsButton) ?? false;
+
+  Future<void> setShowDirectorToolsButton(bool value) async {
+    await _prefs.setBool(_keyShowDirectorToolsButton, value);
   }
 
   // — Settings Section Order —
@@ -247,26 +174,6 @@ class PreferencesService {
 
   Future<void> setRememberSession(bool value) async {
     await _prefs.setBool(_keyRememberSession, value);
-  }
-
-  // — Slideshow Configs —
-
-  String get slideshowConfigs => _prefs.getString(_keySlideshowConfigs) ?? '';
-
-  Future<void> setSlideshowConfigs(String value) async {
-    await _prefs.setString(_keySlideshowConfigs, value);
-  }
-
-  // — Default Slideshow —
-
-  String? get defaultSlideshowId => _prefs.getString(_keyDefaultSlideshowId);
-
-  Future<void> setDefaultSlideshowId(String? id) async {
-    if (id == null) {
-      await _prefs.remove(_keyDefaultSlideshowId);
-    } else {
-      await _prefs.setString(_keyDefaultSlideshowId, id);
-    }
   }
 
   // — Locale —
@@ -329,18 +236,6 @@ class PreferencesService {
     await _prefs.setString(_keyCustomResolutions, value);
   }
 
-  // — Default Save Album —
-
-  String? get defaultSaveAlbumId => _prefs.getString(_keyDefaultSaveAlbumId);
-
-  Future<void> setDefaultSaveAlbumId(String? id) async {
-    if (id == null) {
-      await _prefs.remove(_keyDefaultSaveAlbumId);
-    } else {
-      await _prefs.setString(_keyDefaultSaveAlbumId, id);
-    }
-  }
-
   // — Character Editor Mode —
 
   String get characterEditorMode =>
@@ -358,4 +253,101 @@ class PreferencesService {
   Future<void> setCharacterPresets(String value) async {
     await _prefs.setString(_keyCharacterPresets, value);
   }
+
+  // — Tooltips —
+
+  bool get showTooltips => _prefs.getBool(_keyShowTooltips) ?? true;
+
+  Future<void> setShowTooltips(bool value) async {
+    await _prefs.setBool(_keyShowTooltips, value);
+    tooltipVisibilityNotifier.value = value;
+  }
+
+  // — Delegating getters for backward compatibility —
+  // These delegate to domain sub-classes so existing code that hasn't
+  // been migrated yet continues to compile.
+
+  // Gallery delegates
+  Set<String> get favorites => gallery.favorites;
+  Future<void> setFavorites(Set<String> value) => gallery.setFavorites(value);
+  Set<String> get demoSafe => gallery.demoSafe;
+  Future<void> setDemoSafe(Set<String> value) => gallery.setDemoSafe(value);
+  bool get demoMode => gallery.demoMode;
+  Future<void> setDemoMode(bool value) => gallery.setDemoMode(value);
+  String get demoPositivePrefix => gallery.demoPositivePrefix;
+  Future<void> setDemoPositivePrefix(String value) => gallery.setDemoPositivePrefix(value);
+  String get demoNegativePrefix => gallery.demoNegativePrefix;
+  Future<void> setDemoNegativePrefix(String value) => gallery.setDemoNegativePrefix(value);
+  String get galleryAlbums => gallery.albums;
+  Future<void> setGalleryAlbums(String value) => gallery.setAlbums(value);
+  int? get galleryGridColumns => gallery.gridColumns;
+  Future<void> setGalleryGridColumns(int value) => gallery.setGridColumns(value);
+  String? get defaultSaveAlbumId => gallery.defaultSaveAlbumId;
+  Future<void> setDefaultSaveAlbumId(String? id) => gallery.setDefaultSaveAlbumId(id);
+  bool get stripMetadataOnExport => gallery.stripMetadataOnExport;
+  Future<void> setStripMetadataOnExport(bool value) => gallery.setStripMetadataOnExport(value);
+  String get slideshowConfigs => gallery.slideshowConfigs;
+  Future<void> setSlideshowConfigs(String value) => gallery.setSlideshowConfigs(value);
+  String? get defaultSlideshowId => gallery.defaultSlideshowId;
+  Future<void> setDefaultSlideshowId(String? id) => gallery.setDefaultSlideshowId(id);
+
+  // Security delegates
+  bool get pinEnabled => security.pinEnabled;
+  Future<void> setPinEnabled(bool value) => security.setPinEnabled(value);
+  String get pinHash => security.pinHash;
+  Future<void> setPinHash(String value) => security.setPinHash(value);
+  String get pinSalt => security.pinSalt;
+  Future<void> setPinSalt(String value) => security.setPinSalt(value);
+  bool get pinLockOnResume => security.pinLockOnResume;
+  Future<void> setPinLockOnResume(bool value) => security.setPinLockOnResume(value);
+  bool get pinBiometricEnabled => security.pinBiometricEnabled;
+  Future<void> setPinBiometricEnabled(bool value) => security.setPinBiometricEnabled(value);
+  int get pinHashVersion => security.pinHashVersion;
+  Future<void> setPinHashVersion(int value) => security.setPinHashVersion(value);
+
+  // ML delegates
+  String? get selectedBgRemovalModel => ml.selectedBgRemovalModel;
+  Future<void> setSelectedBgRemovalModel(String? id) => ml.setSelectedBgRemovalModel(id);
+  String? get selectedUpscaleModel => ml.selectedUpscaleModel;
+  Future<void> setSelectedUpscaleModel(String? id) => ml.setSelectedUpscaleModel(id);
+  String? get selectedSegmentationModel => ml.selectedSegmentationModel;
+  Future<void> setSelectedSegmentationModel(String? id) => ml.setSelectedSegmentationModel(id);
+  String get upscaleBackend => ml.upscaleBackend;
+  Future<void> setUpscaleBackend(String value) => ml.setUpscaleBackend(value);
+
+  // Jukebox delegates
+  double get jukeboxVolume => jukebox.volume;
+  Future<void> setJukeboxVolume(double value) => jukebox.setVolume(value);
+  String? get jukeboxSoundFontId => jukebox.soundFontId;
+  Future<void> setJukeboxSoundFontId(String? id) => jukebox.setSoundFontId(id);
+  bool get jukeboxShuffle => jukebox.shuffle;
+  Future<void> setJukeboxShuffle(bool value) => jukebox.setShuffle(value);
+  String get jukeboxRepeat => jukebox.repeat;
+  Future<void> setJukeboxRepeat(String value) => jukebox.setRepeat(value);
+  String get jukeboxSongDurations => jukebox.songDurations;
+  Future<void> setJukeboxSongDurations(String value) => jukebox.setSongDurations(value);
+  int? get jukeboxKaraokeHighlightColor => jukebox.karaokeHighlightColor;
+  Future<void> setJukeboxKaraokeHighlightColor(int? value) => jukebox.setKaraokeHighlightColor(value);
+  int? get jukeboxKaraokeUpcomingColor => jukebox.karaokeUpcomingColor;
+  Future<void> setJukeboxKaraokeUpcomingColor(int? value) => jukebox.setKaraokeUpcomingColor(value);
+  int? get jukeboxKaraokeNextLineColor => jukebox.karaokeNextLineColor;
+  Future<void> setJukeboxKaraokeNextLineColor(int? value) => jukebox.setKaraokeNextLineColor(value);
+  String? get jukeboxKaraokeFontFamily => jukebox.karaokeFontFamily;
+  Future<void> setJukeboxKaraokeFontFamily(String? value) => jukebox.setKaraokeFontFamily(value);
+  double get jukeboxKaraokeFontScale => jukebox.karaokeFontScale;
+  Future<void> setJukeboxKaraokeFontScale(double value) => jukebox.setKaraokeFontScale(value);
+  bool get jukeboxShowMiniLyric => jukebox.showMiniLyric;
+  Future<void> setJukeboxShowMiniLyric(bool value) => jukebox.setShowMiniLyric(value);
+  bool get jukeboxShowKaraokeInPanel => jukebox.showKaraokeInPanel;
+  Future<void> setJukeboxShowKaraokeInPanel(bool value) => jukebox.setShowKaraokeInPanel(value);
+  int? get jukeboxVisualizerColor => jukebox.visualizerColor;
+  Future<void> setJukeboxVisualizerColor(int? value) => jukebox.setVisualizerColor(value);
+  String get jukeboxVisualizerStyle => jukebox.visualizerStyle;
+  Future<void> setJukeboxVisualizerStyle(String value) => jukebox.setVisualizerStyle(value);
+  double get jukeboxVizIntensity => jukebox.vizIntensity;
+  Future<void> setJukeboxVizIntensity(double value) => jukebox.setVizIntensity(value);
+  double get jukeboxVizSpeed => jukebox.vizSpeed;
+  Future<void> setJukeboxVizSpeed(double value) => jukebox.setVizSpeed(value);
+  double get jukeboxVizDensity => jukebox.vizDensity;
+  Future<void> setJukeboxVizDensity(double value) => jukebox.setVizDensity(value);
 }

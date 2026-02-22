@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
-import 'features/generation/models/nai_character.dart';
+import '../../features/generation/models/nai_character.dart';
 
 /// Result of an image generation
 class GenerationResult {
@@ -302,6 +302,110 @@ class NovelAIService {
       rethrow;
     } catch (e) {
       debugPrint('NovelAIService: Error generating image: $e');
+      rethrow;
+    }
+  }
+
+  /// Augments an image using Director Tools (bg-removal, lineart, sketch, etc.)
+  Future<Uint8List> augmentImage({
+    required String imageBase64,
+    required int width,
+    required int height,
+    required String reqType,
+    int? defry,
+    String? prompt,
+  }) async {
+    const url = 'https://image.novelai.net/ai/augment-image';
+    final body = <String, dynamic>{
+      'image': imageBase64,
+      'width': width,
+      'height': height,
+      'req_type': reqType,
+      if (defry != null) 'defry': defry,
+      if (prompt != null) 'prompt': prompt,
+    };
+
+    try {
+      final response = await _dio.post(
+        url,
+        data: body,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {
+            'Authorization': 'Bearer $_apiKey',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return await compute(_decodeZip, response.data as List<int>);
+      } else {
+        throw Exception('[Augment Error ${response.statusCode}]');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw UnauthorizedException();
+      }
+      debugPrint('NovelAIService: Augment error: ${e.message}');
+      final responseData = e.response?.data;
+      if (responseData != null) {
+        if (responseData is List<int>) {
+          debugPrint('NovelAIService: Response body: ${utf8.decode(responseData, allowMalformed: true)}');
+        } else {
+          debugPrint('NovelAIService: Response body: $responseData');
+        }
+      }
+      rethrow;
+    }
+  }
+
+  /// Upscales an image using the NovelAI upscale endpoint.
+  Future<Uint8List> upscaleImage({
+    required String imageBase64,
+    required int width,
+    required int height,
+    int scale = 2,
+  }) async {
+    const url = 'https://api.novelai.net/ai/upscale';
+    final body = {
+      'image': imageBase64,
+      'width': width,
+      'height': height,
+      'scale': scale,
+    };
+
+    try {
+      final response = await _dio.post(
+        url,
+        data: body,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {
+            'Authorization': 'Bearer $_apiKey',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return await compute(_decodeZip, response.data as List<int>);
+      } else {
+        throw Exception('[Upscale Error ${response.statusCode}]');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw UnauthorizedException();
+      }
+      debugPrint('NovelAIService: Upscale error: ${e.message}');
+      final responseData = e.response?.data;
+      if (responseData != null) {
+        if (responseData is List<int>) {
+          debugPrint('NovelAIService: Response body: ${utf8.decode(responseData, allowMalformed: true)}');
+        } else {
+          debugPrint('NovelAIService: Response body: $responseData');
+        }
+      }
       rethrow;
     }
   }

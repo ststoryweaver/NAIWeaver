@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'features/director_ref/models/director_reference.dart';
-import 'features/vibe_transfer/models/vibe_transfer.dart';
-import 'features/generation/models/nai_character.dart';
+import '../../features/director_ref/models/director_reference.dart';
+import '../../features/vibe_transfer/models/vibe_transfer.dart';
+import '../../features/generation/models/nai_character.dart';
 
 class GenerationPreset {
   final String name;

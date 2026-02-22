@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import '../../tag_service.dart';
-import '../../wildcard_processor.dart';
+import 'tag_service.dart';
+import 'wildcard_processor.dart';
 
 /// Provides wildcard file listing and favorites management for auto-completion.
 class WildcardService {

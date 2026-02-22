@@ -22,6 +22,10 @@ class PathService {
   String get examplesDir => p.join(baseDir, 'Tags', 'Examples');
   String get referenceLibraryFilePath => p.join(baseDir, 'reference_library.json');
   String get canvasSessionDir => p.join(baseDir, 'canvas_sessions');
+  String get mlModelsDir => p.join(baseDir, 'ml_models');
+  String get soundfontsDir => p.join(baseDir, 'soundfonts');
+  String get customSongsDir => p.join(baseDir, 'custom_songs');
+  String get customSongsJsonPath => p.join(baseDir, 'custom_songs.json');
 
   static Future<PathService> initialize() async {
     if (kIsWeb) return PathService('');
@@ -45,6 +49,9 @@ class PathService {
     await Directory(wildcardDir).create(recursive: true);
     await Directory(p.dirname(tagFilePath)).create(recursive: true);
     await Directory(canvasSessionDir).create(recursive: true);
+    await Directory(mlModelsDir).create(recursive: true);
+    await Directory(soundfontsDir).create(recursive: true);
+    await Directory(customSongsDir).create(recursive: true);
   }
 
   /// Copies bundled assets to app support directory if they don't already exist.

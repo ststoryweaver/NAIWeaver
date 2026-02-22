@@ -4,8 +4,8 @@ import 'package:archive/archive.dart';
 import '../../features/gallery/models/gallery_album.dart';
 import '../../features/gallery/providers/gallery_notifier.dart';
 import '../utils/image_utils.dart';
-import '../../presets.dart';
-import '../../styles.dart';
+import 'presets.dart';
+import 'styles.dart';
 
 class PackManifest {
   final String name;
