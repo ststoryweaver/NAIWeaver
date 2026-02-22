@@ -31,6 +31,7 @@ import '../../../core/ml/widgets/bg_removal_overlay.dart';
 import '../../../core/ml/widgets/upscale_comparison_view.dart';
 import '../../tools/enhance/providers/enhance_notifier.dart';
 import '../../tools/director_tools/providers/director_tools_notifier.dart';
+import '../../../core/services/novel_ai_service.dart';
 
 class ImageDetailView extends StatefulWidget {
   final int initialIndex;
@@ -429,6 +430,13 @@ class _ImageDetailViewState extends State<ImageDetailView>
     final h = frame.image.height;
     frame.image.dispose();
 
+    final scale = NovelAIService.bestUpscaleScale(w, h);
+    if (scale == null) {
+      if (!mounted) return;
+      showErrorSnackBar(context, 'Image too large for NAI upscale (${w}x$h exceeds 2048px limit per side)');
+      return;
+    }
+
     if (!mounted) return;
     showDialog(
       context: context,
@@ -455,7 +463,7 @@ class _ImageDetailViewState extends State<ImageDetailView>
         imageBase64: imageBase64,
         width: w,
         height: h,
-        scale: 4,
+        scale: scale,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -482,6 +490,86 @@ class _ImageDetailViewState extends State<ImageDetailView>
       if (!mounted) return;
       Navigator.of(context).pop();
       showErrorSnackBar(context, context.l.naiUpscaleFailed);
+    }
+  }
+
+  Future<void> _handleNaiBgRemoval(GalleryItem item) async {
+    final gen = context.read<GenerationNotifier>();
+    if (gen.state.apiKey.isEmpty) {
+      showErrorSnackBar(context, context.l.naiApiKeyRequired);
+      return;
+    }
+    final gallery = context.read<GalleryNotifier>();
+    final t = context.tRead;
+
+    final bytes = await item.file.readAsBytes();
+    if (!mounted) return;
+
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final w = frame.image.width;
+    final h = frame.image.height;
+    frame.image.dispose();
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final t = ctx.tRead;
+        return AlertDialog(
+          backgroundColor: t.surfaceHigh,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('REMOVING BACKGROUND...', style: TextStyle(fontSize: t.fontSize(10), letterSpacing: 2, color: t.textSecondary)),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final imageBase64 = base64Encode(bytes);
+      final result = await gen.service.augmentImage(
+        imageBase64: imageBase64,
+        width: w,
+        height: h,
+        reqType: 'bg-removal',
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // Show BG removal overlay
+      final saved = await showDialog<Uint8List>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Dialog.fullscreen(
+          backgroundColor: t.background,
+          child: BGRemovalOverlay(
+            resultImage: result,
+            onSave: (img) => Navigator.pop(ctx, img),
+            onDiscard: () => Navigator.pop(ctx),
+            autoSave: gen.state.autoSaveImages,
+          ),
+        ),
+      );
+
+      if (saved != null && mounted) {
+        final baseName = p.basenameWithoutExtension(item.file.path);
+        final timestamp = generateTimestamp();
+        final outputName = 'BG_${baseName}_$timestamp.png';
+        await gallery.saveMLResultWithMetadata(saved, outputName, sourceBytes: bytes);
+        if (mounted) {
+          showAppSnackBar(context, context.l.mlBgRemovedSavedAs(outputName));
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      showErrorSnackBar(context, 'NAI BG REMOVAL FAILED');
     }
   }
 
@@ -872,7 +960,8 @@ class _ImageDetailViewState extends State<ImageDetailView>
                                       ));
                                     },
                                   ),
-                                  if (context.read<MLNotifier>().hasBgRemovalModel)
+                                  if (context.read<MLNotifier>().hasBgRemovalModel ||
+                                      context.read<PreferencesService>().bgRemovalBackend == 'novelai')
                                     _ViewerAction(
                                       icon: context.watch<MLNotifier>().isProcessing
                                           ? Icons.hourglass_top
@@ -882,9 +971,16 @@ class _ImageDetailViewState extends State<ImageDetailView>
                                       mobile: mobile,
                                       onTap: context.watch<MLNotifier>().isProcessing
                                           ? () {}
-                                          : () => _handleRemoveBg(item),
+                                          : () {
+                                              if (context.read<PreferencesService>().bgRemovalBackend == 'novelai') {
+                                                _handleNaiBgRemoval(item);
+                                              } else {
+                                                _handleRemoveBg(item);
+                                              }
+                                            },
                                     ),
-                                  if (context.read<MLNotifier>().hasUpscaleModel)
+                                  if (context.read<MLNotifier>().hasUpscaleModel ||
+                                      context.read<PreferencesService>().upscaleBackend == 'novelai')
                                     _ViewerAction(
                                       icon: context.watch<MLNotifier>().isProcessing
                                           ? Icons.hourglass_top
@@ -894,15 +990,13 @@ class _ImageDetailViewState extends State<ImageDetailView>
                                       mobile: mobile,
                                       onTap: context.watch<MLNotifier>().isProcessing
                                           ? () {}
-                                          : () => _handleUpscale(item),
-                                    ),
-                                  if (context.read<GenerationNotifier>().state.apiKey.isNotEmpty)
-                                    _ViewerAction(
-                                      icon: Icons.cloud_upload_outlined,
-                                      label: context.l.naiUpscale.toUpperCase(),
-                                      color: t.accentEdit,
-                                      mobile: mobile,
-                                      onTap: () => _handleNaiUpscale(item),
+                                          : () {
+                                              if (context.read<PreferencesService>().upscaleBackend == 'novelai') {
+                                                _handleNaiUpscale(item);
+                                              } else {
+                                                _handleUpscale(item);
+                                              }
+                                            },
                                     ),
                                   _ViewerAction(
                                     icon: Icons.person_outline,

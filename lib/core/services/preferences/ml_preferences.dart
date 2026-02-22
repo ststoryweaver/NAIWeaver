@@ -10,6 +10,7 @@ class MlPreferences {
   static const String _kSelectedUpscaleModel = 'selected_upscale_model';
   static const String _kSelectedSegmentationModel = 'selected_segmentation_model';
   static const String _kUpscaleBackend = 'upscale_backend';
+  static const String _kBgRemovalBackend = 'bg_removal_backend';
 
   // — BG Removal Model —
 
@@ -39,10 +40,19 @@ class MlPreferences {
 
   // — Upscale Backend —
 
-  String get upscaleBackend => _prefs.getString(_kUpscaleBackend) ?? 'ml';
+  String get upscaleBackend => _prefs.getString(_kUpscaleBackend) ?? 'novelai';
 
   Future<void> setUpscaleBackend(String value) async {
     await _prefs.setString(_kUpscaleBackend, value);
+  }
+
+  // — BG Removal Backend —
+
+  String get bgRemovalBackend =>
+      _prefs.getString(_kBgRemovalBackend) ?? 'novelai';
+
+  Future<void> setBgRemovalBackend(String value) async {
+    await _prefs.setString(_kBgRemovalBackend, value);
   }
 
   // — Segmentation Model —

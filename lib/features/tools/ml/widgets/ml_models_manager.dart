@@ -8,12 +8,14 @@ import '../../../../core/ml/ml_model_registry.dart';
 import '../../../../core/ml/ml_notifier.dart';
 import '../../../../core/services/download_manager.dart';
 import '../../../../core/ml/ml_storage_service.dart';
+import '../../../../core/services/preferences_service.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/theme/vision_tokens.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../generation/providers/generation_notifier.dart';
 
 class MLModelsManager extends StatefulWidget {
   const MLModelsManager({super.key});
@@ -183,14 +185,29 @@ class _MLModelsManagerState extends State<MLModelsManager> {
           // Background Removal section
           _SectionHeader(title: 'BACKGROUND REMOVAL', icon: Icons.content_cut),
           const SizedBox(height: 8),
+          // NAI API bg-removal card
+          _NaiBgRemovalCard(
+            isSelected: context.watch<PreferencesService>().bgRemovalBackend == 'novelai',
+            hasApiKey: context.watch<GenerationNotifier>().state.apiKey.isNotEmpty,
+            onSelect: () async {
+              await context.read<PreferencesService>().setBgRemovalBackend('novelai');
+              if (mounted) setState(() {});
+            },
+          ),
+          const SizedBox(height: 8),
           ...MLModelRegistry.backgroundRemovalModels.map((entry) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _MLModelCard(
               entry: entry,
               ml: ml,
               caps: caps,
-              isSelected: ml.selectedBgRemovalModelId == entry.id,
-              onSelect: () => ml.selectBgRemovalModel(entry.id),
+              isSelected: ml.selectedBgRemovalModelId == entry.id &&
+                  context.watch<PreferencesService>().bgRemovalBackend == 'ml',
+              onSelect: () async {
+                ml.selectBgRemovalModel(entry.id);
+                await context.read<PreferencesService>().setBgRemovalBackend('ml');
+                if (mounted) setState(() {});
+              },
               onDownload: () async {
                 await ml.downloadModel(entry);
                 _refreshStats();
@@ -205,14 +222,29 @@ class _MLModelsManagerState extends State<MLModelsManager> {
           // Upscaling section
           _SectionHeader(title: 'UPSCALING', icon: Icons.zoom_out_map),
           const SizedBox(height: 8),
+          // NAI API upscale card
+          _NaiUpscaleCard(
+            isSelected: context.watch<PreferencesService>().upscaleBackend == 'novelai',
+            hasApiKey: context.watch<GenerationNotifier>().state.apiKey.isNotEmpty,
+            onSelect: () async {
+              await context.read<PreferencesService>().setUpscaleBackend('novelai');
+              if (mounted) setState(() {});
+            },
+          ),
+          const SizedBox(height: 8),
           ...MLModelRegistry.upscaleModels.map((entry) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _MLModelCard(
               entry: entry,
               ml: ml,
               caps: caps,
-              isSelected: ml.selectedUpscaleModelId == entry.id,
-              onSelect: () => ml.selectUpscaleModel(entry.id),
+              isSelected: ml.selectedUpscaleModelId == entry.id &&
+                  context.watch<PreferencesService>().upscaleBackend == 'ml',
+              onSelect: () async {
+                ml.selectUpscaleModel(entry.id);
+                await context.read<PreferencesService>().setUpscaleBackend('ml');
+                if (mounted) setState(() {});
+              },
               onDownload: () async {
                 await ml.downloadModel(entry);
                 _refreshStats();
@@ -738,6 +770,232 @@ class _MLModelCard extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NaiUpscaleCard extends StatelessWidget {
+  final bool isSelected;
+  final bool hasApiKey;
+  final VoidCallback onSelect;
+
+  const _NaiUpscaleCard({
+    required this.isSelected,
+    required this.hasApiKey,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final mobile = isMobile(context);
+    return GestureDetector(
+      onTap: onSelect,
+      child: Container(
+        padding: EdgeInsets.all(mobile ? 14 : 10),
+        decoration: BoxDecoration(
+          color: isSelected ? t.borderSubtle : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isSelected ? t.accent : t.borderSubtle,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Selection indicator
+            Container(
+              width: mobile ? 18 : 14,
+              height: mobile ? 18 : 14,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? t.accent : t.borderMedium,
+                  width: 2,
+                ),
+                color: isSelected ? t.accent : Colors.transparent,
+              ),
+              child: isSelected
+                  ? Icon(Icons.check, size: mobile ? 10 : 8, color: t.background)
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Icon(Icons.cloud_outlined, size: mobile ? 18 : 14, color: t.accentEdit),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'NOVELAI API UPSCALE',
+                        style: TextStyle(
+                          color: isSelected ? t.textPrimary : t.textSecondary,
+                          fontSize: t.fontSize(mobile ? 12 : 10),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: t.accentEdit.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          'CLOUD',
+                          style: TextStyle(
+                            color: t.accentEdit,
+                            fontSize: t.fontSize(6),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Up to 4x server-side upscaling via NovelAI API. Requires API key. No download needed.',
+                    style: TextStyle(
+                      color: t.textDisabled,
+                      fontSize: t.fontSize(mobile ? 10 : 8),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  if (!hasApiKey) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'NO API KEY SET',
+                      style: TextStyle(
+                        color: t.accentDanger,
+                        fontSize: t.fontSize(mobile ? 8 : 6),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NaiBgRemovalCard extends StatelessWidget {
+  final bool isSelected;
+  final bool hasApiKey;
+  final VoidCallback onSelect;
+
+  const _NaiBgRemovalCard({
+    required this.isSelected,
+    required this.hasApiKey,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final mobile = isMobile(context);
+    return GestureDetector(
+      onTap: onSelect,
+      child: Container(
+        padding: EdgeInsets.all(mobile ? 14 : 10),
+        decoration: BoxDecoration(
+          color: isSelected ? t.borderSubtle : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isSelected ? t.accent : t.borderSubtle,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Selection indicator
+            Container(
+              width: mobile ? 18 : 14,
+              height: mobile ? 18 : 14,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? t.accent : t.borderMedium,
+                  width: 2,
+                ),
+                color: isSelected ? t.accent : Colors.transparent,
+              ),
+              child: isSelected
+                  ? Icon(Icons.check, size: mobile ? 10 : 8, color: t.background)
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Icon(Icons.cloud_outlined, size: mobile ? 18 : 14, color: t.accentEdit),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'NOVELAI API BG REMOVAL',
+                        style: TextStyle(
+                          color: isSelected ? t.textPrimary : t.textSecondary,
+                          fontSize: t.fontSize(mobile ? 12 : 10),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: t.accentEdit.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          'CLOUD',
+                          style: TextStyle(
+                            color: t.accentEdit,
+                            fontSize: t.fontSize(6),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Server-side background removal via NovelAI API. Requires API key. No download needed.',
+                    style: TextStyle(
+                      color: t.textDisabled,
+                      fontSize: t.fontSize(mobile ? 10 : 8),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  if (!hasApiKey) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'NO API KEY SET',
+                      style: TextStyle(
+                        color: t.accentDanger,
+                        fontSize: t.fontSize(mobile ? 8 : 6),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

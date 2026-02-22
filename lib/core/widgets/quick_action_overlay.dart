@@ -10,6 +10,7 @@ import '../ml/ml_notifier.dart';
 import '../ml/widgets/upscale_comparison_view.dart';
 import '../services/preferences_service.dart';
 import '../theme/theme_extensions.dart';
+import '../services/novel_ai_service.dart';
 import '../utils/app_snackbar.dart';
 import '../utils/responsive.dart';
 import '../utils/timestamp_utils.dart';
@@ -35,6 +36,7 @@ class QuickActionOverlay extends StatelessWidget {
     final ml = context.watch<MLNotifier>();
     final prefs = context.read<PreferencesService>();
     final upscaleBackend = prefs.upscaleBackend;
+    final bgRemovalBackend = prefs.bgRemovalBackend;
 
     // Nothing to show when there is no image or generation is in progress.
     if (state.generatedImage == null || state.isLoading) {
@@ -55,7 +57,8 @@ class QuickActionOverlay extends StatelessWidget {
     final double editTop = nextTop;
     if (showEdit) nextTop += step;
 
-    final bool showBgRemoval = state.showBgRemovalButton && ml.hasBgRemovalModel;
+    final bool showBgRemoval = state.showBgRemovalButton &&
+        (ml.hasBgRemovalModel || bgRemovalBackend == 'novelai');
     final double bgRemovalTop = nextTop;
     if (showBgRemoval) nextTop += step;
 
@@ -116,13 +119,18 @@ class QuickActionOverlay extends StatelessWidget {
               onTap: ml.isProcessing
                   ? null
                   : () async {
-                      final result = await ml.removeBackground(state.generatedImage!);
-                      if (result != null && context.mounted) {
-                        final gallery = context.read<GalleryNotifier>();
-                        final timestamp = generateTimestamp();
-                        await gallery.saveMLResult(result, 'BG_gen_$timestamp.png');
-                        if (context.mounted) {
-                          showAppSnackBar(context, l.mlBgRemovedAndSaved);
+                      final sourceBytes = state.generatedImage!;
+                      if (bgRemovalBackend == 'novelai') {
+                        await _handleNovelAIBgRemoval(context, sourceBytes);
+                      } else {
+                        final result = await ml.removeBackground(sourceBytes);
+                        if (result != null && context.mounted) {
+                          final gallery = context.read<GalleryNotifier>();
+                          final timestamp = generateTimestamp();
+                          await gallery.saveMLResult(result, 'BG_gen_$timestamp.png');
+                          if (context.mounted) {
+                            showAppSnackBar(context, l.mlBgRemovedAndSaved);
+                          }
                         }
                       }
                     },
@@ -212,10 +220,19 @@ class QuickActionOverlay extends StatelessWidget {
       final decoded = await compute(_decodeImageDimensions, sourceBytes);
       if (decoded == null || !context.mounted) return;
 
+      final scale = NovelAIService.bestUpscaleScale(decoded.$1, decoded.$2);
+      if (scale == null) {
+        if (context.mounted) {
+          showErrorSnackBar(context, 'Image too large for NAI upscale (${decoded.$1}x${decoded.$2} exceeds 2048px limit per side)');
+        }
+        return;
+      }
+
       final result = await service.upscaleImage(
         imageBase64: base64Encode(sourceBytes),
         width: decoded.$1,
         height: decoded.$2,
+        scale: scale,
       );
 
       if (context.mounted) {
@@ -224,6 +241,36 @@ class QuickActionOverlay extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         showErrorSnackBar(context, l.naiUpscaleFailed);
+      }
+    }
+  }
+
+  Future<void> _handleNovelAIBgRemoval(BuildContext context, Uint8List sourceBytes) async {
+    final service = context.read<GenerationNotifier>().service;
+    final l = context.l;
+
+    try {
+      final decoded = await compute(_decodeImageDimensions, sourceBytes);
+      if (decoded == null || !context.mounted) return;
+
+      final result = await service.augmentImage(
+        imageBase64: base64Encode(sourceBytes),
+        width: decoded.$1,
+        height: decoded.$2,
+        reqType: 'bg-removal',
+      );
+
+      if (context.mounted) {
+        final gallery = context.read<GalleryNotifier>();
+        final timestamp = generateTimestamp();
+        await gallery.saveMLResult(result, 'BG_gen_$timestamp.png');
+        if (context.mounted) {
+          showAppSnackBar(context, l.mlBgRemovedAndSaved);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showErrorSnackBar(context, 'NAI BG REMOVAL FAILED');
       }
     }
   }

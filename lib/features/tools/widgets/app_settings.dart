@@ -117,8 +117,6 @@ class _AppSettingsState extends State<AppSettings> {
             t: t,
           ),
           const SizedBox(height: 12),
-          _buildUpscaleBackendDropdown(t),
-          const SizedBox(height: 12),
           _buildShelfToggle(
             label: l.settingsEnhanceButton.toUpperCase(),
             description: l.settingsEnhanceButtonDesc,
@@ -539,58 +537,6 @@ class _AppSettingsState extends State<AppSettings> {
         notifier.setCharacterEditorMode(newMode);
       },
       t: t,
-    );
-  }
-
-  Widget _buildUpscaleBackendDropdown(VisionTokens t) {
-    final prefs = context.read<PreferencesService>();
-    final l = context.l;
-    return StatefulBuilder(
-      builder: (context, setLocalState) {
-        final current = prefs.upscaleBackend;
-        return Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l.settingsUpscaleBackend.toUpperCase(),
-                    style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l.settingsUpscaleBackendDesc,
-                    style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
-                  ),
-                ],
-              ),
-            ),
-            DropdownButton<String>(
-              value: current,
-              dropdownColor: t.surfaceHigh,
-              underline: const SizedBox.shrink(),
-              style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(10), letterSpacing: 1),
-              items: [
-                DropdownMenuItem(
-                  value: 'ml',
-                  child: Text(l.settingsUpscaleBackendMl.toUpperCase(), style: TextStyle(fontSize: t.fontSize(10))),
-                ),
-                DropdownMenuItem(
-                  value: 'novelai',
-                  child: Text(l.settingsUpscaleBackendNovelai.toUpperCase(), style: TextStyle(fontSize: t.fontSize(10))),
-                ),
-              ],
-              onChanged: (val) async {
-                if (val != null) {
-                  await prefs.setUpscaleBackend(val);
-                  setLocalState(() {});
-                }
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 

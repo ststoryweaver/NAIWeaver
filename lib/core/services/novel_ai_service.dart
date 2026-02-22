@@ -22,6 +22,21 @@ class NovelAIService {
   final Dio _dio = Dio();
   final String _apiKey;
 
+  /// Maximum output dimension (px) the NAI upscale endpoint accepts.
+  static const int maxUpscaleOutputPixels = 4096;
+
+  /// Returns the largest viable scale factor (4, 2) for the given input
+  /// dimensions, or `null` if even 2x would exceed the output limit.
+  static int? bestUpscaleScale(int width, int height) {
+    for (final s in [4, 2]) {
+      if (width * s <= maxUpscaleOutputPixels &&
+          height * s <= maxUpscaleOutputPixels) {
+        return s;
+      }
+    }
+    return null;
+  }
+
   NovelAIService(this._apiKey) {
     if (kDebugMode) {
       _dio.interceptors.add(LogInterceptor(
@@ -361,12 +376,24 @@ class NovelAIService {
   }
 
   /// Upscales an image using the NovelAI upscale endpoint.
+  ///
+  /// If [scale] would produce an output exceeding [maxUpscaleOutputPixels],
+  /// an [ArgumentError] is thrown. Use [bestUpscaleScale] to pick a safe value.
   Future<Uint8List> upscaleImage({
     required String imageBase64,
     required int width,
     required int height,
     int scale = 2,
   }) async {
+    if (width * scale > maxUpscaleOutputPixels ||
+        height * scale > maxUpscaleOutputPixels) {
+      throw ArgumentError(
+        'Output resolution ${width * scale}x${height * scale} exceeds '
+        'NAI upscale limit of ${maxUpscaleOutputPixels}px. '
+        'Try a smaller scale or image.',
+      );
+    }
+
     const url = 'https://api.novelai.net/ai/upscale';
     final body = {
       'image': imageBase64,

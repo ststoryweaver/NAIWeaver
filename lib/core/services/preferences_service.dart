@@ -314,6 +314,8 @@ class PreferencesService {
   Future<void> setSelectedSegmentationModel(String? id) => ml.setSelectedSegmentationModel(id);
   String get upscaleBackend => ml.upscaleBackend;
   Future<void> setUpscaleBackend(String value) => ml.setUpscaleBackend(value);
+  String get bgRemovalBackend => ml.bgRemovalBackend;
+  Future<void> setBgRemovalBackend(String value) => ml.setBgRemovalBackend(value);
 
   // Jukebox delegates
   double get jukeboxVolume => jukebox.volume;
