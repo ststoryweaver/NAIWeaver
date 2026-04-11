@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/director_ref/models/director_reference.dart';
 import '../../features/vibe_transfer/models/vibe_transfer.dart';
 import '../../features/generation/models/nai_character.dart';
@@ -90,12 +90,14 @@ class GenerationPreset {
 }
 
 class PresetStorage {
+  static const String _storageKey = 'saved_generation_presets';
+
   static Future<List<GenerationPreset>> loadPresets(String filePath) async {
     try {
-      final file = File(filePath);
-      if (!await file.exists()) return [];
-      final content = await file.readAsString();
-      final List<dynamic> jsonList = json.decode(content);
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_storageKey);
+      if (jsonString == null || jsonString.isEmpty) return [];
+      final List<dynamic> jsonList = json.decode(jsonString);
       return jsonList.map((json) => GenerationPreset.fromJson(json)).toList();
     } catch (e) {
       debugPrint("Error loading presets: $e");
@@ -105,9 +107,9 @@ class PresetStorage {
 
   static Future<void> savePresets(String filePath, List<GenerationPreset> presets) async {
     try {
-      final file = File(filePath);
+      final prefs = await SharedPreferences.getInstance();
       final jsonList = presets.map((p) => p.toJson()).toList();
-      await file.writeAsString(json.encode(jsonList));
+      await prefs.setString(_storageKey, json.encode(jsonList));
     } catch (e) {
       debugPrint("Error saving presets: $e");
     }
