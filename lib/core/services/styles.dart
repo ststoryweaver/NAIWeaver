@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PromptStyle {
   final String name;
@@ -36,19 +36,20 @@ class PromptStyle {
 }
 
 class StyleStorage {
+  static const String _storageKey = 'saved_prompt_styles';
+
   static Future<List<PromptStyle>> loadStyles(String filePath) async {
     try {
-      if (kIsWeb) {
-        final content = await rootBundle.loadString('prompt_styles.json');
-        final List<dynamic> jsonList = jsonDecode(content);
+      final prefs = await SharedPreferences.getInstance();
+      final storedStyles = prefs.getString(_storageKey);
+      if (storedStyles != null && storedStyles.isNotEmpty) {
+        final List<dynamic> jsonList = jsonDecode(storedStyles);
         return jsonList.map((j) => PromptStyle.fromJson(j)).toList();
       }
-      final file = File(filePath);
-      if (await file.exists()) {
-        final content = await file.readAsString();
-        final List<dynamic> jsonList = jsonDecode(content);
-        return jsonList.map((j) => PromptStyle.fromJson(j)).toList();
-      }
+
+      final content = await rootBundle.loadString('prompt_styles.json');
+      final List<dynamic> jsonList = jsonDecode(content);
+      return jsonList.map((j) => PromptStyle.fromJson(j)).toList();
     } catch (e) {
       debugPrint('Error loading styles: $e');
     }
@@ -64,22 +65,20 @@ class StyleStorage {
 
   static Future<void> saveStyles(String filePath, List<PromptStyle> styles) async {
     try {
-      final file = File(filePath);
+      final prefs = await SharedPreferences.getInstance();
       final jsonString = jsonEncode(styles.map((s) => s.toJson()).toList());
-      await file.writeAsString(jsonString);
+      await prefs.setString(_storageKey, jsonString);
     } catch (e) {
       debugPrint('Error saving styles: $e');
     }
   }
 
-  /// Resets styles to bundled defaults by overwriting the local file.
+  /// Resets styles to bundled defaults by saving default content to SharedPreferences.
   static Future<List<PromptStyle>> resetToDefaults(String filePath) async {
     try {
       final content = await rootBundle.loadString('prompt_styles.json');
-      if (!kIsWeb) {
-        final file = File(filePath);
-        await file.writeAsString(content);
-      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_storageKey, content);
       final List<dynamic> jsonList = jsonDecode(content);
       return jsonList.map((j) => PromptStyle.fromJson(j)).toList();
     } catch (e) {
