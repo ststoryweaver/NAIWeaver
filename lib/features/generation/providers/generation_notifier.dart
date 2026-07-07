@@ -13,6 +13,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../../core/utils/nai_filename.dart';
 import '../../../core/utils/unique_file_path.dart';
 import '../../../core/utils/web_download.dart';
 import '../../../core/services/saf_export_service.dart';
@@ -1054,20 +1055,13 @@ class GenerationNotifier extends ChangeNotifier {
   }
 
   /// Generates a NovelAI-style filename from the prompt and seed.
-  /// Format: first ~50 chars of prompt (sanitized) + _seed.png
+  /// Format: `<prompt> s-<seed>.png`, matching NAI's own convention (issue #28).
   String _buildFileName(Map<String, dynamic> metadata, {String prefix = 'Gen'}) {
     try {
       final prompt = (metadata['prompt'] as String? ?? '').trim();
       final seed = metadata['seed']?.toString() ?? '';
       if (prompt.isNotEmpty && seed.isNotEmpty) {
-        // Sanitize: keep alphanumeric, spaces→underscores, remove special chars
-        var sanitized = prompt
-            .replaceAll(RegExp(r'[^\w\s]'), '')
-            .replaceAll(RegExp(r'\s+'), '_')
-            .toLowerCase();
-        if (sanitized.length > 50) sanitized = sanitized.substring(0, 50);
-        sanitized = sanitized.replaceAll(RegExp(r'_+$'), ''); // trim trailing underscores
-        return '${sanitized}_$seed';
+        return naiFilenameBase(prompt, seed);
       }
     } catch (_) {}
     // Fallback to timestamp
