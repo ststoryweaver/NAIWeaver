@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/tag_service.dart';
@@ -298,6 +299,8 @@ class TagLibraryNotifier extends ChangeNotifier {
   }
 
   Future<void> saveExample(String tagName, Uint8List bytes) async {
+    // Example images are stored as files; there is no filesystem on web.
+    if (kIsWeb) return;
     try {
       final dir = Directory(examplesDir);
       if (!await dir.exists()) {

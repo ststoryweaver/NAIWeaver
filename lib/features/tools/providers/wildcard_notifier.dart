@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/services/wildcard_service.dart';
@@ -76,6 +77,14 @@ class WildcardNotifier extends ChangeNotifier {
   }
 
   Future<void> refreshFiles() async {
+    // Wildcard .txt files live on disk; web has no filesystem, so the
+    // manager simply shows an empty list instead of throwing `_Namespace`.
+    if (kIsWeb) {
+      _state = _state.copyWith(files: [], isLoading: false);
+      notifyListeners();
+      return;
+    }
+
     _state = _state.copyWith(isLoading: true);
     notifyListeners();
 

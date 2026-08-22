@@ -1688,7 +1688,7 @@ class GenerationNotifier extends ChangeNotifier {
       if (_state.autoSaveImages) {
         final timestamp = DateFormat('yyyyMMdd_HHmmssSSS').format(DateTime.now());
         String? srcPath;
-        if (sourceImageBytes != null) {
+        if (sourceImageBytes != null && !kIsWeb) {
           try {
             final directory = Directory(_outputDir);
             if (!await directory.exists()) {
