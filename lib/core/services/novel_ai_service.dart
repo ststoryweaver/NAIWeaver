@@ -29,6 +29,20 @@ class NovelAIService {
   final Dio _dio = Dio();
   final String _apiKey;
 
+  /// NovelAI hosts. Every request is built through [_imageUrl] / [_apiUrl]
+  /// and authenticated through [_headers] so there is a single place to
+  /// change if a proxy or self-hosted endpoint is ever supported.
+  static const String imageHost = 'https://image.novelai.net';
+  static const String apiHost = 'https://api.novelai.net';
+
+  String _imageUrl(String path) => '$imageHost$path';
+  String _apiUrl(String path) => '$apiHost$path';
+
+  Map<String, String> _headers({bool json = true}) => {
+        'Authorization': 'Bearer $_apiKey',
+        if (json) 'Content-Type': 'application/json',
+      };
+
   /// Maximum output dimension (px) the NAI upscale endpoint accepts.
   static const int maxUpscaleOutputPixels = 4096;
 
@@ -107,7 +121,7 @@ class NovelAIService {
     double informationExtracted = 1.0,
     NaiModel model = NaiModel.fallback,
   }) async {
-    const url = 'https://image.novelai.net/ai/encode-vibe';
+    final url = _imageUrl('/ai/encode-vibe');
     // V5 does not encode vibes; [NaiModel.vibeEncodeId] maps it to the
     // matching V4.5 id so the vibe library keeps working.
     final body = {
@@ -122,10 +136,7 @@ class NovelAIService {
         data: body,
         options: Options(
           responseType: ResponseType.bytes,
-          headers: {
-            'Authorization': 'Bearer $_apiKey',
-            'Content-Type': 'application/json',
-          },
+          headers: _headers(),
         ),
       );
 
@@ -152,14 +163,14 @@ class NovelAIService {
   /// the image host and only for Opus. Returns null on failure.
   Future<NaiSubscription?> getSubscription() async {
     if (_apiKey.isEmpty) return null;
-    for (final url in const [
-      'https://image.novelai.net/user/subscription',
-      'https://api.novelai.net/user/subscription',
+    for (final url in [
+      _imageUrl('/user/subscription'),
+      _apiUrl('/user/subscription'),
     ]) {
       try {
         final response = await _getWithRetry(
           url,
-          options: Options(headers: {'Authorization': 'Bearer $_apiKey'}),
+          options: Options(headers: _headers(json: false)),
         );
         if (response.statusCode == 200) {
           final parsed = NaiSubscription.fromJson(response.data);
@@ -218,7 +229,7 @@ class NovelAIService {
     NaiModel model = NaiModel.fallback,
     bool transparentBackground = false,
   }) async {
-    const url = 'https://image.novelai.net/ai/generate-image';
+    final url = _imageUrl('/ai/generate-image');
 
     final body = buildNaiGenerateBody(
       model: model,
@@ -264,10 +275,7 @@ class NovelAIService {
         data: body,
         options: Options(
           responseType: ResponseType.bytes,
-          headers: {
-            'Authorization': 'Bearer $_apiKey',
-            'Content-Type': 'application/json',
-          },
+          headers: _headers(),
         ),
       );
 
@@ -322,7 +330,7 @@ class NovelAIService {
     int? defry,
     String? prompt,
   }) async {
-    const url = 'https://image.novelai.net/ai/augment-image';
+    final url = _imageUrl('/ai/augment-image');
     final body = <String, dynamic>{
       'image': imageBase64,
       'width': width,
@@ -338,10 +346,7 @@ class NovelAIService {
         data: body,
         options: Options(
           responseType: ResponseType.bytes,
-          headers: {
-            'Authorization': 'Bearer $_apiKey',
-            'Content-Type': 'application/json',
-          },
+          headers: _headers(),
         ),
       );
 
@@ -386,7 +391,7 @@ class NovelAIService {
       );
     }
 
-    const url = 'https://api.novelai.net/ai/upscale';
+    final url = _apiUrl('/ai/upscale');
     final body = {
       'image': imageBase64,
       'width': width,
@@ -400,10 +405,7 @@ class NovelAIService {
         data: body,
         options: Options(
           responseType: ResponseType.bytes,
-          headers: {
-            'Authorization': 'Bearer $_apiKey',
-            'Content-Type': 'application/json',
-          },
+          headers: _headers(),
         ),
       );
 
