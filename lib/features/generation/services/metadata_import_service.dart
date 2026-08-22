@@ -35,6 +35,12 @@ class MetadataImportResult {
   final bool? smea;
   final bool? smeaDyn;
   final bool? decrisper;
+  final String? noiseSchedule;
+  final double? cfgRescale;
+  /// `skip_cfg_above_sigma`. NovelAI writes an explicit null when Variety+ is
+  /// off, so [hasVarietyBoostKey] tells "off" apart from "not recorded".
+  final double? varietyBoostSigma;
+  final bool hasVarietyBoostKey;
 
   /// Raw NovelAI model id from the Comment JSON (`model`), if present.
   final String? model;
@@ -58,6 +64,10 @@ class MetadataImportResult {
     this.smea,
     this.smeaDyn,
     this.decrisper,
+    this.noiseSchedule,
+    this.cfgRescale,
+    this.varietyBoostSigma,
+    this.hasVarietyBoostKey = false,
     this.model,
     this.activeStyleNames,
     this.isStyleEnabled,
@@ -220,6 +230,9 @@ class MetadataImportService {
     String? sampler;
     String? model;
     bool? smea, smeaDyn, decrisper;
+    String? noiseSchedule;
+    double? cfgRescale, varietyBoostSigma;
+    bool hasVarietyBoostKey = false;
     List<String>? activeStyleNames;
     bool? isStyleEnabled;
     List<NaiCharacter> characters = const [];
@@ -236,6 +249,10 @@ class MetadataImportService {
       smea = settings['sm'] as bool?;
       smeaDyn = settings['sm_dyn'] as bool?;
       decrisper = settings['dynamic_thresholding'] as bool?;
+      noiseSchedule = settings['noise_schedule']?.toString();
+      cfgRescale = (settings['cfg_rescale'] as num?)?.toDouble();
+      hasVarietyBoostKey = settings.containsKey('skip_cfg_above_sigma');
+      varietyBoostSigma = (settings['skip_cfg_above_sigma'] as num?)?.toDouble();
       // Our own PNGs carry the wire id under `model` (since the V5 work);
       // NovelAI's own exports name it in `Source` ("NovelAI Diffusion V5 …").
       model = settings['model']?.toString() ??
@@ -390,6 +407,10 @@ class MetadataImportService {
       smea: smea,
       smeaDyn: smeaDyn,
       decrisper: decrisper,
+      noiseSchedule: noiseSchedule,
+      cfgRescale: cfgRescale,
+      varietyBoostSigma: varietyBoostSigma,
+      hasVarietyBoostKey: hasVarietyBoostKey,
       model: model,
       activeStyleNames: activeStyleNames,
       isStyleEnabled: isStyleEnabled,

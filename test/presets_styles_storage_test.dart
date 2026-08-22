@@ -56,6 +56,47 @@ void main() {
       expect(loaded[0].prompt, 'a wizard, alpha');
     });
 
+    // Issue #35: schedule / rescale / Variety+ ride along in presets, and
+    // presets saved before the fields existed load with NovelAI's defaults.
+    test('round-trips noise schedule, cfg_rescale and Variety+', () async {
+      final path = p.join(tmp.path, 'presets.json');
+      final preset = GenerationPreset(
+        name: 'v+',
+        prompt: 'x',
+        negativePrompt: '',
+        width: 832,
+        height: 1216,
+        scale: 5,
+        steps: 28,
+        sampler: 'k_euler',
+        smea: false,
+        smeaDyn: false,
+        decrisper: false,
+        noiseSchedule: 'exponential',
+        cfgRescale: 0.4,
+        varietyBoostSigma: 58,
+      );
+      await PresetStorage.savePresets(path, [preset]);
+      final loaded = (await PresetStorage.loadPresets(path)).single;
+      expect(loaded.noiseSchedule, 'exponential');
+      expect(loaded.cfgRescale, 0.4);
+      expect(loaded.varietyBoostSigma, 58.0);
+
+      final legacy = GenerationPreset.fromJson({
+        'name': 'old',
+        'prompt': 'x',
+        'negativePrompt': '',
+        'width': 832,
+        'height': 1216,
+        'scale': 5,
+        'steps': 28,
+        'sampler': 'k_euler',
+      });
+      expect(legacy.noiseSchedule, 'karras');
+      expect(legacy.cfgRescale, 0);
+      expect(legacy.varietyBoostSigma, isNull);
+    });
+
     test('overwrites previous data on subsequent save', () async {
       final path = p.join(tmp.path, 'presets.json');
       await PresetStorage.savePresets(path, [_samplePreset('one')]);

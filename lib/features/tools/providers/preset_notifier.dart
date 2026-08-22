@@ -4,6 +4,7 @@ import '../../../core/utils/tag_suggestion_helper.dart';
 import '../../../core/services/presets.dart';
 import '../../../core/services/tag_service.dart';
 import '../../director_ref/models/director_reference.dart';
+import '../../vibe_transfer/models/vibe_transfer.dart';
 import '../../generation/models/nai_character.dart';
 
 class PresetState {
@@ -119,6 +120,9 @@ class PresetNotifier extends ChangeNotifier {
       smea: smea ?? _state.selectedPreset!.smea,
       smeaDyn: smeaDyn ?? _state.selectedPreset!.smeaDyn,
       decrisper: decrisper ?? _state.selectedPreset!.decrisper,
+      noiseSchedule: _state.selectedPreset!.noiseSchedule,
+      cfgRescale: _state.selectedPreset!.cfgRescale,
+      varietyBoostSigma: _state.selectedPreset!.varietyBoostSigma,
       model: _state.selectedPreset!.model,
       characters: characters ?? _state.selectedPreset!.characters,
       interactions: interactions ?? _state.selectedPreset!.interactions,
@@ -179,9 +183,14 @@ class PresetNotifier extends ChangeNotifier {
       smea: preset.smea,
       smeaDyn: preset.smeaDyn,
       decrisper: preset.decrisper,
+      noiseSchedule: preset.noiseSchedule,
+      cfgRescale: preset.cfgRescale,
+      varietyBoostSigma: preset.varietyBoostSigma,
+      model: preset.model,
       characters: List<NaiCharacter>.from(preset.characters),
       interactions: List<NaiInteraction>.from(preset.interactions),
       directorReferences: List<DirectorReference>.from(preset.directorReferences),
+      vibeTransfers: List<VibeTransfer>.from(preset.vibeTransfers),
     );
 
     final updatedPresets = List<GenerationPreset>.from(_state.presets)..add(newPreset);

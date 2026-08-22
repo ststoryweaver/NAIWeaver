@@ -1445,6 +1445,15 @@ class GenerationNotifier extends ChangeNotifier {
       smea: categories.contains(ImportCategory.settings) ? result.smea : null,
       smeaDyn: categories.contains(ImportCategory.settings) ? result.smeaDyn : null,
       decrisper: categories.contains(ImportCategory.settings) ? result.decrisper : null,
+      noiseSchedule: categories.contains(ImportCategory.settings) ? result.noiseSchedule : null,
+      cfgRescale: categories.contains(ImportCategory.settings) ? result.cfgRescale : null,
+      varietyBoostSigma: categories.contains(ImportCategory.settings) ? result.varietyBoostSigma : null,
+      // NovelAI writes `skip_cfg_above_sigma: null` when Variety+ is off, so
+      // an explicit null in the image switches it off here too; an image that
+      // predates the key leaves the current setting alone.
+      clearVarietyBoost: categories.contains(ImportCategory.settings) &&
+          result.hasVarietyBoostKey &&
+          result.varietyBoostSigma == null,
       // Unknown / absent model id keeps the current model.
       model: categories.contains(ImportCategory.settings) ? NaiModel.tryParse(result.model) : null,
       randomizeSeed: categories.contains(ImportCategory.seed) ? false : null,
@@ -1492,6 +1501,9 @@ class GenerationNotifier extends ChangeNotifier {
       smea: _state.smea,
       smeaDyn: _state.smeaDyn,
       decrisper: _state.decrisper,
+      noiseSchedule: _state.noiseSchedule,
+      cfgRescale: _state.cfgRescale,
+      varietyBoostSigma: _state.varietyBoostSigma,
       model: _state.model.id,
       characters: List<NaiCharacter>.from(_state.characters),
       interactions: List<NaiInteraction>.from(_state.interactions),
@@ -1517,6 +1529,10 @@ class GenerationNotifier extends ChangeNotifier {
       smea: preset.smea,
       smeaDyn: preset.smeaDyn,
       decrisper: preset.decrisper,
+      noiseSchedule: preset.noiseSchedule,
+      cfgRescale: preset.cfgRescale,
+      varietyBoostSigma: preset.varietyBoostSigma,
+      clearVarietyBoost: preset.varietyBoostSigma == null,
       // Null = preset pre-dates model pinning; keep the current model.
       model: NaiModel.tryParse(preset.model),
       characters: List<NaiCharacter>.from(preset.characters),
@@ -1691,6 +1707,11 @@ class GenerationNotifier extends ChangeNotifier {
         img2imgNoise: request.noise,
         img2imgColorCorrect: request.colorCorrect,
         maskBlur: request.maskBase64 != null ? request.maskBlur : null,
+        // Schedule / rescale / Variety+ are session-wide sampler settings, so
+        // img2img and inpaint honour them the same as txt2img (issue #35).
+        noiseSchedule: _state.noiseSchedule,
+        cfgRescale: _state.cfgRescale,
+        varietyBoostSigma: _state.varietyBoostSigma,
         promptPrefix: request.promptPrefix,
         promptSuffix: request.promptSuffix,
         characters: request.characters,

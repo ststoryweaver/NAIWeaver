@@ -18,6 +18,14 @@ class GenerationPreset {
   final bool smeaDyn;
   final bool decrisper;
 
+  /// Noise schedule, Prompt Guidance Rescale and Variety+ (issue #35). All
+  /// three default to NovelAI's own defaults so presets saved before they
+  /// existed load unchanged: karras / 0 / off.
+  final String noiseSchedule;
+  final double cfgRescale;
+  /// `skip_cfg_above_sigma`; null = Variety+ off.
+  final double? varietyBoostSigma;
+
   /// NovelAI model id the preset pins (`nai-diffusion-5-full` …). Null =
   /// "preset doesn't pin a model" (every preset saved before V5).
   final String? model;
@@ -38,6 +46,9 @@ class GenerationPreset {
     required this.smea,
     required this.smeaDyn,
     required this.decrisper,
+    this.noiseSchedule = 'karras',
+    this.cfgRescale = 0,
+    this.varietyBoostSigma,
     this.model,
     this.characters = const [],
     this.interactions = const [],
@@ -57,6 +68,9 @@ class GenerationPreset {
         'smea': smea,
         'smeaDyn': smeaDyn,
         'decrisper': decrisper,
+        'noiseSchedule': noiseSchedule,
+        'cfgRescale': cfgRescale,
+        'varietyBoostSigma': varietyBoostSigma,
         if (model != null) 'model': model,
         'characters': characters.map((c) => c.toJson()).toList(),
         'interactions': interactions.map((i) => i.toJson()).toList(),
@@ -76,6 +90,9 @@ class GenerationPreset {
         smea: json['smea'] ?? false,
         smeaDyn: json['smeaDyn'] ?? false,
         decrisper: json['decrisper'] ?? false,
+        noiseSchedule: json['noiseSchedule'] as String? ?? 'karras',
+        cfgRescale: (json['cfgRescale'] as num?)?.toDouble() ?? 0,
+        varietyBoostSigma: (json['varietyBoostSigma'] as num?)?.toDouble(),
         model: json['model'] as String?,
         characters: (json['characters'] as List<dynamic>?)
                 ?.map((c) => NaiCharacter.fromJson(c as Map<String, dynamic>))
