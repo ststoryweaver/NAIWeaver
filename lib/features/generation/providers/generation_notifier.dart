@@ -399,10 +399,15 @@ class GenerationNotifier extends ChangeNotifier {
     final presets = await _presetService.loadPresets();
     final styles = await _presetService.loadStyles();
 
-    // Default style selection: Light - NAI, or those marked as default, or first available
+    // Default style selection: the bundled V4.5 light UC ("Light V4.5 - NAI",
+    // or its pre-0.9.3 name), or those marked as default, or first available
     List<String> initialActiveStyles = [];
-    if (styles.any((s) => s.name == "Light - NAI")) {
-      initialActiveStyles = ["Light - NAI"];
+    final bundledLight = styles
+        .where((s) => s.name == "Light V4.5 - NAI" || s.name == "Light - NAI")
+        .map((s) => s.name)
+        .toList();
+    if (bundledLight.isNotEmpty) {
+      initialActiveStyles = [bundledLight.first];
     } else {
       final defaultStyleNames = styles.where((s) => s.isDefault).map((s) => s.name).toList();
       initialActiveStyles = defaultStyleNames.isNotEmpty

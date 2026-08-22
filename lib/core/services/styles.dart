@@ -59,7 +59,7 @@ class StyleStorage {
 
     return [
       PromptStyle(
-        name: "Quality (NAI Default)",
+        name: "Quality V4.5 (NAI Default)",
         prefix: "best quality, amazing quality, very aesthetic, absurdres, ",
       ),
     ];
@@ -94,7 +94,7 @@ class StyleStorage {
       debugPrint('Error resetting styles: $e');
       return [
         PromptStyle(
-          name: "Quality (NAI Default)",
+          name: "Quality V4.5 (NAI Default)",
           prefix: "best quality, amazing quality, very aesthetic, absurdres, ",
         ),
       ];
