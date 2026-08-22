@@ -303,9 +303,10 @@ class _MaskToolbarState extends State<MaskToolbar> {
     final result = await pickCustomFiles(
       allowedExtensions: ['png', 'jpg', 'jpeg'],
     );
-    if (result == null || result.files.isEmpty || result.files.first.path == null) return;
+    if (result == null || result.files.isEmpty) return;
 
-    final bytes = await File(result.files.first.path!).readAsBytes();
+    final bytes = await readPickedFileBytes(result.files.first);
+    if (bytes == null) return;
     notifier.loadMask(bytes);
   }
 }

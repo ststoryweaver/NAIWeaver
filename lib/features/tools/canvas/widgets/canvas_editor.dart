@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import '../../../../core/utils/file_picker_helper.dart';
@@ -400,10 +399,8 @@ class _CanvasEditorState extends State<CanvasEditor> {
       final result = await pickImageFiles();
       if (result == null || result.files.isEmpty) return;
 
-      final filePath = result.files.single.path;
-      if (filePath == null) return;
-
-      final bytes = await File(filePath).readAsBytes();
+      final bytes = await readPickedFileBytes(result.files.single);
+      if (bytes == null) return;
       final name = result.files.single.name;
       notifier.addImageLayer(bytes, name: name);
       notifier.setTool(CanvasTool.transform);

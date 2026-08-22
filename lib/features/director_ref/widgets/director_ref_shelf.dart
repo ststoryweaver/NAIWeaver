@@ -20,8 +20,10 @@ class DirectorRefShelf extends StatelessWidget {
 
   Future<void> _pickAndAdd(BuildContext context, {bool useFileBrowser = false}) async {
     final result = await pickImageFiles(useFileBrowser: useFileBrowser);
-    if (result != null && result.files.single.path != null) {
-      final bytes = await File(result.files.single.path!).readAsBytes();
+    final bytes = result == null
+        ? null
+        : await readPickedFileBytes(result.files.single);
+    if (bytes != null) {
       if (context.mounted) {
         context.read<DirectorRefNotifier>().addReference(bytes);
       }

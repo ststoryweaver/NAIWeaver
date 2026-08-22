@@ -1,4 +1,3 @@
-import 'dart:io';
 import '../../../../core/utils/file_picker_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -122,8 +121,10 @@ class _DirectorToolsEditorState extends State<DirectorToolsEditor> {
               accentColor: t.accentEdit,
               onTap: () async {
                 final result = await pickImageFiles();
-                if (result != null && result.files.single.path != null) {
-                  final bytes = await File(result.files.single.path!).readAsBytes();
+                final bytes = result == null
+                    ? null
+                    : await readPickedFileBytes(result.files.single);
+                if (bytes != null) {
                   notifier.setSourceImage(bytes);
                 }
               },

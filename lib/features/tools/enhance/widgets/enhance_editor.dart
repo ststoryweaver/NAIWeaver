@@ -1,4 +1,3 @@
-import 'dart:io';
 import '../../../../core/utils/file_picker_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -121,8 +120,10 @@ class _EnhanceEditorState extends State<EnhanceEditor> {
               accentColor: t.accentEdit,
               onTap: () async {
                 final result = await pickImageFiles();
-                if (result != null && result.files.single.path != null) {
-                  final bytes = await File(result.files.single.path!).readAsBytes();
+                final bytes = result == null
+                    ? null
+                    : await readPickedFileBytes(result.files.single);
+                if (bytes != null) {
                   notifier.setSourceImage(bytes);
                   _negativePromptController.text = notifier.negativePrompt;
                   _initialized = true;

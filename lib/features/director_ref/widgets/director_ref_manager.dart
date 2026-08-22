@@ -1,4 +1,3 @@
-import 'dart:io';
 import '../../../core/widgets/model_gate.dart';
 import '../../../core/utils/file_picker_helper.dart';
 import 'package:flutter/material.dart';
@@ -136,8 +135,8 @@ class _DirectorRefManagerState extends State<DirectorRefManager> {
     if (result != null && context.mounted) {
       final notifier = context.read<DirectorRefNotifier>();
       for (final file in result.files) {
-        if (file.path != null) {
-          final bytes = await File(file.path!).readAsBytes();
+        final bytes = await readPickedFileBytes(file);
+        if (bytes != null) {
           if (context.mounted) {
             await notifier.addReference(bytes);
           }

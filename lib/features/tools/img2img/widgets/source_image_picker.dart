@@ -84,8 +84,10 @@ class SourceImagePicker extends StatelessWidget {
               onTap: () async {
                 final prefs = context.read<PreferencesService>();
                 final result = await pickImageFiles();
-                if (result != null && result.files.single.path != null) {
-                  final bytes = await File(result.files.single.path!).readAsBytes();
+                final bytes = result == null
+                    ? null
+                    : await readPickedFileBytes(result.files.single);
+                if (bytes != null) {
                   String? prompt;
                   String? negativePrompt;
                   if (prefs.img2imgImportPrompt) {
