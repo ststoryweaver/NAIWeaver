@@ -394,19 +394,79 @@ Map<String, dynamic>? parseCommentJson(String comment) {
   }
 }
 
-/// True when [bytes] is a PNG whose IHDR colour type carries an alpha channel
-/// (4 = grey+alpha, 6 = RGBA). Cheap header sniff — no decode. NovelAI V5
-/// returns colour type 6 when transparency is requested.
-bool pngHasAlpha(Uint8List bytes) {
-  if (bytes.length < 29) return false;
-  const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
-  for (var i = 0; i < sig.length; i++) {
-    if (bytes[i] != sig[i]) return false;
+/// Reads the pixel dimensions from a PNG's IHDR chunk without decoding it.
+/// Returns null if [bytes] is not a PNG or the header is truncated.
+///
+/// Used to size the transparency checkerboard to the image itself, so it never
+/// paints into the letterbox bands left by BoxFit.contain.
+({int width, int height})? pngSize(Uint8List bytes) {
+  if (bytes.length < 33) return null;
+  if (!isPng(bytes)) return null;
+  // 8 (sig) + 4 (len) + 4 ('IHDR'), then width(4) height(4) big-endian.
+  if (bytes[12] != 0x49 ||
+      bytes[13] != 0x48 ||
+      bytes[14] != 0x44 ||
+      bytes[15] != 0x52) {
+    return null;
   }
-  // 8 (sig) + 4 (len) + 4 ('IHDR') + 13 data: width(4) height(4) depth(1) colorType(1)
-  if (bytes[12] != 0x49 || bytes[13] != 0x48 || bytes[14] != 0x44 || bytes[15] != 0x52) {
+  final width =
+      (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+  final height =
+      (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+  if (width <= 0 || height <= 0) return null;
+  return (width: width, height: height);
+}
+
+/// Whether a PNG's colour type or chunks allow transparent pixels at all.
+///
+/// This is a cheap header-only screen: an opaque RGBA image still passes. Use
+/// [pngHasTransparentPixels] before showing transparency affordances.
+bool pngSupportsAlpha(Uint8List bytes) {
+  if (bytes.length < 29) return false;
+  if (!isPng(bytes)) return false;
+  if (bytes[12] != 0x49 ||
+      bytes[13] != 0x48 ||
+      bytes[14] != 0x44 ||
+      bytes[15] != 0x52) {
     return false;
   }
   final colorType = bytes[25];
-  return colorType == 4 || colorType == 6;
+  // 4 = grey+alpha, 6 = RGBA. Types 0/2/3 carry alpha only via a tRNS chunk.
+  if (colorType == 4 || colorType == 6) return true;
+  return _hasTrnsChunk(bytes);
+}
+
+/// Whether a PNG actually contains at least one non-opaque pixel.
+///
+/// [pngSupportsAlpha] only reports that the encoding *can* carry alpha, which
+/// is true of every RGBA PNG NovelAI returns — including fully opaque ones. The
+/// preview checkerboard keys off this instead, so it appears only for genuinely
+/// transparent renders. Decodes the image, so cache the result per image rather
+/// than calling it from build().
+bool pngHasTransparentPixels(Uint8List bytes) {
+  if (!pngSupportsAlpha(bytes)) return false;
+  final image = _decodePngSafe(bytes);
+  if (image == null) return false;
+  if (!image.hasAlpha) return false;
+  for (final pixel in image) {
+    if (pixel.a < pixel.maxChannelValue) return true;
+  }
+  return false;
+}
+
+/// Scans the chunk list for a tRNS transparency chunk.
+bool _hasTrnsChunk(Uint8List bytes) {
+  var offset = 8;
+  while (offset + 8 <= bytes.length) {
+    final length = (bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3];
+    if (length < 0) return false;
+    final type = String.fromCharCodes(bytes.sublist(offset + 4, offset + 8));
+    if (type == 'tRNS') return true;
+    if (type == 'IDAT' || type == 'IEND') return false;
+    offset += 12 + length;
+  }
+  return false;
 }

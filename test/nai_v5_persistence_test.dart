@@ -142,7 +142,7 @@ void main() {
     });
   });
 
-  group('pngHasAlpha', () {
+  group('pngSupportsAlpha', () {
     Uint8List png(int colorType) {
       final b = Uint8List(40);
       const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -154,15 +154,15 @@ void main() {
     }
 
     test('RGBA (6) and grey+alpha (4) are alpha; RGB (2) is not', () {
-      expect(pngHasAlpha(png(6)), isTrue);
-      expect(pngHasAlpha(png(4)), isTrue);
-      expect(pngHasAlpha(png(2)), isFalse);
-      expect(pngHasAlpha(png(0)), isFalse);
+      expect(pngSupportsAlpha(png(6)), isTrue);
+      expect(pngSupportsAlpha(png(4)), isTrue);
+      expect(pngSupportsAlpha(png(2)), isFalse);
+      expect(pngSupportsAlpha(png(0)), isFalse);
     });
 
     test('non-PNG / short buffers are false', () {
-      expect(pngHasAlpha(Uint8List(3)), isFalse);
-      expect(pngHasAlpha(Uint8List.fromList(List.filled(40, 0x52))), isFalse);
+      expect(pngSupportsAlpha(Uint8List(3)), isFalse);
+      expect(pngSupportsAlpha(Uint8List.fromList(List.filled(40, 0x52))), isFalse);
     });
   });
 }
