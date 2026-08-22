@@ -520,6 +520,96 @@ class _ExpandedSettingsContentState extends State<ExpandedSettingsContent> {
       ],
     );
 
+    final caps = state.model.caps;
+
+    // Noise schedule — only models that expose a picker (V4.5); V5 forces
+    // karras, so the control is hidden rather than shown as a no-op (#35).
+    Widget? noiseScheduleField;
+    if (caps.noiseSchedule) {
+      final schedules = state.model.noiseSchedules;
+      final value = schedules.contains(state.noiseSchedule)
+          ? state.noiseSchedule
+          : state.model.defaults.noiseSchedule;
+      noiseScheduleField = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('NOISE SCHEDULE', style: labelStyle),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            // ignore: deprecated_member_use
+            value: value,
+            dropdownColor: t.surfaceHigh,
+            style: TextStyle(color: t.textPrimary, fontSize: t.fontSize(11), letterSpacing: 1),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              fillColor: t.borderSubtle,
+              filled: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+            ),
+            onChanged: (String? newValue) {
+              if (newValue != null) notifier.updateSettings(noiseSchedule: newValue);
+            },
+            items: schedules.map<DropdownMenuItem<String>>((String v) {
+              return DropdownMenuItem<String>(value: v, child: Text(v.toUpperCase(), style: TextStyle(fontSize: t.fontSize(10))));
+            }).toList(),
+          ),
+        ],
+      );
+    }
+
+    // Prompt Guidance Rescale (`cfg_rescale`), 0 = off.
+    Widget? rescaleSlider;
+    if (caps.cfgRescale) {
+      rescaleSlider = _buildCompactSlider(
+        context,
+        'GUIDANCE RESCALE',
+        state.cfgRescale,
+        0.0,
+        1.0,
+        0.02,
+        (v) => notifier.updateSettings(cfgRescale: v),
+        t,
+      );
+    }
+
+    // Variety+ — a toggle, since NovelAI exposes it as one. On = the sigma
+    // floor their UI sends; off = null (key present but unset).
+    Widget? varietyToggle;
+    if (caps.varietyPlus) {
+      final on = state.varietyBoostSigma != null;
+      varietyToggle = InkWell(
+        onTap: () => notifier.updateSettings(
+          varietyBoostSigma: on ? null : _varietyDefaultSigma,
+          clearVarietyBoost: on,
+        ),
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: on ? t.accent : t.borderMedium),
+            color: on ? t.accent.withValues(alpha: 0.15) : Colors.transparent,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, size: mobile ? 16 : 14, color: on ? t.accent : t.textDisabled),
+              const SizedBox(width: 8),
+              Text(
+                'VARIETY+',
+                style: TextStyle(
+                  color: on ? t.accent : t.textDisabled,
+                  fontSize: t.fontSize(mobile ? 10 : 9),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     Widget furryToggle = InkWell(
       onTap: () => notifier.updateSettings(furryMode: !state.furryMode),
       borderRadius: BorderRadius.circular(4),
@@ -562,20 +652,56 @@ class _ExpandedSettingsContentState extends State<ExpandedSettingsContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           samplerField,
+          if (noiseScheduleField != null) ...[
+            const SizedBox(height: 16),
+            noiseScheduleField,
+          ],
+          if (rescaleSlider != null) ...[
+            const SizedBox(height: 16),
+            rescaleSlider,
+          ],
           const SizedBox(height: 16),
-          furryToggle,
+          Row(
+            children: [
+              if (varietyToggle != null) ...[
+                varietyToggle,
+                const SizedBox(width: 12),
+              ],
+              furryToggle,
+            ],
+          ),
         ],
       );
     }
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(flex: 1, child: samplerField),
-        const SizedBox(width: 24),
-        furryToggle,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 1, child: samplerField),
+            if (noiseScheduleField != null) ...[
+              const SizedBox(width: 24),
+              Expanded(flex: 1, child: noiseScheduleField),
+            ],
+            const SizedBox(width: 24),
+            if (varietyToggle != null) ...[
+              varietyToggle,
+              const SizedBox(width: 12),
+            ],
+            furryToggle,
+          ],
+        ),
+        if (rescaleSlider != null) ...[
+          const SizedBox(height: 16),
+          rescaleSlider,
+        ],
       ],
     );
   }
+
+  /// Sigma floor NovelAI's frontend sends when Variety+ is switched on.
+  static const double _varietyDefaultSigma = 58.0;
 
   /// Sampler list for the active model; keeps a now-unlisted sampler (e.g.
   /// restored from an old session) visible so the dropdown never asserts.

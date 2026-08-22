@@ -19,6 +19,9 @@ class SessionSnapshot {
   final bool smea;
   final bool smeaDyn;
   final bool decrisper;
+  final String noiseSchedule;
+  final double cfgRescale;
+  final double? varietyBoostSigma;
   final bool randomizeSeed;
   final bool autoPositioning;
   final List<String> activeStyleNames;
@@ -43,6 +46,9 @@ class SessionSnapshot {
     required this.smea,
     required this.smeaDyn,
     required this.decrisper,
+    this.noiseSchedule = 'karras',
+    this.cfgRescale = 0,
+    this.varietyBoostSigma,
     required this.randomizeSeed,
     required this.autoPositioning,
     required this.activeStyleNames,
@@ -68,6 +74,9 @@ class SessionSnapshot {
         'smea': smea,
         'smea_dyn': smeaDyn,
         'decrisper': decrisper,
+        'noise_schedule': noiseSchedule,
+        'cfg_rescale': cfgRescale,
+        'variety_boost_sigma': varietyBoostSigma,
         'randomize_seed': randomizeSeed,
         'auto_positioning': autoPositioning,
         'active_style_names': activeStyleNames,
@@ -115,6 +124,9 @@ class SessionSnapshot {
       smea: json['smea'] as bool? ?? false,
       smeaDyn: json['smea_dyn'] as bool? ?? false,
       decrisper: json['decrisper'] as bool? ?? false,
+      noiseSchedule: json['noise_schedule'] as String? ?? 'karras',
+      cfgRescale: (json['cfg_rescale'] as num?)?.toDouble() ?? 0,
+      varietyBoostSigma: (json['variety_boost_sigma'] as num?)?.toDouble(),
       randomizeSeed: json['randomize_seed'] as bool? ?? true,
       autoPositioning: json['auto_positioning'] as bool? ?? false,
       activeStyleNames: (json['active_style_names'] as List<dynamic>?)

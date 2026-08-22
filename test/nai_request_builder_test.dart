@@ -43,6 +43,10 @@ void main() {
         'sm',
         'sm_dyn',
         'dynamic_thresholding',
+        // NovelAI's own V4.5 body carries both of these (research doc §2.4:
+        // cfg_rescale 0, skip_cfg_above_sigma null).
+        'cfg_rescale',
+        'skip_cfg_above_sigma',
         'uc',
         'v4_prompt',
         'v4_negative_prompt',
@@ -52,6 +56,8 @@ void main() {
       expect(p['sm'], false);
       expect(p['sm_dyn'], false);
       expect(p['dynamic_thresholding'], false);
+      expect(p['cfg_rescale'], 0);
+      expect(p['skip_cfg_above_sigma'], isNull);
       expect(p['uc'], 'lowres');
       expect(p['v4_prompt']['caption']['base_caption'], 'best quality, 1girl, smile, very aesthetic');
       expect(p['v4_prompt']['use_coords'], false);
@@ -110,7 +116,45 @@ void main() {
       ]);
     });
 
-    test('vibe + director arrays are sent on V4.5', () {
+    test('vibe arrays are sent on V4.5 when no director ref is set', () {
+      final p = _params(buildNaiGenerateBody(
+        model: NaiModel.v45Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+        vibeTransferImages: ['VIBE'],
+        vibeTransferStrengths: [0.6],
+        vibeTransferInfoExtracted: [1.0],
+      ));
+      expect(p['reference_image_multiple'], ['VIBE']);
+      expect(p['reference_strength_multiple'], [0.6]);
+      expect(p['reference_information_extracted_multiple'], [1.0]);
+    });
+
+    test('director arrays are sent on V4.5', () {
+      final p = _params(buildNaiGenerateBody(
+        model: NaiModel.v45Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+        directorRefImages: ['REF'],
+        directorRefDescriptions: [
+          {'caption': {'base_caption': 'character&style', 'char_captions': []}, 'legacy_uc': false}
+        ],
+        directorRefStrengths: [1.0],
+        directorRefSecondaryStrengths: [1.0],
+        directorRefInfoExtracted: [1.0],
+      ));
+      expect(p['director_reference_images'], ['REF']);
+      expect(p['director_reference_strength_values'], [1.0]);
+    });
+
+    // Issue #24: NovelAI's UI hides Vibe once a Director reference is set, and
+    // sending both returns a ZIP with an empty/truncated image entry, which
+    // the app used to save as a corrupt file (and then froze the gallery on).
+    test('vibe is dropped when a director ref is present (issue #24)', () {
       final p = _params(buildNaiGenerateBody(
         model: NaiModel.v45Full,
         prompt: 'x',
@@ -128,11 +172,83 @@ void main() {
         directorRefSecondaryStrengths: [1.0],
         directorRefInfoExtracted: [1.0],
       ));
-      expect(p['reference_image_multiple'], ['VIBE']);
-      expect(p['reference_strength_multiple'], [0.6]);
-      expect(p['reference_information_extracted_multiple'], [1.0]);
+      // Director wins, matching NovelAI's own frontend.
       expect(p['director_reference_images'], ['REF']);
-      expect(p['director_reference_strength_values'], [1.0]);
+      for (final k in p.keys) {
+        expect(k.startsWith('reference_'), isFalse,
+            reason: 'vibe key "$k" must not be sent alongside a director ref');
+      }
+    });
+
+    test('noise_schedule honours a supported choice on V4.5', () {
+      for (final schedule in ['exponential', 'polyexponential', 'karras']) {
+        final p = _params(buildNaiGenerateBody(
+          model: NaiModel.v45Full,
+          prompt: 'x',
+          width: 64,
+          height: 64,
+          seed: 1,
+          noiseSchedule: schedule,
+        ));
+        expect(p['noise_schedule'], schedule);
+      }
+    });
+
+    test('an unsupported noise_schedule falls back to the model default', () {
+      for (final schedule in ['native', 'nonsense', '']) {
+        final p = _params(buildNaiGenerateBody(
+          model: NaiModel.v45Full,
+          prompt: 'x',
+          width: 64,
+          height: 64,
+          seed: 1,
+          noiseSchedule: schedule,
+        ));
+        expect(p['noise_schedule'], 'karras');
+      }
+    });
+
+    test('cfg_rescale defaults to 0 and honours an explicit value', () {
+      final dflt = _params(buildNaiGenerateBody(
+        model: NaiModel.v45Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+      ));
+      expect(dflt['cfg_rescale'], 0);
+
+      final set = _params(buildNaiGenerateBody(
+        model: NaiModel.v45Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+        cfgRescale: 0.4,
+      ));
+      expect(set['cfg_rescale'], 0.4);
+    });
+
+    test('skip_cfg_above_sigma is null when Variety+ is off, set when on', () {
+      final off = _params(buildNaiGenerateBody(
+        model: NaiModel.v45Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+      ));
+      expect(off.containsKey('skip_cfg_above_sigma'), isTrue);
+      expect(off['skip_cfg_above_sigma'], isNull);
+
+      final on = _params(buildNaiGenerateBody(
+        model: NaiModel.v45Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+        varietyBoostSigma: 58.0,
+      ));
+      expect(on['skip_cfg_above_sigma'], 58.0);
     });
 
     test('img2img / infill fields and inpaint model id', () {
@@ -230,6 +346,23 @@ void main() {
       ));
       expect(d['sampler'], 'k_euler_ancestral');
       expect(d['prefer_brownian'], true);
+    });
+
+    test('V5 forces its noise schedule and drops Variety+', () {
+      final p = _params(buildNaiGenerateBody(
+        model: NaiModel.v5Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+        // Both of these are unsupported on V5 and must not leak through.
+        noiseSchedule: 'exponential',
+        varietyBoostSigma: 58.0,
+      ));
+      expect(p['noise_schedule'], 'karras');
+      expect(p.containsKey('skip_cfg_above_sigma'), isFalse);
+      // cfg_rescale IS supported on V5.
+      expect(p['cfg_rescale'], 0);
     });
 
     test('vibe + director arrays are NOT sent on V5', () {

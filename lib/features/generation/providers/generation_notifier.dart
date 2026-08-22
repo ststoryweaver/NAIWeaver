@@ -83,6 +83,12 @@ class GenerationState {
   final bool smea;
   final bool smeaDyn;
   final bool decrisper;
+  /// Noise schedule; only offered on models whose caps allow a picker (V4.5).
+  final String noiseSchedule;
+  /// Prompt Guidance Rescale (`cfg_rescale`). 0 = off, NovelAI's default.
+  final double cfgRescale;
+  /// Variety+ (`skip_cfg_above_sigma`). Null = off.
+  final double? varietyBoostSigma;
   final bool randomizeSeed;
   final List<String> activeStyleNames;
   final bool isStyleEnabled;
@@ -134,6 +140,9 @@ class GenerationState {
     this.smea = false,
     this.smeaDyn = false,
     this.decrisper = false,
+    this.noiseSchedule = 'karras',
+    this.cfgRescale = 0,
+    this.varietyBoostSigma,
     this.randomizeSeed = true,
     this.activeStyleNames = const [],
     this.isStyleEnabled = true,
@@ -179,6 +188,10 @@ class GenerationState {
     bool? smea,
     bool? smeaDyn,
     bool? decrisper,
+    String? noiseSchedule,
+    double? cfgRescale,
+    double? varietyBoostSigma,
+    bool clearVarietyBoost = false,
     bool? randomizeSeed,
     List<String>? activeStyleNames,
     bool? isStyleEnabled,
@@ -226,6 +239,11 @@ class GenerationState {
       smea: smea ?? this.smea,
       smeaDyn: smeaDyn ?? this.smeaDyn,
       decrisper: decrisper ?? this.decrisper,
+      noiseSchedule: noiseSchedule ?? this.noiseSchedule,
+      cfgRescale: cfgRescale ?? this.cfgRescale,
+      varietyBoostSigma: clearVarietyBoost
+          ? null
+          : (varietyBoostSigma ?? this.varietyBoostSigma),
       randomizeSeed: randomizeSeed ?? this.randomizeSeed,
       activeStyleNames: activeStyleNames ?? this.activeStyleNames,
       isStyleEnabled: isStyleEnabled ?? this.isStyleEnabled,
@@ -582,6 +600,10 @@ class GenerationNotifier extends ChangeNotifier {
     bool? smea,
     bool? smeaDyn,
     bool? decrisper,
+    String? noiseSchedule,
+    double? cfgRescale,
+    double? varietyBoostSigma,
+    bool clearVarietyBoost = false,
     bool? randomizeSeed,
     List<String>? activeStyleNames,
     bool? isStyleEnabled,
@@ -601,6 +623,10 @@ class GenerationNotifier extends ChangeNotifier {
       smea: smea,
       smeaDyn: smeaDyn,
       decrisper: decrisper,
+      noiseSchedule: noiseSchedule,
+      cfgRescale: cfgRescale,
+      varietyBoostSigma: varietyBoostSigma,
+      clearVarietyBoost: clearVarietyBoost,
       randomizeSeed: randomizeSeed,
       activeStyleNames: activeStyleNames,
       isStyleEnabled: isStyleEnabled,
@@ -1079,6 +1105,9 @@ class GenerationNotifier extends ChangeNotifier {
         smea: _state.smea,
         smeaDyn: _state.smeaDyn,
         decrisper: _state.decrisper,
+        noiseSchedule: _state.noiseSchedule,
+        cfgRescale: _state.cfgRescale,
+        varietyBoostSigma: _state.varietyBoostSigma,
         seed: seed,
         promptPrefix: combinedPrefix,
         promptSuffix: combinedSuffix,
@@ -1771,6 +1800,9 @@ class GenerationNotifier extends ChangeNotifier {
       smea: _state.smea,
       smeaDyn: _state.smeaDyn,
       decrisper: _state.decrisper,
+      noiseSchedule: _state.noiseSchedule,
+      cfgRescale: _state.cfgRescale,
+      varietyBoostSigma: _state.varietyBoostSigma,
       randomizeSeed: _state.randomizeSeed,
       autoPositioning: _state.autoPositioning,
       activeStyleNames: _state.activeStyleNames,
@@ -1804,6 +1836,10 @@ class GenerationNotifier extends ChangeNotifier {
       smea: snapshot.smea,
       smeaDyn: snapshot.smeaDyn,
       decrisper: snapshot.decrisper,
+      noiseSchedule: snapshot.noiseSchedule,
+      cfgRescale: snapshot.cfgRescale,
+      varietyBoostSigma: snapshot.varietyBoostSigma,
+      clearVarietyBoost: snapshot.varietyBoostSigma == null,
       randomizeSeed: snapshot.randomizeSeed,
       autoPositioning: snapshot.autoPositioning,
       activeStyleNames: snapshot.activeStyleNames,
