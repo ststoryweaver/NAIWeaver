@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../models/nai_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,6 +37,7 @@ class PreferencesService {
   static const String _keySkippedUpdateVersion = 'skipped_update_version';
   static const String _keyFurryMode = 'furry_mode';
   static const String _keyUseCurated = 'use_curated';
+  static const String _keyNaiModel = 'nai_model';
   static const String _keyImg2ImgImportPrompt = 'img2img_import_prompt';
   static const String _keyShowSeedControl = 'show_seed_control';
   static const String _keyShowAnlasTracker = 'show_anlas_tracker';
@@ -286,7 +288,24 @@ class PreferencesService {
     await _prefs.setBool(_keyFurryMode, value);
   }
 
-  // — Curated Model —
+  // — Image model —
+
+  /// Selected NovelAI image model (`nai_model`, stored as the wire id).
+  /// Falls back to the pre-V5 `use_curated` boolean so existing installs keep
+  /// their V4.5 choice; nobody is auto-migrated to V5 (it is metered on Opus).
+  NaiModel get naiModel {
+    final stored = NaiModel.tryParse(_prefs.getString(_keyNaiModel));
+    if (stored != null) return stored;
+    return NaiModel.fromLegacyCurated(_prefs.getBool(_keyUseCurated) ?? false);
+  }
+
+  Future<void> setNaiModel(NaiModel model) async {
+    await _prefs.setString(_keyNaiModel, model.id);
+    // Keep the legacy flag coherent for older builds / backups.
+    await _prefs.setBool(_keyUseCurated, model.isCurated);
+  }
+
+  // — Curated Model (legacy; prefer [naiModel]) —
 
   bool get useCurated => _prefs.getBool(_keyUseCurated) ?? false;
 
@@ -576,6 +595,7 @@ class PreferencesService {
     _keyExportAlbumName, _keySettingsSectionOrder, _keySmartStyleImport,
     _keyCharInsertTarget,
     _keyRememberSession, _keyLocale, _keyFurryMode, _keyUseCurated,
+    _keyNaiModel,
     _keyImg2ImgImportPrompt, _keyShowSeedControl, _keyShowAnlasTracker,
     _keyCanvasAutoSave, _keyCustomResolutions, _keyCharacterEditorMode,
     _keyFilenamePattern, _keySavePathPattern,

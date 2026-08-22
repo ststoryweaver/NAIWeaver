@@ -8,6 +8,7 @@ import 'vision_tokens.dart';
 
 class ThemeNotifier extends ChangeNotifier {
   static const defaultSectionOrder = [
+    'model',
     'characters',
     'dimensions_seed',
     'steps_scale',
@@ -90,7 +91,11 @@ class ThemeNotifier extends ChangeNotifier {
     if (savedOrder != null) {
       // Add any new section IDs not in saved order
       final missing = defaultSectionOrder.where((id) => !savedOrder.contains(id)).toList();
-      _sectionOrder = [...savedOrder, ...missing];
+      // New sections are appended, except the model picker which belongs at
+      // the top for installs that saved an order before V5.
+      final prepend = missing.where((id) => id == 'model').toList();
+      final append = missing.where((id) => id != 'model').toList();
+      _sectionOrder = [...prepend, ...savedOrder, ...append];
       // Remove any IDs no longer in defaults
       _sectionOrder.removeWhere((id) => !defaultSectionOrder.contains(id));
     }

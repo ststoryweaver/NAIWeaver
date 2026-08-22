@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import '../../../core/models/nai_model.dart';
 import '../../../core/services/kv_store.dart';
 import '../models/nai_character.dart';
 import '../../director_ref/models/director_reference.dart';
@@ -23,7 +24,8 @@ class SessionSnapshot {
   final List<String> activeStyleNames;
   final bool isStyleEnabled;
   final bool furryMode;
-  final bool useCurated;
+  final NaiModel model;
+  final bool transparentBackground;
   final List<NaiCharacter> characters;
   final List<NaiInteraction> interactions;
   final List<DirectorReference> directorReferences;
@@ -46,7 +48,8 @@ class SessionSnapshot {
     required this.activeStyleNames,
     required this.isStyleEnabled,
     required this.furryMode,
-    required this.useCurated,
+    required this.model,
+    this.transparentBackground = false,
     required this.characters,
     required this.interactions,
     required this.directorReferences,
@@ -70,7 +73,10 @@ class SessionSnapshot {
         'active_style_names': activeStyleNames,
         'is_style_enabled': isStyleEnabled,
         'furry_mode': furryMode,
-        'use_curated': useCurated,
+        'nai_model': model.id,
+        // Legacy flag kept so older builds reading this file stay coherent.
+        'use_curated': model.isCurated,
+        'transparent_background': transparentBackground,
         'characters': characters.map((c) => c.toJson()).toList(),
         'interactions': interactions.map((i) => i.toJson()).toList(),
         'director_references':
@@ -117,7 +123,11 @@ class SessionSnapshot {
           [],
       isStyleEnabled: json['is_style_enabled'] as bool? ?? true,
       furryMode: json['furry_mode'] as bool? ?? false,
-      useCurated: json['use_curated'] as bool? ?? false,
+      // Pre-V5 snapshots only carry `use_curated`; map it to the V4.5 model
+      // (never auto-migrate to V5).
+      model: NaiModel.tryParse(json['nai_model'] as String?) ??
+          NaiModel.fromLegacyCurated(json['use_curated'] as bool? ?? false),
+      transparentBackground: json['transparent_background'] as bool? ?? false,
       characters: characters,
       interactions: interactions,
       directorReferences: directorReferences,

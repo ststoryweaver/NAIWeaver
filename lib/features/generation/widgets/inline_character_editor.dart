@@ -28,6 +28,9 @@ class _CharEditorState {
   final bool autoPositioning;
   final String characterEditorMode;
   final List<CharacterPreset> characterPresets;
+  final int maxCharacters;
+  final bool freeformPosition;
+  final double aspectRatio;
 
   const _CharEditorState({
     required this.characters,
@@ -35,6 +38,9 @@ class _CharEditorState {
     required this.autoPositioning,
     required this.characterEditorMode,
     required this.characterPresets,
+    required this.maxCharacters,
+    required this.freeformPosition,
+    required this.aspectRatio,
   });
 
   @override
@@ -45,6 +51,9 @@ class _CharEditorState {
           listEquals(interactions, other.interactions) &&
           autoPositioning == other.autoPositioning &&
           characterEditorMode == other.characterEditorMode &&
+          maxCharacters == other.maxCharacters &&
+          freeformPosition == other.freeformPosition &&
+          aspectRatio == other.aspectRatio &&
           listEquals(characterPresets, other.characterPresets);
 
   @override
@@ -54,6 +63,9 @@ class _CharEditorState {
         autoPositioning,
         characterEditorMode,
         Object.hashAll(characterPresets),
+        maxCharacters,
+        freeformPosition,
+        aspectRatio,
       );
 }
 
@@ -69,6 +81,9 @@ class InlineCharacterEditor extends StatelessWidget {
         autoPositioning: n.state.autoPositioning,
         characterEditorMode: n.state.characterEditorMode,
         characterPresets: n.state.characterPresets,
+        maxCharacters: n.state.model.maxCharacters,
+        freeformPosition: n.state.model.caps.freeformPosition,
+        aspectRatio: n.state.height > 0 ? n.state.width / n.state.height : 1,
       ),
       shouldRebuild: (prev, next) => prev != next,
       builder: (context, editorState, _) {
@@ -148,12 +163,26 @@ class InlineCharacterEditor extends StatelessWidget {
                   character: editorState.characters[i],
                   autoPositioning: editorState.autoPositioning,
                   characterPresets: editorState.characterPresets,
+                  freeformPosition: editorState.freeformPosition,
+                  aspectRatio: editorState.aspectRatio,
                 ),
                 if (i < editorState.characters.length - 1) const SizedBox(height: 8),
               ],
 
               // Add character button
-              if (editorState.characters.length < 6) ...[
+              if (editorState.characters.length > editorState.maxCharacters) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Only the first ${editorState.maxCharacters} characters are sent on this model',
+                  style: TextStyle(
+                    fontSize: t.fontSize(mobile ? 9 : 8),
+                    color: t.accentCharacter,
+                    letterSpacing: 1,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+              if (editorState.characters.length < editorState.maxCharacters) ...[
                 const SizedBox(height: 8),
                 _AddCharacterButton(
                   onTap: () => notifier.addCharacter(),
@@ -286,6 +315,8 @@ class _CharacterCard extends StatefulWidget {
   final NaiCharacter character;
   final bool autoPositioning;
   final List<CharacterPreset> characterPresets;
+  final bool freeformPosition;
+  final double aspectRatio;
 
   const _CharacterCard({
     super.key,
@@ -293,6 +324,8 @@ class _CharacterCard extends StatefulWidget {
     required this.character,
     required this.autoPositioning,
     required this.characterPresets,
+    this.freeformPosition = false,
+    this.aspectRatio = 1,
   });
 
   @override
@@ -800,6 +833,8 @@ class _CharacterCardState extends State<_CharacterCard> {
                                 height: 120,
                                 width: 120,
                                 child: NaiGridSelector(
+                                  freeform: widget.freeformPosition,
+                                  aspectRatio: widget.aspectRatio,
                                   selectedCoordinate: widget.character.center,
                                   onCoordinateSelected: (coord) {
                                     final notifier = context.read<GenerationNotifier>();

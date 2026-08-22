@@ -1,3 +1,5 @@
+import '../../../core/utils/image_utils.dart';
+import '../../../core/widgets/checkerboard.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../core/theme/theme_extensions.dart';
@@ -117,7 +119,18 @@ class _ImagePreviewViewerState extends State<ImagePreviewViewer>
                     minScale: 0.5,
                     maxScale: 4.0,
                     child: Center(
-                      child: Image.memory(
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // V5 can return real RGBA; show a checkerboard so a
+                          // transparent background reads as transparent.
+                          if (pngHasAlpha(widget.generatedImage!))
+                            Positioned.fill(
+                              child: CustomPaint(
+                                painter: const CheckerboardPainter(),
+                              ),
+                            ),
+                          Image.memory(
                         widget.generatedImage!,
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.medium,
@@ -129,6 +142,8 @@ class _ImagePreviewViewerState extends State<ImagePreviewViewer>
                           size: 48,
                           color: t.textPrimary.withValues(alpha: 0.2),
                         ),
+                      ),
+                        ],
                       ),
                     ),
                   ),

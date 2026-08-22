@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import '../../../core/models/nai_model.dart';
 import '../../../core/services/novel_ai_service.dart';
 import '../../director_ref/services/reference_image_processor.dart';
 import '../models/vibe_transfer.dart';
@@ -9,7 +10,7 @@ class VibeTransferNotifier extends ChangeNotifier {
   bool _isProcessing = false;
   int _idCounter = 0;
   NovelAIService? _service;
-  bool _useCurated = false;
+  NaiModel _model = NaiModel.fallback;
 
   List<VibeTransfer> get vibes => _vibes;
   bool get isProcessing => _isProcessing;
@@ -18,8 +19,9 @@ class VibeTransferNotifier extends ChangeNotifier {
     _service = service;
   }
 
-  void updateUseCurated(bool value) {
-    _useCurated = value;
+  /// The active image model; decides which id `/ai/encode-vibe` sees.
+  void updateModel(NaiModel model) {
+    _model = model;
   }
 
   Future<void> addVibe(Uint8List imageBytes) async {
@@ -37,7 +39,7 @@ class VibeTransferNotifier extends ChangeNotifier {
       final vibeVectorBytes = await _service!.encodeVibeImage(
         imageBase64: b64,
         informationExtracted: 1.0,
-        useCurated: _useCurated,
+        model: _model,
       );
       final vibeVectorB64 = base64Encode(vibeVectorBytes);
 

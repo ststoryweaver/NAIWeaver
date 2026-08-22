@@ -10,12 +10,17 @@ class CharacterManager {
 
   CharacterManager({required PreferencesService prefs}) : _prefs = prefs;
 
-  /// Maximum number of characters NAI supports per generation.
+  /// Character cap of the V4.5 models. V5 accepts 32 — callers pass the
+  /// active model's `maxCharacters` (see `NaiModel`) via [addCharacter].
   static const int maxCharacters = 6;
 
-  /// Add a new character. Returns updated characters list, or null if at capacity.
+  /// Add a new character. Returns updated characters list, or null if at
+  /// [maxCharacters] capacity.
   List<NaiCharacter>? addCharacter(List<NaiCharacter> current,
-      {String name = '', String prompt = '', String uc = ''}) {
+      {String name = '',
+      String prompt = '',
+      String uc = '',
+      int maxCharacters = CharacterManager.maxCharacters}) {
     if (current.length >= maxCharacters) return null;
     return List<NaiCharacter>.from(current)
       ..add(NaiCharacter(

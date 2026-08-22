@@ -35,6 +35,9 @@ class MetadataImportResult {
   final bool? smea;
   final bool? smeaDyn;
   final bool? decrisper;
+
+  /// Raw NovelAI model id from the Comment JSON (`model`), if present.
+  final String? model;
   final List<String>? activeStyleNames;
   final bool? isStyleEnabled;
   final List<NaiCharacter> characters;
@@ -55,6 +58,7 @@ class MetadataImportResult {
     this.smea,
     this.smeaDyn,
     this.decrisper,
+    this.model,
     this.activeStyleNames,
     this.isStyleEnabled,
     this.characters = const [],
@@ -72,7 +76,7 @@ class MetadataImportResult {
     if (characters.isNotEmpty) cats.add(ImportCategory.characters);
     if (seed != null) cats.add(ImportCategory.seed);
     if (activeStyleNames != null) cats.add(ImportCategory.styles);
-    if (width != null || scale != null || steps != null || sampler != null) cats.add(ImportCategory.settings);
+    if (width != null || scale != null || steps != null || sampler != null || model != null) cats.add(ImportCategory.settings);
     return cats;
   }
 }
@@ -214,6 +218,7 @@ class MetadataImportService {
     String? seed;
     double? width, height, scale, steps;
     String? sampler;
+    String? model;
     bool? smea, smeaDyn, decrisper;
     List<String>? activeStyleNames;
     bool? isStyleEnabled;
@@ -231,6 +236,11 @@ class MetadataImportService {
       smea = settings['sm'] as bool?;
       smeaDyn = settings['sm_dyn'] as bool?;
       decrisper = settings['dynamic_thresholding'] as bool?;
+      // Our own PNGs carry the wire id under `model` (since the V5 work);
+      // NovelAI's own exports name it in `Source` ("NovelAI Diffusion V5 …").
+      model = settings['model']?.toString() ??
+          settings['model_name']?.toString() ??
+          metadata['Source']?.toString();
       if (settings['seed'] != null) seed = settings['seed'].toString();
 
       // Restore active styles based on smart import toggle
@@ -380,6 +390,7 @@ class MetadataImportService {
       smea: smea,
       smeaDyn: smeaDyn,
       decrisper: decrisper,
+      model: model,
       activeStyleNames: activeStyleNames,
       isStyleEnabled: isStyleEnabled,
       characters: characters,

@@ -708,40 +708,79 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
             toolbarHeight: mobile ? 48 : 32,
             actions: [
               if (state.anlas != null && context.read<PreferencesService>().showAnlasTracker)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Tooltip(
-                    message: context.l.mainRefreshAnlas,
-                    child: InkWell(
-                    onTap: () => notifier.fetchAnlas(),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: mobile ? 10 : 8, vertical: mobile ? 4 : 2),
-                      decoration: BoxDecoration(
+                Builder(builder: (context) {
+                  // V5 on Opus is metered by a usage battery (free renders
+                  // refill over time); V4.5 stays unlimited. Show the battery
+                  // next to the Anlas count whenever a V5 model is active.
+                  final usage = state.subscription?.usage;
+                  final showBattery = state.model.isV5 && usage != null;
+                  final low = usage?.isLow ?? false;
+                  const warn = Color(0xFFFF9800);
+                  final batteryColor = low ? warn : t.headerText;
+                  final String tip;
+                  if (showBattery) {
+                    tip = 'Opus V5 allowance: ${usage.remainingPercent.toStringAsFixed(1)}% '
+                        '(~${usage.imagesLeft} images) · refills ~${usage.percentPerDay.toStringAsFixed(1)}%/day '
+                        '(~${usage.imagesPerDay} images). When empty, V5 renders cost Anlas; V4.5 stays free.\n'
+                        '${context.l.mainRefreshAnlas}';
+                  } else if (state.model.isV5 && state.subscription != null && !state.subscription!.isOpus) {
+                    tip = 'V5 costs Anlas on your plan (V4.5 too, below Opus).\n${context.l.mainRefreshAnlas}';
+                  } else {
+                    tip = context.l.mainRefreshAnlas;
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Tooltip(
+                      message: tip,
+                      child: InkWell(
+                        onTap: () => notifier.fetchAnlas(),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: t.borderMedium),
-                        color: t.borderSubtle,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.toll, size: mobile ? 14 : 11, color: t.headerText),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${state.anlas}',
-                            style: TextStyle(
-                              color: t.headerText,
-                              fontSize: t.fontSize(mobile ? 10 : 8),
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: mobile ? 10 : 8, vertical: mobile ? 4 : 2),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: low ? warn : t.borderMedium),
+                            color: t.borderSubtle,
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.toll, size: mobile ? 14 : 11, color: t.headerText),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${state.anlas}',
+                                style: TextStyle(
+                                  color: t.headerText,
+                                  fontSize: t.fontSize(mobile ? 10 : 8),
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (showBattery) ...[
+                                const SizedBox(width: 6),
+                                Icon(
+                                  low ? Icons.battery_alert : Icons.battery_charging_full,
+                                  size: mobile ? 14 : 11,
+                                  color: batteryColor,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${usage.remainingPercent.round()}% · ~${usage.imagesLeft}',
+                                  style: TextStyle(
+                                    color: batteryColor,
+                                    fontSize: t.fontSize(mobile ? 10 : 8),
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  ),
-                ),
+                  );
+                }),
               IconButton(
                 onPressed: () => showHelpDialog(context),
                 icon: Icon(Icons.help_outline, color: t.headerText, size: mobile ? 20 : 16),

@@ -333,12 +333,17 @@ class _CharacterEditorSheetState extends State<CharacterEditorSheet> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 padding: const EdgeInsets.all(8),
-                child: NaiGridSelector(
-                  selectedCoordinate: _coordinate,
-                  onCoordinateSelected: (coord) {
-                    setState(() => _coordinate = coord);
-                  },
-                ),
+                child: Builder(builder: (context) {
+                  final gen = context.watch<GenerationNotifier?>()?.state;
+                  return NaiGridSelector(
+                    freeform: gen?.model.caps.freeformPosition ?? false,
+                    aspectRatio: gen != null && gen.height > 0 ? gen.width / gen.height : 1,
+                    selectedCoordinate: _coordinate,
+                    onCoordinateSelected: (coord) {
+                      setState(() => _coordinate = coord);
+                    },
+                  );
+                }),
               ),
             ),
           ],

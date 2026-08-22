@@ -401,6 +401,8 @@ class _DirectorViewState extends State<DirectorView> {
                       SizedBox(
                         height: 180,
                         child: NaiGridSelector(
+                          freeform: context.select<GenerationNotifier?, bool>(
+                              (n) => n?.state.model.caps.freeformPosition ?? false),
                           selectedCoordinate: slot.position,
                           onCoordinateSelected: (coord) {
                             final updatedSlots = List<BeatCharacterSlot>.from(beat.characterSlots);

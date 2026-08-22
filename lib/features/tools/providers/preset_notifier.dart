@@ -119,9 +119,11 @@ class PresetNotifier extends ChangeNotifier {
       smea: smea ?? _state.selectedPreset!.smea,
       smeaDyn: smeaDyn ?? _state.selectedPreset!.smeaDyn,
       decrisper: decrisper ?? _state.selectedPreset!.decrisper,
+      model: _state.selectedPreset!.model,
       characters: characters ?? _state.selectedPreset!.characters,
       interactions: interactions ?? _state.selectedPreset!.interactions,
       directorReferences: directorReferences ?? _state.selectedPreset!.directorReferences,
+      vibeTransfers: _state.selectedPreset!.vibeTransfers,
     );
 
     _state = _state.copyWith(

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/l10n/l10n_extensions.dart';
+import '../../../core/models/nai_model.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/tag_service.dart';
 import '../../../core/utils/responsive.dart';
@@ -91,13 +92,8 @@ class AdvancedSettingsPanel extends StatelessWidget {
     }
   }
 
-  static const List<String> samplers = [
-    "k_euler_ancestral",
-    "k_euler",
-    "k_dpmpp_2s_ancestral",
-    "k_dpmpp_2m",
-    "k_dpmpp_sde",
-  ];
+  /// Samplers NovelAI offers for the V4/V5 model group (see [NaiModel.samplers]).
+  static List<String> get samplers => NaiModel.fallback.samplers;
 
   /// Callback for navigating to the style manager.
   final VoidCallback onManageStyles;
@@ -301,6 +297,7 @@ class _ExpandedSettingsContentState extends State<ExpandedSettingsContent> {
     final sectionGap = compact ? 16.0 : 24.0;
 
     final builders = <String, Widget Function()>{
+      'model': () => _buildModelSection(notifier, state, mobile, t, compact: compact),
       'dimensions_seed': () => _buildDimensionsSeed(notifier, state, mobile, t, compact: compact),
       'steps_scale': () => _buildStepsScale(notifier, state, mobile, t, compact: compact),
       'sampler_post': () => _buildSamplerPost(notifier, state, mobile, t, compact: compact),
@@ -516,7 +513,7 @@ class _ExpandedSettingsContentState extends State<ExpandedSettingsContent> {
           onChanged: (String? newValue) {
             if (newValue != null) notifier.updateSettings(sampler: newValue);
           },
-          items: AdvancedSettingsPanel.samplers.map<DropdownMenuItem<String>>((String value) {
+          items: _samplerItems(state).map<DropdownMenuItem<String>>((String value) {
             return DropdownMenuItem<String>(value: value, child: Text(value.toUpperCase(), style: TextStyle(fontSize: t.fontSize(10))));
           }).toList(),
         ),
@@ -560,56 +557,13 @@ class _ExpandedSettingsContentState extends State<ExpandedSettingsContent> {
       ),
     );
 
-    Widget curatedToggle = InkWell(
-      onTap: () => notifier.updateSettings(useCurated: !state.useCurated),
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: state.useCurated ? const Color(0xFF4CAF50) : t.borderMedium,
-          ),
-          color: state.useCurated
-              ? const Color(0xFF4CAF50).withValues(alpha: 0.15)
-              : Colors.transparent,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.auto_awesome,
-              size: mobile ? 16 : 14,
-              color: state.useCurated ? const Color(0xFF4CAF50) : t.textDisabled,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'CURATED',
-              style: TextStyle(
-                color: state.useCurated ? const Color(0xFF4CAF50) : t.textDisabled,
-                fontSize: t.fontSize(mobile ? 10 : 9),
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
     if (mobile || compact) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           samplerField,
           const SizedBox(height: 16),
-          Row(
-            children: [
-              furryToggle,
-              const SizedBox(width: 12),
-              curatedToggle,
-            ],
-          ),
+          furryToggle,
         ],
       );
     }
@@ -619,8 +573,218 @@ class _ExpandedSettingsContentState extends State<ExpandedSettingsContent> {
         Expanded(flex: 1, child: samplerField),
         const SizedBox(width: 24),
         furryToggle,
-        const SizedBox(width: 12),
-        curatedToggle,
+      ],
+    );
+  }
+
+  /// Sampler list for the active model; keeps a now-unlisted sampler (e.g.
+  /// restored from an old session) visible so the dropdown never asserts.
+  List<String> _samplerItems(GenerationState state) {
+    final items = List<String>.from(state.model.samplers);
+    if (!items.contains(state.sampler)) items.add(state.sampler);
+    return items;
+  }
+
+  Widget _buildModelSection(GenerationNotifier notifier, GenerationState state, bool mobile, VisionTokens t, {bool compact = false}) {
+    final labelStyle = TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(mobile ? 12 : 9), letterSpacing: 2, color: t.secondaryText);
+    final model = state.model;
+    final caps = model.caps;
+    final usage = state.subscription?.usage;
+    final costKind = notifier.costKind;
+
+    // Pre-flight cost label (free / V5 allowance / costs Anlas).
+    String? costLabel;
+    Color costColor = t.textDisabled;
+    switch (costKind) {
+      case NaiCostKind.free:
+        costLabel = 'FREE ON OPUS';
+        costColor = const Color(0xFF4CAF50);
+      case NaiCostKind.allowance:
+        costLabel = usage != null
+            ? 'V5 ALLOWANCE · ${usage.remainingPercent.toStringAsFixed(0)}% (~${usage.imagesLeft} LEFT)'
+            : 'USES V5 ALLOWANCE';
+        costColor = usage != null && usage.isLow ? const Color(0xFFFF9800) : t.accent;
+      case NaiCostKind.anlas:
+        costLabel = 'COSTS ANLAS';
+        costColor = const Color(0xFFFF9800);
+      case NaiCostKind.unknown:
+        costLabel = null;
+    }
+
+    Widget modelChip(NaiModel m) {
+      final selected = m == model;
+      final color = m.isV5 ? t.accent : const Color(0xFF4CAF50);
+      return Tooltip(
+        message: m.capsHint,
+        child: InkWell(
+          onTap: () => notifier.updateSettings(model: m),
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: mobile ? 12 : 10, vertical: mobile ? 8 : 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: selected ? color : t.borderMedium),
+              color: selected ? color.withValues(alpha: 0.15) : Colors.transparent,
+            ),
+            child: Text(
+              m.label.toUpperCase(),
+              style: TextStyle(
+                color: selected ? color : t.textDisabled,
+                fontSize: t.fontSize(mobile ? 10 : 9),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget toggle({
+      required String label,
+      required IconData icon,
+      required bool value,
+      required Color color,
+      required VoidCallback onTap,
+      required String tooltip,
+    }) {
+      return Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: value ? color : t.borderMedium),
+              color: value ? color.withValues(alpha: 0.15) : Colors.transparent,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: mobile ? 16 : 14, color: value ? color : t.textDisabled),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: value ? color : t.textDisabled,
+                    fontSize: t.fontSize(mobile ? 10 : 9),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final defaultsTip = "Reset steps / scale / sampler to NovelAI's defaults for "
+        "${model.label} (${model.defaults.steps} steps, scale ${model.defaults.scale.toStringAsFixed(1)})";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('MODEL', style: labelStyle),
+            const Spacer(),
+            Tooltip(
+              message: defaultsTip,
+              child: InkWell(
+                onTap: notifier.applyModelDefaults,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.restart_alt, size: mobile ? 14 : 12, color: t.textDisabled),
+                      const SizedBox(width: 4),
+                      Text('DEFAULTS', style: TextStyle(fontSize: t.fontSize(mobile ? 9 : 8), letterSpacing: 1.5, fontWeight: FontWeight.bold, color: t.textDisabled)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: NaiModel.values.map(modelChip).toList(),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          model.capsHint,
+          style: TextStyle(
+            fontSize: t.fontSize(mobile ? 9 : 8),
+            color: t.textMinimal,
+            letterSpacing: 0.5,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        if (caps.transparency || costLabel != null) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (caps.transparency)
+                toggle(
+                  label: 'TRANSPARENT BG',
+                  icon: Icons.blur_on,
+                  value: state.transparentBackground,
+                  color: t.accent,
+                  tooltip: 'Native RGBA output: adds "transparent background" to the prompt and requests straight alpha (V5 only)',
+                  onTap: () => notifier.updateSettings(transparentBackground: !state.transparentBackground),
+                ),
+              if (costLabel != null)
+                Tooltip(
+                  message: usage != null
+                      ? 'Opus V5 allowance: ${usage.remainingPercent.toStringAsFixed(1)}% left (~${usage.imagesLeft} images), '
+                          'refills ~${usage.percentPerDay.toStringAsFixed(1)}%/day (~${usage.imagesPerDay} images). '
+                          'When empty, V5 renders cost Anlas; V4.5 stays free.'
+                      : 'Free on Opus: one image, no base image, up to 1024x1024, up to 28 steps. '
+                          'V5 draws from the Opus usage limit; V4.5 is unlimited.',
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: costColor.withValues(alpha: 0.6)),
+                      color: costColor.withValues(alpha: 0.08),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          costKind == NaiCostKind.allowance
+                              ? Icons.battery_charging_full
+                              : (costKind == NaiCostKind.anlas ? Icons.toll : Icons.check_circle_outline),
+                          size: mobile ? 14 : 12,
+                          color: costColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          costLabel,
+                          style: TextStyle(
+                            color: costColor,
+                            fontSize: t.fontSize(mobile ? 9 : 8),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }

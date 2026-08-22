@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../core/widgets/model_gate.dart';
 import '../../../core/utils/file_picker_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -155,6 +156,10 @@ class _DirectorRefManagerState extends State<DirectorRefManager> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            ModelGateBanner(
+              capability: (caps) => caps.characterReference,
+              feature: 'Character Reference',
+            ),
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),

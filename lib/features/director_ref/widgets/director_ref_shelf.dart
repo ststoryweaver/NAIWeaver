@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import '../../../core/widgets/model_gate.dart';
 import '../../../core/utils/file_picker_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -157,23 +158,27 @@ class DirectorRefShelf extends StatelessWidget {
         final mobile = isMobile(context);
         return AnimatedSize(
           duration: const Duration(milliseconds: 200),
-          child: Container(
-            height: mobile ? 52 : 44,
-            margin: const EdgeInsets.only(top: 2, bottom: 2),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                ...refs.map((ref) => DirectorRefChip(
-                  reference: ref,
-                  onTap: () => _openEditor(context, notifier, ref),
-                  onLongPress: () => notifier.removeReference(ref.id),
-                )),
-                _AddRefButton(
-                  isProcessing: notifier.isProcessing,
-                  onTap: () => _showSavedRefsSheet(context),
-                  onLongPress: () => _showRefMenu(context),
-                ),
-              ],
+          child: ModelGate(
+            capability: (caps) => caps.characterReference,
+            feature: 'Character Reference',
+            child: Container(
+              height: mobile ? 52 : 44,
+              margin: const EdgeInsets.only(top: 2, bottom: 2),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  ...refs.map((ref) => DirectorRefChip(
+                    reference: ref,
+                    onTap: () => _openEditor(context, notifier, ref),
+                    onLongPress: () => notifier.removeReference(ref.id),
+                  )),
+                  _AddRefButton(
+                    isProcessing: notifier.isProcessing,
+                    onTap: () => _showSavedRefsSheet(context),
+                    onLongPress: () => _showRefMenu(context),
+                  ),
+                ],
+              ),
             ),
           ),
         );

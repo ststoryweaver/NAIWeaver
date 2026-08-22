@@ -18,6 +18,7 @@ import '../../../core/utils/nai_filename.dart';
 import '../../../core/utils/unique_file_path.dart';
 import '../../../core/utils/web_download.dart';
 import '../../../core/services/saf_export_service.dart';
+import '../../../core/models/nai_model.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/novel_ai_service.dart';
 import '../../../core/services/nai_text_service.dart';
@@ -100,7 +101,16 @@ class GenerationState {
   final bool showEnhanceButton;
   final bool showDirectorToolsButton;
   final bool furryMode;
-  final bool useCurated;
+
+  /// Active NovelAI image model (replaces the old `useCurated` bool).
+  final NaiModel model;
+
+  /// V5 "Transparent BG" toggle (native RGBA output). Ignored on models
+  /// without `caps.transparency`.
+  final bool transparentBackground;
+
+  /// Last `/user/subscription` read (tier, Anlas, V5 usage battery).
+  final NaiSubscription? subscription;
   final String? errorMessage;
   final int? anlas;
   final String characterEditorMode;
@@ -142,7 +152,9 @@ class GenerationState {
     this.showEnhanceButton = false,
     this.showDirectorToolsButton = false,
     this.furryMode = false,
-    this.useCurated = false,
+    this.model = NaiModel.fallback,
+    this.transparentBackground = false,
+    this.subscription,
     this.errorMessage,
     this.anlas,
     this.characterEditorMode = 'expanded',
@@ -185,7 +197,10 @@ class GenerationState {
     bool? showEnhanceButton,
     bool? showDirectorToolsButton,
     bool? furryMode,
-    bool? useCurated,
+    NaiModel? model,
+    bool? transparentBackground,
+    NaiSubscription? subscription,
+    bool clearSubscription = false,
     String? errorMessage,
     bool clearErrorMessage = false,
     int? anlas,
@@ -229,7 +244,9 @@ class GenerationState {
       showEnhanceButton: showEnhanceButton ?? this.showEnhanceButton,
       showDirectorToolsButton: showDirectorToolsButton ?? this.showDirectorToolsButton,
       furryMode: furryMode ?? this.furryMode,
-      useCurated: useCurated ?? this.useCurated,
+      model: model ?? this.model,
+      transparentBackground: transparentBackground ?? this.transparentBackground,
+      subscription: clearSubscription ? null : (subscription ?? this.subscription),
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       anlas: clearAnlas ? null : (anlas ?? this.anlas),
       characterEditorMode: characterEditorMode ?? this.characterEditorMode,
@@ -335,7 +352,7 @@ class GenerationNotifier extends ChangeNotifier {
   void updateVibeTransferNotifier(VibeTransferNotifier notifier) {
     _vibeTransferNotifier = notifier;
     notifier.updateService(_service);
-    notifier.updateUseCurated(_state.useCurated);
+    notifier.updateModel(_state.model);
   }
 
   void updateDirectorToolsNotifier(DirectorToolsNotifier notifier) {
@@ -346,6 +363,7 @@ class GenerationNotifier extends ChangeNotifier {
   void updateEnhanceNotifier(EnhanceNotifier notifier) {
     _enhanceNotifier = notifier;
     notifier.updateService(_service);
+    notifier.updateModel(_state.model);
   }
 
   void updateTextGenNotifier(TextGenNotifier notifier) {
@@ -397,9 +415,10 @@ class GenerationNotifier extends ChangeNotifier {
       showEnhanceButton: _prefs.showEnhanceButton,
       showDirectorToolsButton: _prefs.showDirectorToolsButton,
       furryMode: _prefs.furryMode,
-      useCurated: _prefs.useCurated,
+      model: _prefs.naiModel,
       characterEditorMode: _prefs.characterEditorMode,
     );
+    _propagateModel();
     loadCharacterPresets();
     notifyListeners();
 
@@ -409,10 +428,33 @@ class GenerationNotifier extends ChangeNotifier {
     fetchAnlas();
   }
 
+  /// Refreshes Anlas + the V5 usage battery from `/user/subscription`.
   Future<void> fetchAnlas() async {
-    final balance = await _service.getAnlasBalance();
-    _state = _state.copyWith(anlas: balance, clearAnlas: balance == null);
+    final sub = await _service.getSubscription();
+    _state = _state.copyWith(
+      anlas: sub?.anlas,
+      clearAnlas: sub == null,
+      subscription: sub,
+      clearSubscription: sub == null,
+    );
     notifyListeners();
+  }
+
+  /// Pre-flight cost classification for the next txt2img render
+  /// (free / V5 allowance / costs Anlas / unknown).
+  NaiCostKind get costKind => estimateCostKind(
+        model: _state.model,
+        width: _state.width.toInt(),
+        height: _state.height.toInt(),
+        steps: _state.steps.toInt(),
+        hasBaseImage: false,
+        subscription: _state.subscription,
+      );
+
+  /// Pushes the active model to the helpers that issue their own requests.
+  void _propagateModel() {
+    _vibeTransferNotifier?.updateModel(_state.model);
+    _enhanceNotifier?.updateModel(_state.model);
   }
 
   Future<void> reloadPresetsAndStyles() async {
@@ -545,13 +587,11 @@ class GenerationNotifier extends ChangeNotifier {
     bool? isStyleEnabled,
     List<NaiCharacter>? characters,
     bool? furryMode,
-    bool? useCurated,
+    NaiModel? model,
+    bool? transparentBackground,
   }) {
     if (furryMode != null) _prefs.setFurryMode(furryMode);
-    if (useCurated != null) {
-      _prefs.setUseCurated(useCurated);
-      _vibeTransferNotifier?.updateUseCurated(useCurated);
-    }
+    if (model != null) _prefs.setNaiModel(model);
     _state = _state.copyWith(
       width: width,
       height: height,
@@ -566,14 +606,32 @@ class GenerationNotifier extends ChangeNotifier {
       isStyleEnabled: isStyleEnabled,
       characters: characters,
       furryMode: furryMode,
-      useCurated: useCurated,
+      model: model,
+      transparentBackground: transparentBackground,
+    );
+    if (model != null) _propagateModel();
+    notifyListeners();
+  }
+
+  /// "Reset to model defaults": NovelAI's own steps / scale / sampler for the
+  /// active model (V5: 23 / 7.0, V4.5: 23 / 5.0). Never applied implicitly on
+  /// a model switch — a user's tuned values are theirs.
+  void applyModelDefaults() {
+    final d = _state.model.defaults;
+    _state = _state.copyWith(
+      steps: d.steps.toDouble(),
+      scale: d.scale,
+      sampler: d.sampler,
     );
     notifyListeners();
   }
 
   void addCharacter({String name = '', String prompt = '', String uc = ''}) {
     final result = _characterManager.addCharacter(_state.characters,
-        name: name, prompt: prompt, uc: uc);
+        name: name,
+        prompt: prompt,
+        uc: uc,
+        maxCharacters: _state.model.maxCharacters);
     if (result == null) return;
     _state = _state.copyWith(characters: result);
     notifyListeners();
@@ -994,8 +1052,13 @@ class GenerationNotifier extends ChangeNotifier {
       }
       final fullNegativePrompt = styleNegativeContent != null ? "$baseNegative, $styleNegativeContent" : baseNegative;
 
-      final dirPayload = _directorRefNotifier?.buildPayload();
-      final vibePayload = _vibeTransferNotifier?.buildPayload();
+      // V5 (launch) has neither Character Reference nor Vibe Transfer; the
+      // data is kept but not sent (the request builder drops it too).
+      final caps = _state.model.caps;
+      final dirPayload =
+          caps.characterReference ? _directorRefNotifier?.buildPayload() : null;
+      final vibePayload =
+          caps.vibeTransfer ? _vibeTransferNotifier?.buildPayload() : null;
 
       // Process wildcards in character prompts
       final processedCharacters = await Future.wait(
@@ -1030,7 +1093,8 @@ class GenerationNotifier extends ChangeNotifier {
         vibeTransferImages: vibePayload?.vibeVectors,
         vibeTransferStrengths: vibePayload?.strengths,
         vibeTransferInfoExtracted: vibePayload?.infoExtracted,
-        useCurated: _state.useCurated,
+        model: _state.model,
+        transparentBackground: _state.transparentBackground,
       );
 
       // Save active style info in metadata for round-trip restore
@@ -1277,7 +1341,7 @@ class GenerationNotifier extends ChangeNotifier {
   /// Returns [ApplyTagResult.characterLimitReached] without mutating state when
   /// the editor is already at the 6-character maximum.
   ApplyTagResult _addSavedCharacterAsCard(DanbooruTag tag) {
-    if (_state.characters.length >= CharacterManager.maxCharacters) {
+    if (_state.characters.length >= _state.model.maxCharacters) {
       return ApplyTagResult.characterLimitReached;
     }
     final prompt = (tag.expansion != null && tag.expansion!.trim().isNotEmpty)
@@ -1352,6 +1416,8 @@ class GenerationNotifier extends ChangeNotifier {
       smea: categories.contains(ImportCategory.settings) ? result.smea : null,
       smeaDyn: categories.contains(ImportCategory.settings) ? result.smeaDyn : null,
       decrisper: categories.contains(ImportCategory.settings) ? result.decrisper : null,
+      // Unknown / absent model id keeps the current model.
+      model: categories.contains(ImportCategory.settings) ? NaiModel.tryParse(result.model) : null,
       randomizeSeed: categories.contains(ImportCategory.seed) ? false : null,
       generatedImage: result.imageBytes,
       activeStyleNames: categories.contains(ImportCategory.styles) ? result.activeStyleNames : null,
@@ -1360,6 +1426,10 @@ class GenerationNotifier extends ChangeNotifier {
       interactions: categories.contains(ImportCategory.characters) ? result.interactions : null,
       autoPositioning: categories.contains(ImportCategory.characters) ? result.autoPositioning : null,
     );
+    if (categories.contains(ImportCategory.settings) && result.model != null) {
+      _prefs.setNaiModel(_state.model);
+      _propagateModel();
+    }
     notifyListeners();
   }
 
@@ -1393,6 +1463,7 @@ class GenerationNotifier extends ChangeNotifier {
       smea: _state.smea,
       smeaDyn: _state.smeaDyn,
       decrisper: _state.decrisper,
+      model: _state.model.id,
       characters: List<NaiCharacter>.from(_state.characters),
       interactions: List<NaiInteraction>.from(_state.interactions),
       directorReferences: _directorRefNotifier?.references.toList() ?? const [],
@@ -1417,6 +1488,8 @@ class GenerationNotifier extends ChangeNotifier {
       smea: preset.smea,
       smeaDyn: preset.smeaDyn,
       decrisper: preset.decrisper,
+      // Null = preset pre-dates model pinning; keep the current model.
+      model: NaiModel.tryParse(preset.model),
       characters: List<NaiCharacter>.from(preset.characters),
       interactions: List<NaiInteraction>.from(preset.interactions),
     );
@@ -1429,6 +1502,10 @@ class GenerationNotifier extends ChangeNotifier {
       _vibeTransferNotifier?.setVibes(preset.vibeTransfers);
     } else {
       _vibeTransferNotifier?.clearAll();
+    }
+    if (preset.model != null) {
+      _prefs.setNaiModel(_state.model);
+      _propagateModel();
     }
     notifyListeners();
   }
@@ -1468,7 +1545,7 @@ class GenerationNotifier extends ChangeNotifier {
         steps: settings.steps,
         sampler: settings.sampler,
         seed: seed,
-        useCurated: _state.useCurated,
+        model: _state.model,
       );
 
       // Auto-save the preview as well, so it's in the gallery
@@ -1522,7 +1599,7 @@ class GenerationNotifier extends ChangeNotifier {
         seed: seed,
         characters: processedChars,
         useCoords: request.useCoords,
-        useCurated: _state.useCurated,
+        model: _state.model,
       );
 
       _lastMetadata = result.metadata;
@@ -1563,8 +1640,11 @@ class GenerationNotifier extends ChangeNotifier {
           : (int.tryParse(seedController.text) ?? math.Random().nextInt(4294967295));
       if (_state.randomizeSeed) seedController.text = seed.toString();
 
-      final dirPayload = _directorRefNotifier?.buildPayload();
-      final vibePayload = _vibeTransferNotifier?.buildPayload();
+      final caps = _state.model.caps;
+      final dirPayload =
+          caps.characterReference ? _directorRefNotifier?.buildPayload() : null;
+      final vibePayload =
+          caps.vibeTransfer ? _vibeTransferNotifier?.buildPayload() : null;
 
       final result = await _service.generateImage(
         prompt: request.prompt,
@@ -1595,7 +1675,8 @@ class GenerationNotifier extends ChangeNotifier {
         vibeTransferImages: vibePayload?.vibeVectors,
         vibeTransferStrengths: vibePayload?.strengths,
         vibeTransferInfoExtracted: vibePayload?.infoExtracted,
-        useCurated: _state.useCurated,
+        model: _state.model,
+        transparentBackground: _state.transparentBackground,
       );
 
       Uint8List finalBytes = result.imageBytes;
@@ -1695,7 +1776,8 @@ class GenerationNotifier extends ChangeNotifier {
       activeStyleNames: _state.activeStyleNames,
       isStyleEnabled: _state.isStyleEnabled,
       furryMode: _state.furryMode,
-      useCurated: _state.useCurated,
+      model: _state.model,
+      transparentBackground: _state.transparentBackground,
       characters: _state.characters,
       interactions: _state.interactions,
       directorReferences: _directorRefNotifier?.references.toList() ?? [],
@@ -1727,10 +1809,12 @@ class GenerationNotifier extends ChangeNotifier {
       activeStyleNames: snapshot.activeStyleNames,
       isStyleEnabled: snapshot.isStyleEnabled,
       furryMode: snapshot.furryMode,
-      useCurated: snapshot.useCurated,
+      model: snapshot.model,
+      transparentBackground: snapshot.transparentBackground,
       characters: snapshot.characters,
       interactions: snapshot.interactions,
     );
+    _propagateModel();
 
     // Restore director references
     if (snapshot.directorReferences.isNotEmpty) {

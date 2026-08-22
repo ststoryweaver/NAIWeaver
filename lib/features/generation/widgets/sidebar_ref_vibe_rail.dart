@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/widgets/model_gate.dart';
 import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
@@ -189,28 +190,32 @@ class _RefSection extends StatelessWidget {
     return Consumer<DirectorRefNotifier>(
       builder: (context, notifier, _) {
         final refs = notifier.references;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ...refs.map((ref) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: _RailChip(
-                imageBytes: ref.originalImageBytes,
-                borderColor: _refBorderColor(ref.type, t),
-                icon: _refIcon(ref.type),
-                enabled: ref.enabled,
-                onTap: () => _openEditor(context, notifier, ref),
-                onLongPress: () => notifier.removeReference(ref.id),
+        return ModelGate(
+          capability: (caps) => caps.characterReference,
+          feature: 'Character Reference',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...refs.map((ref) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _RailChip(
+                  imageBytes: ref.originalImageBytes,
+                  borderColor: _refBorderColor(ref.type, t),
+                  icon: _refIcon(ref.type),
+                  enabled: ref.enabled,
+                  onTap: () => _openEditor(context, notifier, ref),
+                  onLongPress: () => notifier.removeReference(ref.id),
+                ),
+              )),
+              _RailAddButton(
+                label: 'REF',
+                color: t.accentRefCharacter,
+                isProcessing: notifier.isProcessing,
+                onTap: () => _showSavedRefsSheet(context),
+                onLongPress: () => _showRefMenu(context),
               ),
-            )),
-            _RailAddButton(
-              label: 'REF',
-              color: t.accentRefCharacter,
-              isProcessing: notifier.isProcessing,
-              onTap: () => _showSavedRefsSheet(context),
-              onLongPress: () => _showRefMenu(context),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -289,26 +294,30 @@ class _VibeSection extends StatelessWidget {
     return Consumer<VibeTransferNotifier>(
       builder: (context, notifier, _) {
         final vibes = notifier.vibes;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ...vibes.map((vibe) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: _RailChip(
-                imageBytes: vibe.originalImageBytes,
-                borderColor: t.accent,
-                enabled: vibe.enabled,
-                onTap: () => _openEditor(context, notifier, vibe),
-                onLongPress: () => notifier.removeVibe(vibe.id),
+        return ModelGate(
+          capability: (caps) => caps.vibeTransfer,
+          feature: 'Vibe Transfer',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...vibes.map((vibe) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _RailChip(
+                  imageBytes: vibe.originalImageBytes,
+                  borderColor: t.accent,
+                  enabled: vibe.enabled,
+                  onTap: () => _openEditor(context, notifier, vibe),
+                  onLongPress: () => notifier.removeVibe(vibe.id),
+                ),
+              )),
+              _RailAddButton(
+                label: 'VIBE',
+                color: t.accent,
+                isProcessing: notifier.isProcessing,
+                onTap: () => _pickAndAdd(context),
               ),
-            )),
-            _RailAddButton(
-              label: 'VIBE',
-              color: t.accent,
-              isProcessing: notifier.isProcessing,
-              onTap: () => _pickAndAdd(context),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

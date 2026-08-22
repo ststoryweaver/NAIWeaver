@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../core/widgets/model_gate.dart';
 import '../../../core/utils/file_picker_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -162,6 +163,10 @@ class _VibeTransferManagerState extends State<VibeTransferManager> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            ModelGateBanner(
+              capability: (caps) => caps.vibeTransfer,
+              feature: 'Vibe Transfer',
+            ),
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),

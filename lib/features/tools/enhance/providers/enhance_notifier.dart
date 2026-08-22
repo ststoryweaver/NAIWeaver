@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
+import '../../../../core/models/nai_model.dart';
 import '../../../../core/services/novel_ai_service.dart';
 import '../../../generation/models/nai_character.dart';
 import '../models/enhance_config.dart';
 
 class EnhanceNotifier extends ChangeNotifier {
   NovelAIService? _service;
+  NaiModel _model = NaiModel.fallback;
 
   static const String defaultNegativePrompt = 'lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]';
 
@@ -43,6 +45,12 @@ class EnhanceNotifier extends ChangeNotifier {
 
   void updateService(NovelAIService? service) {
     _service = service;
+  }
+
+  /// Enhance renders with the same model as the main editor (it used to be
+  /// hard-wired to V4.5 Full regardless of the CURATED toggle).
+  void updateModel(NaiModel model) {
+    _model = model;
   }
 
   Future<void> setSourceImage(Uint8List bytes) async {
@@ -139,6 +147,7 @@ class EnhanceNotifier extends ChangeNotifier {
         characters: _characters,
         interactions: _interactions,
         useCoords: _useCoords,
+        model: _model,
       );
 
       _resultBytes = result.imageBytes;

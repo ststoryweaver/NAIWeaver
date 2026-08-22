@@ -6,6 +6,7 @@ import '../../../core/theme/theme_extensions.dart';
 import '../../../core/utils/app_snackbar.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/services/novel_ai_service.dart';
+import '../../../core/widgets/model_gate.dart';
 import '../../vibe_transfer/providers/vibe_transfer_notifier.dart';
 import '../../vibe_transfer/widgets/vibe_transfer_chip.dart';
 import '../../vibe_transfer/widgets/vibe_transfer_editor_sheet.dart';
@@ -63,22 +64,26 @@ class VibeTransferShelf extends StatelessWidget {
 
         return AnimatedSize(
           duration: const Duration(milliseconds: 200),
-          child: Container(
-            height: mobile ? 52 : 44,
-            margin: const EdgeInsets.only(top: 2, bottom: 2),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                ...vibes.map((vibe) => VibeTransferChip(
-                      vibe: vibe,
-                      onTap: () => _openEditor(context, notifier, vibe),
-                      onLongPress: () => notifier.removeVibe(vibe.id),
-                    )),
-                _AddVibeButton(
-                  isProcessing: notifier.isProcessing,
-                  onTap: () => _pickAndAdd(context),
-                ),
-              ],
+          child: ModelGate(
+            capability: (caps) => caps.vibeTransfer,
+            feature: 'Vibe Transfer',
+            child: Container(
+              height: mobile ? 52 : 44,
+              margin: const EdgeInsets.only(top: 2, bottom: 2),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  ...vibes.map((vibe) => VibeTransferChip(
+                        vibe: vibe,
+                        onTap: () => _openEditor(context, notifier, vibe),
+                        onLongPress: () => notifier.removeVibe(vibe.id),
+                      )),
+                  _AddVibeButton(
+                    isProcessing: notifier.isProcessing,
+                    onTap: () => _pickAndAdd(context),
+                  ),
+                ],
+              ),
             ),
           ),
         );

@@ -17,6 +17,10 @@ class GenerationPreset {
   final bool smea;
   final bool smeaDyn;
   final bool decrisper;
+
+  /// NovelAI model id the preset pins (`nai-diffusion-5-full` …). Null =
+  /// "preset doesn't pin a model" (every preset saved before V5).
+  final String? model;
   final List<NaiCharacter> characters;
   final List<NaiInteraction> interactions;
   final List<DirectorReference> directorReferences;
@@ -34,6 +38,7 @@ class GenerationPreset {
     required this.smea,
     required this.smeaDyn,
     required this.decrisper,
+    this.model,
     this.characters = const [],
     this.interactions = const [],
     this.directorReferences = const [],
@@ -52,6 +57,7 @@ class GenerationPreset {
         'smea': smea,
         'smeaDyn': smeaDyn,
         'decrisper': decrisper,
+        if (model != null) 'model': model,
         'characters': characters.map((c) => c.toJson()).toList(),
         'interactions': interactions.map((i) => i.toJson()).toList(),
         'directorReferences': directorReferences.map((r) => r.toJson()).toList(),
@@ -70,6 +76,7 @@ class GenerationPreset {
         smea: json['smea'] ?? false,
         smeaDyn: json['smeaDyn'] ?? false,
         decrisper: json['decrisper'] ?? false,
+        model: json['model'] as String?,
         characters: (json['characters'] as List<dynamic>?)
                 ?.map((c) => NaiCharacter.fromJson(c as Map<String, dynamic>))
                 .toList() ??

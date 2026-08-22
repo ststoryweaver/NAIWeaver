@@ -127,6 +127,7 @@ class TagService {
       if (kIsWeb) {
         final content = await rootBundle.loadString('Tags/high-frequency-tags-list.json');
         _tags = await compute(_parseTags, content);
+        _mergeNaiV5Tags();
         _tags.sort((a, b) => b.count.compareTo(a.count));
         _tagSet = null;
         _buildAliasIndex();
@@ -141,6 +142,7 @@ class TagService {
 
       // Using compute for heavy JSON parsing to keep UI responsive
       _tags = await compute(_parseTags, await file.readAsString());
+      _mergeNaiV5Tags();
 
       // Sort tags by count descending for faster suggestion ranking
       _tags.sort((a, b) => b.count.compareTo(a.count));
@@ -167,6 +169,37 @@ class TagService {
       }
     }
     _aliasToTagIndex = index;
+  }
+
+  /// Tags NovelAI introduced with Diffusion V5 (journal post, 2026-08-21).
+  /// They are not in the Danbooru-derived tag list, so they are merged in
+  /// here to make them autocomplete. Counts are nominal — just enough to
+  /// surface above the long tail.
+  static const List<String> naiV5Tags = [
+    'depthness',
+    'attractive male',
+    'low complexity',
+    'medium complexity',
+    'high complexity',
+    'ultra complexity',
+    'has alpha',
+    'alpha transparency',
+    'transparent background',
+    'meta:novel era',
+    'meta:golden era',
+    'visual novel art',
+    'visual novel bg',
+    'visual novel cg',
+    'visual novel chibi',
+    'visual novel sprite',
+  ];
+
+  void _mergeNaiV5Tags() {
+    final existing = _tags.map((t) => t.tag.toLowerCase()).toSet();
+    for (final tag in naiV5Tags) {
+      if (existing.contains(tag)) continue;
+      _tags.add(DanbooruTag(tag: tag, count: 500, typeName: 'general'));
+    }
   }
 
   static List<DanbooruTag> _parseTags(String jsonString) {

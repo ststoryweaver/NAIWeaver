@@ -484,16 +484,17 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            _buildToggle(label: "SMEA", value: preset.smea, onChanged: (v) => notifier.updateCurrentPreset(smea: v), t: t),
-            const SizedBox(width: 24),
-            _buildToggle(label: "SMEA DYN", value: preset.smeaDyn, onChanged: (v) => notifier.updateCurrentPreset(smeaDyn: v), t: t),
-            const SizedBox(width: 24),
-            _buildToggle(label: "DECRISPER", value: preset.decrisper, onChanged: (v) => notifier.updateCurrentPreset(decrisper: v), t: t),
-          ],
-        ),
+        // SMEA / SMEA DYN / Decrisper are not supported by any V4+ model
+        // (NovelAI returns HTTP 500 for `sm:true`); the request builder strips
+        // them, and the toggles are hidden. Presets that still carry them keep
+        // the flags for round-tripping but they have no effect.
+        if (preset.smea || preset.smeaDyn || preset.decrisper) ...[
+          const SizedBox(height: 12),
+          Text(
+            'This preset still has SMEA / Decrisper flags from the V3 era — they are ignored on V4.5 and V5.',
+            style: TextStyle(fontSize: t.fontSize(8), color: t.textDisabled, fontStyle: FontStyle.italic),
+          ),
+        ],
       ],
     );
   }
@@ -569,30 +570,6 @@ class _PresetManagerContentState extends State<_PresetManagerContent> {
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildToggle({required String label, required bool value, required Function(bool) onChanged, required VisionTokens t}) {
-    return Row(
-      children: [
-        Transform.scale(
-          scale: 0.6,
-          child: SizedBox(
-            height: 24,
-            width: 32,
-            child: Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: t.textPrimary,
-              activeTrackColor: t.textDisabled,
-              inactiveThumbColor: t.textMinimal,
-              inactiveTrackColor: t.borderSubtle,
-            ),
-          ),
-        ),
-        const SizedBox(width: 2),
-        Text(label, style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(8), letterSpacing: 1)),
       ],
     );
   }

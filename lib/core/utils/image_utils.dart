@@ -371,3 +371,20 @@ Map<String, dynamic>? parseCommentJson(String comment) {
     }
   }
 }
+
+/// True when [bytes] is a PNG whose IHDR colour type carries an alpha channel
+/// (4 = grey+alpha, 6 = RGBA). Cheap header sniff — no decode. NovelAI V5
+/// returns colour type 6 when transparency is requested.
+bool pngHasAlpha(Uint8List bytes) {
+  if (bytes.length < 29) return false;
+  const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+  for (var i = 0; i < sig.length; i++) {
+    if (bytes[i] != sig[i]) return false;
+  }
+  // 8 (sig) + 4 (len) + 4 ('IHDR') + 13 data: width(4) height(4) depth(1) colorType(1)
+  if (bytes[12] != 0x49 || bytes[13] != 0x48 || bytes[14] != 0x44 || bytes[15] != 0x52) {
+    return false;
+  }
+  final colorType = bytes[25];
+  return colorType == 4 || colorType == 6;
+}
