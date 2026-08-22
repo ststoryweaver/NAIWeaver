@@ -1,12 +1,12 @@
 NAIWeaver
 
-NovelAIの画像生成API (Diffusion V4.5) 用の非公式クロスプラットフォーム・フロントエンドです。Flutterで構築されており、Windows、Linux、Android、Webに対応しています。
+NovelAIの画像生成API (Diffusion V5 / V4.5) 用の非公式クロスプラットフォーム・フロントエンドです。Flutterで構築されており、Windows、Linux、Android、Webに対応しています。
 
 こちらのGitHubページでテスト可能です: https://ststoryweaver.github.io/NAIWeaver/
 機能 (Features)
 画像生成 (Image Generation)
 
-    NovelAI V4.5 API統合: txt2img、img2img、インペインティング、Director Reference (Precise reference)、Vibe Transfer、複数キャラクター生成に対応。
+    NovelAI V5 / V4.5 API統合: txt2img、img2img、インペインティング、Director Reference (Precise reference)、Vibe Transfer、複数キャラクター生成に対応。モデルごとの機能テーブルで、V5では自由なキャラクター配置（最大32人）、ネイティブ透過、自動Text、Opus使用量バッテリーに対応（Vibe Transfer / Character ReferenceはNovelAI側がV5で有効化するまでV4.5のみ）。
 
     複数キャラクター生成: ピクセルレベルでの位置指定やマルチ参加者インタラクションが可能。
 

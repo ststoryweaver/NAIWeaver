@@ -15,10 +15,23 @@
 - **"DEFAULTS" button** in the MODEL section resets steps / scale / sampler to NovelAI's defaults for the active model (V5: 23 steps, scale 7.0 · V4.5: 23 steps, scale 5.0). Switching models never rewrites your tuned values.
 - **V5 prompt helpers** — `k_dpmpp_2m_sde` added to the sampler list; the new V5 tags (`depthness`, `attractive male`, `low|medium|high|ultra complexity`, `has alpha`, `meta:novel era`, `visual novel …`) autocomplete; V5 quality/UC presets ship as styles for new installs (`Quality V5 (NAI Standard)`, `Quality V5 (NAI Light)`, `Light V5 - NAI`).
 - **Model is remembered everywhere** — session snapshot, generation presets (older presets simply don't pin a model), backups (`nai_model`), and PNG metadata (`model` is written and imported).
+- **Noise schedule, guidance rescale and Variety+** — three settings NovelAI's web UI exposes that the app did not, so certain images simply could not be reproduced here. Each is gated per model (V5 forces karras and has no Variety+ at launch, so it hides the controls instead of offering no-ops); V4.5 bodies now send `cfg_rescale` / `skip_cfg_above_sigma` exactly as NovelAI's own frontend does. All three are saved in presets, read back from PNG metadata on import, and sent for img2img/inpaint as well as txt2img (#35).
+- **Vibe Transfer and Character Reference are now mutually exclusive**, matching NovelAI's own UI. The API has no contract for receiving both and could return an empty/truncated image for the combination — the source of the corrupt files that froze the gallery in #24. The exclusion is enforced in the request builder (Character Reference wins), and the Vibe controls grey out with an explanation while a reference is active instead of silently having their data dropped.
+- **Web: importing images works** — on web the file picker returns no path, so every "pick an image" action silently did nothing. Character Reference / Vibe Transfer imports (shelf, sidebar rail, both managers), img2img / Enhance / Director Tools "upload from device", mask load and the Canvas image-layer import now read the picked bytes from memory (#8). Adapted from [@RedContritio](https://github.com/RedContritio)'s fork.
 
 ### Fixes
 - **Preset editor SMEA / SMEA DYN / Decrisper toggles removed** — no V4+ model supports them; presets that still carry the flags show a note instead.
 - **Editing a preset in the Preset Manager no longer drops its Vibe Transfers.**
+- **PNG metadata was never actually written or stripped.** `package:image`'s PNG encoder ignores its own `textData` field, so since the first release `injectMetadata` never wrote our Comment JSON (smart style import and model pinning couldn't work from our own images), "Strip metadata on export" and the pack-export strip option shipped the full prompt anyway, and WebP/JPEG metadata was dropped on import. All three now work on the actual bytes; NovelAI's own `Source` chunk is kept, and the base64 image/mask/reference payloads are left out of the Comment the way NovelAI does.
+- **Numerical weights highlight anywhere in the prompt**, not just at the very start (`girl, 2::tag::`), and positive/negative weights use NovelAI's warm/cool colours (#38).
+- **Negative-prompt tag suggestions can be clicked on desktop** — the list cleared itself on focus loss before the click landed, which is why it reproduced on Windows but not Android (#37).
+- **Transparency checkerboard** — only drawn behind images that actually contain transparent pixels (the old check said "yes" for every RGBA PNG, i.e. almost everything NovelAI returns), and clipped to the image instead of the whole preview box, so no more stray checkerboard strip under portrait renders on Android.
+- **Web: no more `Unsupported operation: _Namespace` console errors** from the Wildcard Manager, img2img auto-save or Tag Library examples — filesystem-only paths are gated off on web (#8).
+- **Anlas chip** shows the V5 usage percentage only; the MODEL section follows the theme's section order.
+- **Duplicating a preset** no longer drops its model pin and Vibe Transfers.
+
+### Under the hood
+- `NovelAIService` builds every NovelAI URL and auth header through one helper (`_imageUrl` / `_apiUrl` / `_headers`), so a proxy or self-hosted endpoint is a one-place change. A standalone Anlas cost estimator (`nai_cost_estimator.dart`, mirroring the official frontend's formula) ships as a library function, not yet surfaced in the UI. Both ported from [@RedContritio](https://github.com/RedContritio)'s fork (MIT).
 
 ## v0.9.2
 
