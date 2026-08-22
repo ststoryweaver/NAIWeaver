@@ -139,7 +139,7 @@
 ## Architecture
 - **Language/Framework**: Dart 3.10.7+ / Flutter (stable channel)
 - **Primary Target**: Windows desktop (also supports Android, iOS, Linux, macOS, Web)
-- **API**: NovelAI image generation (`https://image.novelai.net/ai/generate-image`), model `nai-diffusion-4-5-full`
+- **API**: NovelAI image generation (`https://image.novelai.net/ai/generate-image`), models `nai-diffusion-5-full` / `-5-curated` / `-4-5-full` / `-4-5-curated` via `NaiModel` (`lib/core/models/nai_model.dart`, capability table) and the pure request builder `lib/core/services/nai_request_builder.dart`
 - **State Management**: Provider + ChangeNotifier with `MultiProvider` in `main.dart`
 - **Theme**: Token-based system via `VisionTokens` with 8 built-in themes + custom themes
 

@@ -1,12 +1,15 @@
 # NAIWeaver Feature Catalog
 
 ## Core Generation
-- **Text-to-Image**: Full NovelAI Diffusion V4.5 generation with prompt/negative prompt, configurable dimensions, steps, scale, sampler selection
+- **Text-to-Image**: Full NovelAI Diffusion V5 / V4.5 generation with prompt/negative prompt, configurable dimensions, steps, scale, sampler selection
+- **Model Picker + Capability Layer**: V5 Full · V5 Curated · V4.5 Full · V4.5 Curated. Per-model capabilities (`NaiModel`/`NaiCaps`) gate the UI (Vibe Transfer / Character Reference greyed on V5 with a tooltip) and sanitise the request (V5: karras forced, no SMEA, raw coordinates, `params_version` 4; V4.5 unchanged). "DEFAULTS" resets steps/scale/sampler to NovelAI's per-model defaults
+- **V5 Extras**: free-drag character positioning (32 characters), TRANSPARENT BG toggle (RGBA output over a checkerboard), auto-`Text:` from quoted strings, V5 tags in autocomplete, V5 quality/UC style presets
+- **Opus V5 Usage Battery**: Anlas chip shows the V5 allowance (% / ~images left, warning colour when low) and the MODEL section shows a pre-flight FREE / V5 ALLOWANCE / COSTS ANLAS label
 - **Img2Img / Inpainting**: Source image transformation with strength/noise controls, client-side mask compositing for selective inpainting, canvas editor integration, mask save/load (export to PNG, load pre-painted masks), img2img presets (save/load/delete named settings), and mask customization (adjustable mask color, opacity, and overlay patterns with zoom/pan support)
 - **Img2Img Iterative Workflow**: "Use Result as Source" button to feed the current generation back as the img2img source for iterative refinement
 - **Img2Img Prompt Auto-Import**: Automatically extract and apply prompt from PNG metadata (tEXt + iTXt chunks) when loading a source image
 - **Custom Output Folder**: Configurable output directory for desktop platforms (Windows, Linux)
-- **Multi-Character Generation**: Up to 6 characters with independent prompts, negative prompts, and pixel-coordinate positioning via `char_captions` and `use_coords`
+- **Multi-Character Generation**: Up to 6 characters (V4.5) / 32 (V5) with independent prompts, negative prompts, and pixel-coordinate positioning via `char_captions` and `use_coords`
 - **Character Interactions**: Typed interaction tags (`source#action`, `target#action`, `mutual#action`) automatically injected into character captions, with multi-participant support (multiple source/target characters per interaction)
 - **Expanded Character Editor**: Inline character editor in the settings panel with per-character tag suggestions, UC editing, position grid, and character presets — alternative to the compact shelf
 - **Character Presets**: Save and load reusable character configurations (name, prompt, UC) for quick character switching

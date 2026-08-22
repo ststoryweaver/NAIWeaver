@@ -1,4 +1,4 @@
-# NovelAI API V4.5 Documentation
+# NovelAI API V4.5 / V5 Documentation
 
 ## Endpoint
 `POST https://image.novelai.net/ai/generate-image`
@@ -9,13 +9,40 @@
 | `Authorization` | `Bearer <API_KEY>` |
 | `Content-Type` | `application/json` |
 
+## Models
+
+| `model` | family | inpainting id | notes |
+|---|---|---|---|
+| `nai-diffusion-5-full` | V5 | `nai-diffusion-5-full-inpainting` | |
+| `nai-diffusion-5-curated` | V5 | `nai-diffusion-4-5-curated-inpainting` | NovelAI's UI routes V5 Curated inpaint to the V4.5 Curated model until V5 Curated inpainting ships |
+| `nai-diffusion-4-5-full` | V4.5 | `nai-diffusion-4-5-full-inpainting` | app default (`NaiModel.fallback`) |
+| `nai-diffusion-4-5-curated` | V4.5 | `nai-diffusion-4-5-curated-inpainting` | |
+
+The app keeps a per-model capability table in `lib/core/models/nai_model.dart` (`NaiCaps`) that mirrors NovelAI's own frontend, and `lib/core/services/nai_request_builder.dart` sanitises the body per model:
+
+| | V4.5 | V5 |
+|---|---|---|
+| `params_version` | 3 | 4 |
+| `noise_schedule` | `karras` | `karras` (forced — no picker) |
+| `sm` / `sm_dyn` | sent, always `false` (`true` → HTTP 500) | not sent |
+| `dynamic_thresholding` | `false` | `false` |
+| Vibe Transfer (`reference_*`) | sent | **not sent** (not available at launch) |
+| Character Reference (`director_reference_*`) | sent | **not sent** |
+| character `centers` | 5×5 grid values | raw `{x,y}` (3 dp), up to 32 characters |
+| `deliberate_euler_ancestral_bug` / `prefer_brownian` | — | `false` / `true` with `k_euler_ancestral` |
+| `straight_alpha` / `tag_hint_transparent_background` | — | `true` when Transparent BG is on (RGBA PNG result) |
+| `ddim` sampler | — | remapped to `k_euler_ancestral` |
+| auto `Text:` block | — | quoted `"…"` / `「…」` in the prompt appended as `\nText: …` |
+
+`GET https://image.novelai.net/user/subscription` (bearer) returns `{tier, active, trainingStepsLeft{fixedTrainingStepsLeft, purchasedTrainingSteps}, usage?}`; `usage = {percent, isNegative, timeUntilNextPercent}` is the Opus V5 allowance (absent below Opus). `api.novelai.net` is kept only as a fallback.
+
 ## Request Body
 
 ```json
 {
   "input": "<prompt with styles applied>",
-  "model": "nai-diffusion-4-5-full",
-  "action": "generate | img2img",
+  "model": "nai-diffusion-5-full | nai-diffusion-4-5-full | …",
+  "action": "generate | img2img | infill",
   "parameters": { ... }
 }
 ```
@@ -26,7 +53,7 @@
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `params_version` | int | `3` | API parameter version |
+| `params_version` | int | `3` (V4.5) / `4` (V5) | API parameter version |
 | `width` | int | `832` | Image width in pixels |
 | `height` | int | `1216` | Image height in pixels |
 | `scale` | double | `6.0` | Guidance scale (CFG) |
@@ -104,7 +131,7 @@ NAIWeaver supports multi-participant interactions where multiple characters can 
 | `extra_noise_seed` | int | Seed for extra noise (usually same as main seed) |
 | `add_original_image` | bool | Whether to blend with original |
 
-Set `action: "img2img"` in the request body. For inpainting, set `action: "infill"` and use the model `nai-diffusion-4-5-full-inpainting`.
+Set `action: "img2img"` in the request body. For inpainting, set `action: "infill"` and use the model's inpainting id (see **Models**).
 
 **Reference Inpainting:** Director Reference and Vibe Transfer parameters are supported during `infill` actions, allowing character/style references to guide what the AI infills into masked regions. The same reference parameters used for `generate` are passed alongside `image`, `mask`, and other inpainting parameters.
 

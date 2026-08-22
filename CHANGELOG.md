@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.9.3
+
+### New
+- **NovelAI Diffusion V5 support** — a new **MODEL** section at the top of the settings panel picks **V5 Full · V5 Curated · V4.5 Full · V4.5 Curated** (it replaces the old CURATED toggle; your previous choice is migrated and nobody is moved to V5 automatically). Per-model capabilities are data (`lib/core/models/nai_model.dart`), mirroring NovelAI's own frontend table as of launch day, so the request sent to NovelAI is always valid for the chosen model:
+  - V5 bodies force `noise_schedule: karras`, send `params_version: 4`, drop SMEA/SMEA DYN and the Vibe Transfer / Character Reference arrays (not available on V5 at launch — the data is kept and used again when you switch back), and send raw character coordinates.
+  - V4.5 bodies are unchanged, except that stale `SMEA`/`SMEA DYN` preset flags are no longer sent (NovelAI returns HTTP 500 for them on every V4+ model).
+  - Inpainting routes to `nai-diffusion-5-full-inpainting`; V5 Curated uses the V4.5 Curated inpainting model, exactly as NovelAI's UI does until V5 Curated inpainting ships.
+  - Enhance now renders with the selected model (it was always V4.5 Full before, even with CURATED on).
+- **V5 free character positioning** — with a V5 model the character position picker becomes a free-drag canvas (aspect-matched to the current resolution, 3-decimal precision, faint 5×5 guides) instead of the 5×5 grid; up to **32** characters per generation. V4.5 keeps the grid and the 6-character cap.
+- **V5 native transparency** — a **TRANSPARENT BG** toggle (V5 only) appends `transparent background` to the prompt and requests straight alpha; the result is a real RGBA PNG, shown over a checkerboard in the viewer and saved as-is (metadata is injected without re-encoding).
+- **V5 auto-Text** — on V5, a quoted string in the prompt (`"..."` or `「...」`) is promoted to a `Text:` block the way NovelAI's frontend does; a manual `Text:` block disables it.
+- **Opus V5 usage battery** — the Anlas chip shows the V5 allowance (`%` and `~images left`, orange when low) whenever a V5 model is selected; the MODEL section shows a pre-flight label (**FREE ON OPUS** / **V5 ALLOWANCE** / **COSTS ANLAS**) for the next render. Subscription data now comes from `image.novelai.net/user/subscription` (the legacy host is a fallback).
+- **"DEFAULTS" button** in the MODEL section resets steps / scale / sampler to NovelAI's defaults for the active model (V5: 23 steps, scale 7.0 · V4.5: 23 steps, scale 5.0). Switching models never rewrites your tuned values.
+- **V5 prompt helpers** — `k_dpmpp_2m_sde` added to the sampler list; the new V5 tags (`depthness`, `attractive male`, `low|medium|high|ultra complexity`, `has alpha`, `meta:novel era`, `visual novel …`) autocomplete; V5 quality/UC presets ship as styles for new installs (`Quality V5 (NAI Standard)`, `Quality V5 (NAI Light)`, `Light V5 - NAI`).
+- **Model is remembered everywhere** — session snapshot, generation presets (older presets simply don't pin a model), backups (`nai_model`), and PNG metadata (`model` is written and imported).
+
+### Fixes
+- **Preset editor SMEA / SMEA DYN / Decrisper toggles removed** — no V4+ model supports them; presets that still carry the flags show a note instead.
+- **Editing a preset in the Preset Manager no longer drops its Vibe Transfers.**
+
 ## v0.9.2
 
 ### New

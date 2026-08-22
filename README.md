@@ -4,14 +4,14 @@
 
 # NAIWeaver
 
-An unofficial cross-platform frontend for NovelAI's image generation API (Diffusion V4.5). Built with Flutter for Windows, Linux, Android, and Web.
+An unofficial cross-platform frontend for NovelAI's image generation API (Diffusion V5 and V4.5). Built with Flutter for Windows, Linux, Android, and Web.
 
 Check out the github page to test it out, https://ststoryweaver.github.io/NAIWeaver/
 
 ## Features
 
 ### Image Generation
-- NovelAI V4.5 API integration (txt2img, img2img, inpainting, precise reference, vibe transfer, multiple characters)
+- NovelAI V5 + V4.5 API integration (txt2img, img2img, inpainting, precise reference, vibe transfer, multiple characters) with a per-model capability layer — V5 adds free character positioning (32 characters), native transparency, auto-Text and the Opus usage battery; Vibe Transfer / Character Reference stay on V4.5 until NovelAI enables them for V5
 - Multi-character generation with pixel-level positioning and multi-participant interactions
 - Expanded inline character editor with tag suggestions, UC editing, position grid, and character presets (save/load)
 - Multi-layer canvas editor for img2img source creation (paint, erase, shapes, text with Google Fonts, layers, selection tools, blur, clone stamp, zoom/pan)

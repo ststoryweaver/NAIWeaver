@@ -358,7 +358,7 @@ Context-aware floating action buttons rendered on the image viewer. Each button 
 4. Active styles inject prefix/suffix/negative content
 5. `DirectorRefNotifier.buildPayload()` assembles 5 parallel arrays
 6. `VibeTransferNotifier.buildPayload()` assembles 3 parallel arrays
-7. `NovelAIService` builds V4.5 JSON payload, sends via Dio, decompresses ZIP response
+7. `NovelAIService` asks `buildNaiGenerateBody` for the per-model JSON payload (V4.5/V5 sanitiser), sends via Dio, decompresses ZIP response
 8. `ImageUtils.injectMetadata()` encodes settings into PNG Comment/Description chunks (in Isolate)
 9. Image saved to `output/` folder, `GalleryNotifier` picks it up
 
