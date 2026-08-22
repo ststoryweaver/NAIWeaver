@@ -3,8 +3,24 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart' show ZLibDecoder;
 import 'package:image/image.dart' as img;
 
+/// Request keys whose values are base64 payloads (source image, mask, vibe
+/// vectors, reference images). NovelAI leaves these out of its own Comment
+/// chunk, and embedding them would put megabytes of base64 into every PNG.
+const Set<String> _binaryMetadataKeys = {
+  'image',
+  'mask',
+  'reference_image_multiple',
+  'director_reference_images',
+};
+
 /// Helper to inject metadata into PNG bytes.
 /// This runs in a separate isolate via compute.
+///
+/// package:image 4.x's [img.PngEncoder] ignores its own `textData` field and
+/// only writes `Image.textData` — so the chunks must be set on the decoded
+/// image, not the encoder. (Setting them on the encoder silently wrote
+/// nothing; the only metadata our PNGs carried was whatever NovelAI had put
+/// in the bytes it returned.)
 Uint8List injectMetadata(Map<String, dynamic> data) {
   final bytes = data['bytes'] as Uint8List;
   final metadata = data['metadata'] as Map<String, dynamic>;
@@ -12,20 +28,25 @@ Uint8List injectMetadata(Map<String, dynamic> data) {
   final image = _decodePngSafe(bytes);
   if (image == null) return bytes;
 
-  // Add NovelAI official metadata chunks
-  final Map<String, String> textChunks = {
+  final comment = Map<String, dynamic>.of(metadata)
+    ..removeWhere((k, _) => _binaryMetadataKeys.contains(k));
+
+  // NovelAI's own chunks (Title/Description/Software/Source/Comment) survive
+  // the decode; overlay ours on top. `Source` names the model family and
+  // is only known for sure when NovelAI wrote it, so keep theirs if present.
+  final existing = image.textData ?? const <String, String>{};
+  image.textData = {
+    ...existing,
     'Title': 'NovelAI generated image',
-    'Description': metadata['prompt'] ?? '',
+    'Description': comment['prompt']?.toString() ?? '',
     'Software': 'NovelAI',
-    'Source': 'NovelAI Diffusion V4.5 4BDE2A90',
+    if (!existing.containsKey('Source'))
+      'Source': 'NovelAI Diffusion V4.5 4BDE2A90',
     // NovelAI stores full generation parameters in the Comment field as JSON
-    'Comment': jsonEncode(metadata),
+    'Comment': jsonEncode(comment),
   };
 
-  final encoder = img.PngEncoder();
-  encoder.textData = textChunks;
-
-  return Uint8List.fromList(encoder.encode(image));
+  return Uint8List.fromList(img.PngEncoder().encode(image));
 }
 
 /// Helper to extract metadata from image bytes.
@@ -158,9 +179,10 @@ Uint8List stripMetadata(Uint8List bytes) {
   final image = _decodePngSafe(bytes);
   if (image == null) return bytes;
 
-  final encoder = img.PngEncoder();
-  encoder.textData = {};
-  return Uint8List.fromList(encoder.encode(image));
+  // See [injectMetadata]: the encoder's own textData is ignored, the chunks
+  // written are the image's — clearing those is what actually strips.
+  image.textData = null;
+  return Uint8List.fromList(img.PngEncoder().encode(image));
 }
 
 /// decodePng that never throws: package:image throws (e.g. RangeError) on
@@ -212,11 +234,11 @@ Uint8List? convertToPngPreservingMetadata(Map<String, dynamic> data) {
   final image = img.decodeImage(bytes);
   if (image == null) return null;
 
-  final encoder = img.PngEncoder();
+  // See [injectMetadata]: chunks are written from the image, not the encoder.
   if (textData != null && textData.isNotEmpty) {
-    encoder.textData = textData;
+    image.textData = {...?image.textData, ...textData};
   }
-  return Uint8List.fromList(encoder.encode(image));
+  return Uint8List.fromList(img.PngEncoder().encode(image));
 }
 
 /// Extracts the original creation date from image metadata (EXIF for JPEG/WEBP).
