@@ -3,15 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import '../../features/generation/models/nai_character.dart';
+import '../models/nai_model.dart';
+import 'nai_request_builder.dart';
 
-/// Strips backslashes from a prompt before it reaches the NovelAI API.
-/// NovelAI prompts have no use for `\` (it's not an escape or weighting
-/// character in their syntax), and stray backslashes — usually pasted in by
-/// accident from other tooling — only pollute the prompt. Done here, at the
-/// single API chokepoint, so every path (txt2img, img2img, characters) is
-/// covered. Returns an empty string for null input.
-String sanitizePromptForNai(String? prompt) =>
-    (prompt ?? '').replaceAll('\\', '');
+export 'nai_request_builder.dart' show sanitizePromptForNai;
 
 /// Result of an image generation
 class GenerationResult {
@@ -26,7 +21,10 @@ class UnauthorizedException implements Exception {
   UnauthorizedException([this.message = 'Unauthorized']);
 }
 
-/// Service to interact with NovelAI Image Generation API (V4.5)
+/// Service to interact with NovelAI Image Generation API (V4.5 / V5).
+///
+/// Model selection and per-model request sanitising live in [NaiModel] and
+/// [buildNaiGenerateBody]; this class only does transport.
 class NovelAIService {
   final Dio _dio = Dio();
   final String _apiKey;
@@ -107,12 +105,14 @@ class NovelAIService {
   Future<Uint8List> encodeVibeImage({
     required String imageBase64,
     double informationExtracted = 1.0,
-    bool useCurated = false,
+    NaiModel model = NaiModel.fallback,
   }) async {
     const url = 'https://image.novelai.net/ai/encode-vibe';
+    // V5 does not encode vibes; [NaiModel.vibeEncodeId] maps it to the
+    // matching V4.5 id so the vibe library keeps working.
     final body = {
       "image": imageBase64,
-      "model": useCurated ? "nai-diffusion-4-5-curated" : "nai-diffusion-4-5-full",
+      "model": model.vibeEncodeId,
       "information_extracted": informationExtracted,
     };
 
@@ -143,35 +143,46 @@ class NovelAIService {
     }
   }
 
-  /// Fetches the user's Anlas balance from the NovelAI user data API.
-  /// Returns null on failure (no API key, network error).
-  Future<int?> getAnlasBalance() async {
+  /// Fetches the user's subscription (tier, Anlas, V5 usage battery).
+  ///
+  /// NovelAI moved `/user/subscription` to the image host
+  /// (`api.novelai.net` started answering 400 "update to the image URL" on
+  /// 2026-08-21); the image host is tried first and the legacy host is kept
+  /// as a fallback. The `usage` block (Opus V5 allowance) is only present on
+  /// the image host and only for Opus. Returns null on failure.
+  Future<NaiSubscription?> getSubscription() async {
     if (_apiKey.isEmpty) return null;
-    try {
-      final response = await _getWithRetry(
-        'https://api.novelai.net/user/subscription',
-        options: Options(headers: {'Authorization': 'Bearer $_apiKey'}),
-      );
-      if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        final steps = data['trainingStepsLeft'];
-        if (steps is int) return steps;
-        if (steps is Map<String, dynamic>) {
-          final fixed = steps['fixedTrainingStepsLeft'] as int? ?? 0;
-          final purchased = steps['purchasedTrainingSteps'] as int? ?? 0;
-          return fixed + purchased;
+    for (final url in const [
+      'https://image.novelai.net/user/subscription',
+      'https://api.novelai.net/user/subscription',
+    ]) {
+      try {
+        final response = await _getWithRetry(
+          url,
+          options: Options(headers: {'Authorization': 'Bearer $_apiKey'}),
+        );
+        if (response.statusCode == 200) {
+          final parsed = NaiSubscription.fromJson(response.data);
+          if (parsed != null) return parsed;
         }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) return null;
+        debugPrint('NovelAIService: subscription fetch error ($url): ${e.message}');
+      } catch (e) {
+        debugPrint('NovelAIService: subscription fetch error ($url): $e');
       }
-    } catch (e) {
-      debugPrint('NovelAIService: Anlas fetch error: $e');
     }
     return null;
   }
 
-  /// Generates an image using the NAI Diffusion V4.5 model.
+  /// Fetches the user's Anlas balance. Returns null on failure.
+  Future<int?> getAnlasBalance() async => (await getSubscription())?.anlas;
+
+  /// Generates an image with [model] (default V4.5 Full).
   ///
   /// For img2img: set [action] to `"img2img"`, provide [sourceImageBase64],
-  /// and optionally [maskBase64] for inpainting.
+  /// and optionally [maskBase64] for inpainting. The request body is produced
+  /// by [buildNaiGenerateBody], which strips anything [model] does not support.
   Future<GenerationResult> generateImage({
     required String prompt,
     required int width,
@@ -204,131 +215,48 @@ class NovelAIService {
     List<double>? vibeTransferStrengths,
     List<double>? vibeTransferInfoExtracted,
     bool? useCoords,
-    bool useCurated = false,
+    NaiModel model = NaiModel.fallback,
+    bool transparentBackground = false,
   }) async {
     const url = 'https://image.novelai.net/ai/generate-image';
 
-    final inputPrompt = sanitizePromptForNai(
-        "${promptPrefix ?? ''}$prompt${promptSuffix ?? ''}");
-
-    final effectiveNegativePrompt = sanitizePromptForNai(negativePrompt);
-
-    final bool isMultiCharacter = characters.isNotEmpty;
-
-    // Build character captions with interaction tags
-    final List<Map<String, dynamic>> charCaptions = [];
-    for (int i = 0; i < characters.length; i++) {
-      final character = characters[i];
-      String caption = character.prompt;
-
-      // Find interactions involving this character
-      for (final interaction in interactions) {
-        if (interaction.type == InteractionType.mutual) {
-          if (interaction.sourceCharacterIndices.contains(i)) {
-            caption = "mutual#${interaction.actionName}, $caption";
-          }
-        } else {
-          if (interaction.sourceCharacterIndices.contains(i)) {
-            caption = "source#${interaction.actionName}, $caption";
-          } else if (interaction.targetCharacterIndices.contains(i)) {
-            caption = "target#${interaction.actionName}, $caption";
-          }
-        }
-      }
-
-      charCaptions.add({
-        'char_caption': sanitizePromptForNai(caption),
-        'centers': [character.center.toJson()],
-      });
-    }
-
-    final parameters = {
-      "params_version": 3,
-      "width": width,
-      "height": height,
-      "scale": scale,
-      "sampler": sampler,
-      "steps": steps,
-      "seed": seed,
-      "n_samples": 1,
-      "noise_schedule": "karras",
-      "sm": smea,
-      "sm_dyn": smeaDyn,
-      "dynamic_thresholding": decrisper,
-      "uc": effectiveNegativePrompt,
-      if (isMultiCharacter)
-        "characterPrompts": charCaptions.map((cc) {
-          return {
-            'prompt': cc['char_caption'],
-            'center': (cc['centers'] as List).isNotEmpty
-                ? (cc['centers'] as List).first
-                : {'x': 0.5, 'y': 0.5},
-          };
-        }).toList(),
-      "v4_prompt": {
-        "caption": {
-          "base_caption": inputPrompt,
-          "char_captions": charCaptions,
-        },
-        "use_coords": useCoords ?? isMultiCharacter,
-        "use_order": true
-      },
-      "v4_negative_prompt": {
-        "caption": {
-          "base_caption": effectiveNegativePrompt,
-          "char_captions": characters.map((c) {
-            final neg = c.toV4NegativePrompt();
-            final caption = neg['char_caption'];
-            if (caption is String) {
-              neg['char_caption'] = sanitizePromptForNai(caption);
-            }
-            return neg;
-          }).toList(),
-        }
-      },
-      // img2img / inpainting parameters
-      if (action != 'generate' && sourceImageBase64 != null)
-        "image": sourceImageBase64,
-      if (action != 'generate' && maskBase64 != null)
-        "mask": maskBase64,
-      if (action != 'generate' && img2imgStrength != null)
-        "strength": img2imgStrength,
-      if (action == 'img2img' && img2imgNoise != null)
-        "noise": img2imgNoise,
-      if (action == 'img2img')
-        "extra_noise_seed": seed,
-      if (action != 'generate')
-        "add_original_image": true,
-      if (action == 'infill' && maskBlur != null)
-        "mask_blur": maskBlur,
-      // Director reference (Precise Reference) parameters
-      if (directorRefImages != null && directorRefImages.isNotEmpty)
-        "director_reference_images": directorRefImages,
-      if (directorRefDescriptions != null && directorRefDescriptions.isNotEmpty)
-        "director_reference_descriptions": directorRefDescriptions,
-      if (directorRefStrengths != null && directorRefStrengths.isNotEmpty)
-        "director_reference_strength_values": directorRefStrengths,
-      if (directorRefSecondaryStrengths != null && directorRefSecondaryStrengths.isNotEmpty)
-        "director_reference_secondary_strength_values": directorRefSecondaryStrengths,
-      if (directorRefInfoExtracted != null && directorRefInfoExtracted.isNotEmpty)
-        "director_reference_information_extracted": directorRefInfoExtracted,
-      // Vibe Transfer (Reference Image) parameters
-      if (vibeTransferImages != null && vibeTransferImages.isNotEmpty)
-        "reference_image_multiple": vibeTransferImages,
-      if (vibeTransferStrengths != null && vibeTransferStrengths.isNotEmpty)
-        "reference_strength_multiple": vibeTransferStrengths,
-      if (vibeTransferInfoExtracted != null && vibeTransferInfoExtracted.isNotEmpty)
-        "reference_information_extracted_multiple": vibeTransferInfoExtracted,
-    };
-
-    final body = {
-      "input": inputPrompt,
-      "model": action == 'infill'
-          ? (useCurated ? "nai-diffusion-4-5-curated-inpainting" : "nai-diffusion-4-5-full-inpainting")
-          : (useCurated ? "nai-diffusion-4-5-curated" : "nai-diffusion-4-5-full"),
-      "action": action,
-      "parameters": parameters,
-    };
+    final body = buildNaiGenerateBody(
+      model: model,
+      prompt: prompt,
+      width: width,
+      height: height,
+      seed: seed,
+      steps: steps,
+      scale: scale,
+      sampler: sampler,
+      negativePrompt: negativePrompt,
+      smea: smea,
+      smeaDyn: smeaDyn,
+      decrisper: decrisper,
+      promptPrefix: promptPrefix,
+      promptSuffix: promptSuffix,
+      characters: characters,
+      interactions: interactions,
+      action: action,
+      sourceImageBase64: sourceImageBase64,
+      maskBase64: maskBase64,
+      img2imgStrength: img2imgStrength,
+      img2imgNoise: img2imgNoise,
+      maskBlur: maskBlur,
+      directorRefImages: directorRefImages,
+      directorRefDescriptions: directorRefDescriptions,
+      directorRefStrengths: directorRefStrengths,
+      directorRefSecondaryStrengths: directorRefSecondaryStrengths,
+      directorRefInfoExtracted: directorRefInfoExtracted,
+      vibeTransferImages: vibeTransferImages,
+      vibeTransferStrengths: vibeTransferStrengths,
+      vibeTransferInfoExtracted: vibeTransferInfoExtracted,
+      useCoords: useCoords,
+      transparentBackground: transparentBackground,
+    );
+    final inputPrompt = body['input'] as String;
+    final parameters = body['parameters'] as Map<String, dynamic>;
+    final effectiveNegativePrompt = parameters['uc'] as String;
 
     try {
       final response = await _postWithRetry(
@@ -353,6 +281,7 @@ class NovelAIService {
           "original_prompt": prompt,
           "uc": effectiveNegativePrompt,
           "undesired_content": effectiveNegativePrompt,
+          "model": body['model'],
           ...parameters,
         };
 
