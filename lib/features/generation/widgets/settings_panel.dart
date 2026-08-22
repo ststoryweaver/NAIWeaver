@@ -242,9 +242,18 @@ class _ExpandedSettingsContentState extends State<ExpandedSettingsContent> {
   void _onNegativeFocusChanged() {
     if (_negativePromptFocus.hasFocus) {
       Future.delayed(const Duration(milliseconds: 400), _scrollToNegativePrompt);
-    } else if (_negativeSuggestions.isNotEmpty) {
-      setState(() => _negativeSuggestions = []);
+      return;
     }
+    if (_negativeSuggestions.isEmpty) return;
+    // Don't clear synchronously: on desktop, clicking a suggestion moves focus
+    // out of the field *before* the InkWell's tap resolves, so tearing the
+    // overlay down here meant the click never registered (issue #37). Defer
+    // past the tap; `applyTag` clears the list itself when one is chosen.
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (!mounted || _negativePromptFocus.hasFocus) return;
+      if (_negativeSuggestions.isEmpty) return;
+      setState(() => _negativeSuggestions = []);
+    });
   }
 
   void _onNegativePromptChanged() {
