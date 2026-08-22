@@ -165,6 +165,7 @@ class _VibeTransferManagerState extends State<VibeTransferManager> {
             ModelGateBanner(
               capability: (caps) => caps.vibeTransfer,
               feature: 'Vibe Transfer',
+              conflictsWithDirectorRef: true,
             ),
             // Header
             Padding(

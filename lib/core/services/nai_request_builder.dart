@@ -18,6 +18,10 @@ String sanitizePromptForNai(String? prompt) =>
 /// * V4.5 bodies are unchanged from what this app has always sent, except
 ///   that `sm` / `sm_dyn` are forced false (sending `true` returns HTTP 500
 ///   on every V4+ model).
+/// * `noise_schedule` is honoured only where the model offers a picker
+///   (V4.5); V5 always gets its forced default. `cfg_rescale` and
+///   `skip_cfg_above_sigma` (Variety+) are emitted only for models whose caps
+///   allow them — V5 drops Variety+ at launch.
 /// * V5 bodies drop `sm`/`sm_dyn` entirely, force `noise_schedule: karras`,
 ///   drop the Vibe Transfer / Director Reference arrays (not supported at
 ///   launch), send `params_version: 4`, raw 3-dp character centers, and emit
@@ -37,6 +41,9 @@ Map<String, dynamic> buildNaiGenerateBody({
   bool smea = false,
   bool smeaDyn = false,
   bool decrisper = false,
+  String? noiseSchedule,
+  double? cfgRescale,
+  double? varietyBoostSigma,
   String? promptPrefix,
   String? promptSuffix,
   List<NaiCharacter> characters = const [],
@@ -112,12 +119,18 @@ Map<String, dynamic> buildNaiGenerateBody({
   // DDIM is silently remapped to Euler Ancestral on V4/V5 by NovelAI's UI.
   final effectiveSampler = sampler == 'ddim' ? 'k_euler_ancestral' : sampler;
 
-  final sendVibes = caps.vibeTransfer &&
-      vibeTransferImages != null &&
-      vibeTransferImages.isNotEmpty;
   final sendDirector = caps.characterReference &&
       directorRefImages != null &&
       directorRefImages.isNotEmpty;
+  // Vibe Transfer and Precise/Character Reference are mutually exclusive:
+  // NovelAI's own UI hides Vibe once a Director reference is set, and sending
+  // both produces a ZIP whose image entry is empty or truncated (issue #24) —
+  // which used to be saved verbatim as a corrupt file. Director wins, matching
+  // the frontend. On V5 both caps are false, so neither array is sent anyway.
+  final sendVibes = caps.vibeTransfer &&
+      !sendDirector &&
+      vibeTransferImages != null &&
+      vibeTransferImages.isNotEmpty;
 
   final parameters = <String, dynamic>{
     'params_version': model.defaults.paramsVersion,
@@ -128,13 +141,27 @@ Map<String, dynamic> buildNaiGenerateBody({
     'steps': steps,
     'seed': seed,
     'n_samples': 1,
-    // V5 has no schedule picker — the frontend force-sends karras.
-    'noise_schedule': caps.noiseSchedule ? 'karras' : model.defaults.noiseSchedule,
+    // `caps.noiseSchedule` means "the user may pick one". When false (V5) the
+    // frontend deletes the key and re-adds the forced default — so an
+    // unsupported choice can never leak through. Unknown values fall back to
+    // the model default rather than being passed to the API verbatim.
+    'noise_schedule': caps.noiseSchedule
+        ? (noiseSchedule != null && model.noiseSchedules.contains(noiseSchedule)
+            ? noiseSchedule
+            : model.defaults.noiseSchedule)
+        : model.defaults.noiseSchedule,
     // V4.5: keep the keys (byte-identical body) but never true.
     // V5: the frontend deletes them outright.
     if (!model.isV5) 'sm': caps.smea && smea,
     if (!model.isV5) 'sm_dyn': caps.smea && smeaDyn,
     'dynamic_thresholding': caps.decrisper && decrisper,
+    // Prompt Guidance Rescale. Supported on V4.5 and V5 alike; 0 is NovelAI's
+    // default and is sent explicitly, matching their frontend.
+    if (caps.cfgRescale) 'cfg_rescale': cfgRescale ?? model.defaults.cfgRescale,
+    // Variety+ raises the sigma floor below which CFG is skipped. The
+    // frontend sends null when the toggle is off, and deletes the key
+    // entirely on models without the capability (V5 at launch).
+    if (caps.varietyPlus) 'skip_cfg_above_sigma': varietyBoostSigma,
     'uc': effectiveNegativePrompt,
     if (isMultiCharacter)
       'characterPrompts': charCaptions.map((cc) {

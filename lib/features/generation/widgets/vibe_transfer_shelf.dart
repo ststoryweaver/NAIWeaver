@@ -66,6 +66,7 @@ class VibeTransferShelf extends StatelessWidget {
           child: ModelGate(
             capability: (caps) => caps.vibeTransfer,
             feature: 'Vibe Transfer',
+            conflictsWithDirectorRef: true,
             child: Container(
               height: mobile ? 52 : 44,
               margin: const EdgeInsets.only(top: 2, bottom: 2),

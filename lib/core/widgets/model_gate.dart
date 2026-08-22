@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../features/director_ref/providers/director_ref_notifier.dart';
 import '../../features/generation/providers/generation_notifier.dart';
 import '../models/nai_model.dart';
 
@@ -18,12 +19,18 @@ class ModelGate extends StatelessWidget {
 
   /// Short feature name for the tooltip ("Vibe Transfer").
   final String feature;
+
+  /// When true, this control is also disabled while a Character/Precise
+  /// Reference is active — the two cannot be sent together (issue #24).
+  final bool conflictsWithDirectorRef;
+
   final Widget child;
 
   const ModelGate({
     super.key,
     required this.capability,
     required this.feature,
+    this.conflictsWithDirectorRef = false,
     required this.child,
   });
 
@@ -31,14 +38,33 @@ class ModelGate extends StatelessWidget {
       '$feature is not available on ${model.label} yet — kept, but not sent. '
       'Switch to V4.5 to use it.';
 
+  /// Shown when Vibe Transfer is suppressed by an active Character/Precise
+  /// Reference rather than by the model (issue #24).
+  static const String vibeConflictReason =
+      'Vibe Transfer is disabled while a Character Reference is active — '
+      'NovelAI does not accept both, and sending them together corrupts the '
+      'generated image. Remove or disable the reference to use Vibe Transfer.';
+
+  /// True when a Director reference is active, so the request builder will
+  /// drop any vibes. False when no [DirectorRefNotifier] is in scope.
+  static bool vibeBlockedByDirector(BuildContext context) =>
+      context.select<DirectorRefNotifier?, bool>(
+        (d) => d != null && d.buildPayload() != null,
+      );
+
   @override
   Widget build(BuildContext context) {
     final model = context.select<GenerationNotifier?, NaiModel?>(
       (n) => n?.state.model,
     );
-    if (model == null || capability(model.caps)) return child;
+    if (model == null) return child;
+    final unsupported = !capability(model.caps);
+    final conflicted = !unsupported &&
+        conflictsWithDirectorRef &&
+        vibeBlockedByDirector(context);
+    if (!unsupported && !conflicted) return child;
     return Tooltip(
-      message: reason(model, feature),
+      message: unsupported ? reason(model, feature) : vibeConflictReason,
       child: IgnorePointer(
         child: Opacity(opacity: 0.35, child: child),
       ),
@@ -53,10 +79,14 @@ class ModelGateBanner extends StatelessWidget {
   final bool Function(NaiCaps caps) capability;
   final String feature;
 
+  /// See [ModelGate.conflictsWithDirectorRef].
+  final bool conflictsWithDirectorRef;
+
   const ModelGateBanner({
     super.key,
     required this.capability,
     required this.feature,
+    this.conflictsWithDirectorRef = false,
   });
 
   @override
@@ -64,7 +94,12 @@ class ModelGateBanner extends StatelessWidget {
     final model = context.select<GenerationNotifier?, NaiModel?>(
       (n) => n?.state.model,
     );
-    if (model == null || capability(model.caps)) return const SizedBox.shrink();
+    if (model == null) return const SizedBox.shrink();
+    final unsupported = !capability(model.caps);
+    final conflicted = !unsupported &&
+        conflictsWithDirectorRef &&
+        ModelGate.vibeBlockedByDirector(context);
+    if (!unsupported && !conflicted) return const SizedBox.shrink();
     final color = Theme.of(context).colorScheme.error;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -81,7 +116,9 @@ class ModelGateBanner extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                ModelGate.reason(model, feature),
+                unsupported
+                    ? ModelGate.reason(model, feature)
+                    : ModelGate.vibeConflictReason,
                 style: TextStyle(fontSize: 11, color: color, letterSpacing: 0.3),
               ),
             ),

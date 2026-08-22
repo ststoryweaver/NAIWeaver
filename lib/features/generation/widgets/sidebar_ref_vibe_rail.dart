@@ -299,6 +299,7 @@ class _VibeSection extends StatelessWidget {
         return ModelGate(
           capability: (caps) => caps.vibeTransfer,
           feature: 'Vibe Transfer',
+          conflictsWithDirectorRef: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
