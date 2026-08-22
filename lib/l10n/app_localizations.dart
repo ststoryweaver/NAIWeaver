@@ -3058,6 +3058,12 @@ abstract class AppLocalizations {
   /// **'Failed to create theme: {error}'**
   String themeCreateFailed(String error);
 
+  /// No description provided for @themeSectionModel.
+  ///
+  /// In en, this message translates to:
+  /// **'MODEL'**
+  String get themeSectionModel;
+
   /// No description provided for @themeSectionDimSeed.
   ///
   /// In en, this message translates to:

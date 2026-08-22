@@ -1605,6 +1605,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get themeSectionModel => 'モデル';
+
+  @override
   String get themeSectionDimSeed => '解像度＋シード';
 
   @override

@@ -12,6 +12,7 @@ import '../../../core/widgets/color_picker_dialog.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 
 Map<String, String> _sectionDisplayNames(AppLocalizations l) => {
+  'model': l.themeSectionModel,
   'dimensions_seed': l.themeSectionDimSeed,
   'steps_scale': l.themeSectionStepsScale,
   'sampler_post': l.themeSectionSamplerPost,

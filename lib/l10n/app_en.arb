@@ -564,6 +564,7 @@
   "themeThemeName": "THEME NAME",
   "themeCreateFailed": "Failed to create theme: {error}",
   "@themeCreateFailed": { "placeholders": { "error": { "type": "String" } } },
+  "themeSectionModel": "MODEL",
   "themeSectionDimSeed": "DIMENSIONS + SEED",
   "themeSectionStepsScale": "STEPS + SCALE",
   "themeSectionSamplerPost": "SAMPLER + POST-PROCESSING",

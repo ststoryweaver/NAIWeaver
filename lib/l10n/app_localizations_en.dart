@@ -1638,6 +1638,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get themeSectionModel => 'MODEL';
+
+  @override
   String get themeSectionDimSeed => 'DIMENSIONS + SEED';
 
   @override

@@ -1599,6 +1599,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get themeSectionModel => 'MODEL';
+
+  @override
   String get themeSectionDimSeed => '尺寸 + 种子';
 
   @override

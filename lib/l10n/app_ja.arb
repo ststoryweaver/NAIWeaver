@@ -510,6 +510,7 @@
   "themeCustomTheme": "カスタムテーマ",
   "themeThemeName": "テーマ名",
   "themeCreateFailed": "テーマの作成に失敗しました: {error}",
+  "themeSectionModel": "モデル",
   "themeSectionDimSeed": "解像度＋シード",
   "themeSectionStepsScale": "ステップ＋スケール",
   "themeSectionSamplerPost": "サンプラー＋後処理",

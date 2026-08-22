@@ -765,7 +765,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                                 ),
                                 const SizedBox(width: 2),
                                 Text(
-                                  '${usage.remainingPercent.round()}% · ~${usage.imagesLeft}',
+                                  '${usage.remainingPercent.round()}%',
                                   style: TextStyle(
                                     color: batteryColor,
                                     fontSize: t.fontSize(mobile ? 10 : 8),
