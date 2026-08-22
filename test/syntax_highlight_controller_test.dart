@@ -84,6 +84,65 @@ void main() {
     }
   });
 
+  // Regression (issue #38): `_strengthPrefix` was anchored with `^`, and
+  // `matchAsPrefix` only ever matches an anchored pattern at index 0 of the
+  // whole string — so a weight anywhere but the very start of the prompt was
+  // never highlighted.
+  testWidgets('highlights weights that are not at the start of the prompt',
+      (tester) async {
+    await pump(tester);
+    const text = '1girl, smile, 2::black hair::, looking at viewer';
+    final spans = spansFor(tester, text);
+    expect(joined(spans), text);
+
+    final weightSpan = spans.firstWhere((s) => s.text == '2::',
+        orElse: () => const TextSpan(text: ''));
+    expect(weightSpan.text, '2::',
+        reason: 'mid-prompt weight prefix should be its own span');
+    expect(weightSpan.style?.color, isNot(Colors.white));
+
+    // The body of the mid-prompt weight is highlighted too.
+    final body = spans.firstWhere((s) => s.text == 'black hair',
+        orElse: () => const TextSpan(text: ''));
+    expect(body.style?.color, isNot(Colors.white));
+  });
+
+  testWidgets('highlights several weights across one prompt', (tester) async {
+    await pump(tester);
+    const text = '2::a::, plain, -1::b::, 1.5::c::';
+    final spans = spansFor(tester, text);
+    expect(joined(spans), text);
+    for (final prefix in ['2::', '-1::', '1.5::']) {
+      expect(spans.any((s) => s.text == prefix && s.style?.color != Colors.white),
+          isTrue,
+          reason: '"$prefix" should be highlighted');
+    }
+  });
+
+  // NAI tints positive and negative weights differently; they used to share
+  // one green.
+  testWidgets('positive and negative weights use different colors',
+      (tester) async {
+    await pump(tester);
+    final positive = spansFor(tester, 'girl, 2::tag::')
+        .firstWhere((s) => s.text == '2::');
+    final negative = spansFor(tester, 'girl, -1::tag::')
+        .firstWhere((s) => s.text == '-1::');
+    expect(positive.style?.color, isNot(negative.style?.color));
+  });
+
+  // A bare number must not be mistaken for a weight now that the pattern is
+  // unanchored — the `::` is still required.
+  testWidgets('plain numbers are not treated as weights', (tester) async {
+    await pump(tester);
+    for (final text in ['2024, 1girl', 'group of 3, smile', '1.5 meters']) {
+      final spans = spansFor(tester, text);
+      expect(joined(spans), text);
+      expect(spans.every((s) => s.style?.color == Colors.white), isTrue,
+          reason: '"$text" contains no weights and should be unstyled');
+    }
+  });
+
   testWidgets('still colors brace and bracket emphasis', (tester) async {
     await pump(tester);
     const text = '{{1girl}}, [background]';

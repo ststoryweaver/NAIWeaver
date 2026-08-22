@@ -10,11 +10,24 @@ class SyntaxHighlightController extends TextEditingController {
 
   static const Color _emphasisUpColor = Color(0xFFFFA726); // orange
   static const Color _emphasisDownColor = Color(0xFF42A5F5); // blue
-  static const Color _strengthColor = Color(0xFF66BB6A); // green
+
+  /// Positive numerical weight (`2::tag::`) — NAI tints these warm.
+  static const Color _strengthUpColor = Color(0xFFC98A5E); // red/brown
+  /// Negative numerical weight (`-1::tag::`) — NAI tints these cool.
+  static const Color _strengthDownColor = Color(0xFF5C9CE6); // blue
 
   /// Numerical emphasis opener: `N::` where N may be negative or fractional
   /// (e.g. `2::`, `1.5::`, `-1::`).
-  static final RegExp _strengthPrefix = RegExp(r'^-?\d+(?:\.\d+)?::');
+  ///
+  /// Deliberately **unanchored**: this is used with [RegExp.matchAsPrefix] at
+  /// arbitrary offsets, and a leading `^` there only ever matches at index 0
+  /// of the whole string — which meant weights anywhere but the very start of
+  /// the prompt went unhighlighted (issue #38).
+  static final RegExp _strengthPrefix = RegExp(r'-?\d+(?:\.\d+)?::');
+
+  /// Colour for a weight run, chosen by the sign of the parsed number.
+  static Color _strengthColorFor(String prefix) =>
+      prefix.startsWith('-') ? _strengthDownColor : _strengthUpColor;
 
   @override
   TextSpan buildTextSpan({
@@ -43,9 +56,11 @@ class SyntaxHighlightController extends TextEditingController {
       // this branch to consume it.
       final strengthMatch = _strengthPrefix.matchAsPrefix(src, i);
       if (strengthMatch != null) {
+        final prefix = strengthMatch.group(0)!;
+        final strengthColor = _strengthColorFor(prefix);
         spans.add(TextSpan(
-          text: strengthMatch.group(0),
-          style: style?.copyWith(color: _strengthColor) ?? TextStyle(color: _strengthColor),
+          text: prefix,
+          style: style?.copyWith(color: strengthColor) ?? TextStyle(color: strengthColor),
         ));
         i = strengthMatch.end;
         final close = src.indexOf('::', i);
@@ -53,13 +68,13 @@ class SyntaxHighlightController extends TextEditingController {
           if (close > i) {
             spans.add(TextSpan(
               text: src.substring(i, close),
-              style: style?.copyWith(color: _strengthColor.withValues(alpha: 0.8)) ??
-                  TextStyle(color: _strengthColor.withValues(alpha: 0.8)),
+              style: style?.copyWith(color: strengthColor.withValues(alpha: 0.8)) ??
+                  TextStyle(color: strengthColor.withValues(alpha: 0.8)),
             ));
           }
           spans.add(TextSpan(
             text: '::',
-            style: style?.copyWith(color: _strengthColor) ?? TextStyle(color: _strengthColor),
+            style: style?.copyWith(color: strengthColor) ?? TextStyle(color: strengthColor),
           ));
           i = close + 2;
         }
