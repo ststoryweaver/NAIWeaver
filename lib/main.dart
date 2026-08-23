@@ -729,14 +729,16 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                     tip = context.l.mainRefreshAnlas;
                   }
                   return Padding(
-                    padding: const EdgeInsets.only(right: 4),
+                    // Mobile: a wider gap keeps the chip (which grows a battery
+                    // + percentage on V5) from crowding the help icon.
+                    padding: EdgeInsets.only(right: mobile ? 10 : 4),
                     child: Tooltip(
                       message: tip,
                       child: InkWell(
                         onTap: () => notifier.fetchAnlas(),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: mobile ? 10 : 8, vertical: mobile ? 4 : 2),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: mobile ? 4 : 2),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: low ? warn : t.borderMedium),
@@ -823,6 +825,9 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                   ),
                 ),
               ),
+              // Mobile: keep TOOLS off the screen edge, roughly in line with
+              // the content margin below it.
+              if (mobile) const SizedBox(width: 6),
             ],
           ),
           body: SafeArea(
