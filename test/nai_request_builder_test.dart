@@ -463,6 +463,46 @@ void main() {
       expect(infill(NaiModel.v5Curated)['model'], 'nai-diffusion-4-5-curated-inpainting');
     });
 
+    test('V5 Curated infill body is V4.5-shaped for the V4.5 wire model', () {
+      // The wire model is nai-diffusion-4-5-curated-inpainting, so a V5-shaped
+      // block (params_version 4, no sm keys, prefer_brownian, straight_alpha)
+      // must not be sent — the API 500s over mis-shaped bodies (cf. sm: true).
+      final body = buildNaiGenerateBody(
+        model: NaiModel.v5Curated,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+        action: 'infill',
+        sourceImageBase64: 'S',
+        maskBase64: 'M',
+        transparentBackground: true,
+      );
+      final p = body['parameters'] as Map<String, dynamic>;
+      expect(p['params_version'], 3);
+      expect(p['sm'], false);
+      expect(p['sm_dyn'], false);
+      expect(p.containsKey('prefer_brownian'), isFalse);
+      expect(p.containsKey('deliberate_euler_ancestral_bug'), isFalse);
+      expect(p.containsKey('straight_alpha'), isFalse);
+
+      // V5 Full inpaints through a real V5 model — its body stays V5-shaped.
+      final v5 = buildNaiGenerateBody(
+        model: NaiModel.v5Full,
+        prompt: 'x',
+        width: 64,
+        height: 64,
+        seed: 1,
+        action: 'infill',
+        sourceImageBase64: 'S',
+        maskBase64: 'M',
+      );
+      final v5p = v5['parameters'] as Map<String, dynamic>;
+      expect(v5p['params_version'], 4);
+      expect(v5p.containsKey('sm'), isFalse);
+      expect(v5p['prefer_brownian'], true);
+    });
+
     test('autoText: quoted strings become a Text: block, manual Text: wins', () {
       final a = buildNaiGenerateBody(
         model: NaiModel.v5Full,

@@ -261,6 +261,22 @@ enum NaiModel {
 
   int get maxCharacters => caps.maxCharacters;
 
+  /// The model whose capability table shapes the request body for [action].
+  ///
+  /// Normally `this` — but V5 Curated routes inpainting to the V4.5 Curated
+  /// wire model (see [inpaintingId]), and the body must be shaped for the
+  /// model actually hit: a V5-shaped block (params_version, no sm/sm_dyn,
+  /// prefer_brownian, straight_alpha) sent to a V4.5 endpoint risks the same
+  /// HTTP 500 strictness that `sm: true` already triggers on V4+. Collapses
+  /// back to `this` automatically once the V5 Curated inpainting id ships.
+  NaiModel bodyModelFor(String action) {
+    if (action != 'infill') return this;
+    if (isV5 && inpaintingId == NaiModel.v45Curated.inpaintingId) {
+      return NaiModel.v45Curated;
+    }
+    return this;
+  }
+
   /// Model id to use for `/ai/encode-vibe`. V5 does not accept vibes at all,
   /// so encode against the matching V4.5 id — the vibe library stays usable
   /// when the user switches back.

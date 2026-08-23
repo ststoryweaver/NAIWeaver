@@ -65,7 +65,10 @@ Map<String, dynamic> buildNaiGenerateBody({
   bool? useCoords,
   bool transparentBackground = false,
 }) {
-  final caps = model.caps;
+  // V5 Curated inpainting is routed to the V4.5 Curated wire model, so the
+  // body must be V4.5-shaped as well; every other action shapes for `model`.
+  final bodyModel = model.bodyModelFor(action);
+  final caps = bodyModel.caps;
   final transparent = transparentBackground && caps.transparency;
 
   // NovelAI prepends `transparent background` to the quality suffix when the
@@ -133,7 +136,7 @@ Map<String, dynamic> buildNaiGenerateBody({
       vibeTransferImages.isNotEmpty;
 
   final parameters = <String, dynamic>{
-    'params_version': model.defaults.paramsVersion,
+    'params_version': bodyModel.defaults.paramsVersion,
     'width': width,
     'height': height,
     'scale': scale,
@@ -146,18 +149,20 @@ Map<String, dynamic> buildNaiGenerateBody({
     // unsupported choice can never leak through. Unknown values fall back to
     // the model default rather than being passed to the API verbatim.
     'noise_schedule': caps.noiseSchedule
-        ? (noiseSchedule != null && model.noiseSchedules.contains(noiseSchedule)
+        ? (noiseSchedule != null &&
+                bodyModel.noiseSchedules.contains(noiseSchedule)
             ? noiseSchedule
-            : model.defaults.noiseSchedule)
-        : model.defaults.noiseSchedule,
+            : bodyModel.defaults.noiseSchedule)
+        : bodyModel.defaults.noiseSchedule,
     // V4.5: keep the keys (byte-identical body) but never true.
     // V5: the frontend deletes them outright.
-    if (!model.isV5) 'sm': caps.smea && smea,
-    if (!model.isV5) 'sm_dyn': caps.smea && smeaDyn,
+    if (!bodyModel.isV5) 'sm': caps.smea && smea,
+    if (!bodyModel.isV5) 'sm_dyn': caps.smea && smeaDyn,
     'dynamic_thresholding': caps.decrisper && decrisper,
     // Prompt Guidance Rescale. Supported on V4.5 and V5 alike; 0 is NovelAI's
     // default and is sent explicitly, matching their frontend.
-    if (caps.cfgRescale) 'cfg_rescale': cfgRescale ?? model.defaults.cfgRescale,
+    if (caps.cfgRescale)
+      'cfg_rescale': cfgRescale ?? bodyModel.defaults.cfgRescale,
     // Variety+ raises the sigma floor below which CFG is skipped. The
     // frontend sends null when the toggle is off, and deletes the key
     // entirely on models without the capability (V5 at launch).
@@ -195,7 +200,7 @@ Map<String, dynamic> buildNaiGenerateBody({
       }
     },
     // V5-only extras, in the order NovelAI's frontend emits them.
-    if (model.isV5 && effectiveSampler == 'k_euler_ancestral') ...{
+    if (bodyModel.isV5 && effectiveSampler == 'k_euler_ancestral') ...{
       'deliberate_euler_ancestral_bug': false,
       'prefer_brownian': true,
     },
