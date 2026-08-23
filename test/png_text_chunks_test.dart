@@ -48,17 +48,25 @@ void main() {
       expect(comment['cfg_rescale'], 0.2);
     });
 
-    test('our Comment replaces NovelAI\'s but their Source is kept', () {
+    test('NovelAI\'s Comment chunk is kept verbatim; ours rides in NAIWeaver',
+        () {
       final out = injectMetadata({
         'bytes': naiPng(),
         'metadata': {'prompt': 'ours', 'original_prompt': 'ours'},
       });
+      // On the bytes: NAI's canonical Comment is untouched (it can carry
+      // keys our reconstruction lacks), and the app record has its own chunk.
+      final chunks = img.decodePng(out)!.textData!;
+      expect(jsonDecode(chunks['Comment']!)['prompt'], 'from nai');
+      expect(jsonDecode(chunks['NAIWeaver']!)['prompt'], 'ours');
+      // Through extractMetadata: one merged view, app keys overlaying NAI's.
       final meta = extractMetadata(out)!;
       expect(meta['Source'], 'NovelAI Diffusion V5 ABCDEF01');
       final comment = jsonDecode(meta['Comment']!) as Map;
       expect(comment['prompt'], 'ours');
       expect(comment['original_prompt'], 'ours');
-      expect(comment.containsKey('steps'), isFalse);
+      expect(comment['steps'], 23,
+          reason: 'NAI-only keys survive into the merged view');
     });
 
     test('drops base64 payload keys from the Comment', () {

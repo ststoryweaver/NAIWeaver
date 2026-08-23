@@ -60,6 +60,22 @@ void main() {
       expect(pngHasTransparentPixels(bytes), isTrue);
     });
 
+    test('alpha-254 VAE noise does NOT count as transparent', () {
+      // Every PNG NovelAI returns — opaque V4.5 and V5 renders included —
+      // carries bands of pixels at alpha 254/255. Visually opaque, but a
+      // strict `< max` scan flagged them, drawing the checkerboard behind
+      // almost every render (the bottom/right sliver on V5 renders).
+      final image = img.Image(width: 16, height: 16, numChannels: 4);
+      for (final pixel in image) {
+        pixel.setRgba(200, 100, 50, 255);
+      }
+      for (var x = 0; x < 9; x++) {
+        image.getPixel(x, 15).a = 254;
+      }
+      final bytes = Uint8List.fromList(img.encodePng(image));
+      expect(pngHasTransparentPixels(bytes), isFalse);
+    });
+
     test('RGB without an alpha channel is never transparent', () {
       final bytes = _png(32, 32, channels: 3);
       expect(pngHasTransparentPixels(bytes), isFalse);

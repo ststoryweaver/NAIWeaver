@@ -34,7 +34,15 @@ Uint8List injectMetadata(Map<String, dynamic> data) {
   // NovelAI's own chunks (Title/Description/Software/Source/Comment) survive
   // the decode; overlay ours on top. `Source` names the model family and
   // is only known for sure when NovelAI wrote it, so keep theirs if present.
+  //
+  // `Comment` is NovelAI's canonical provenance record (it can carry keys the
+  // app's reconstruction lacks, e.g. signed fields) — when present it is kept
+  // verbatim and the app's record goes into its own `NAIWeaver` chunk instead;
+  // [extractMetadata] overlays that back for readers. Only images with no NAI
+  // Comment (edited or non-NAI sources) get the app's record under `Comment`.
   final existing = image.textData ?? const <String, String>{};
+  final hasNaiComment = existing.containsKey('Comment');
+  final appRecord = jsonEncode(comment);
   image.textData = {
     ...existing,
     'Title': 'NovelAI generated image',
@@ -42,8 +50,7 @@ Uint8List injectMetadata(Map<String, dynamic> data) {
     'Software': 'NovelAI',
     if (!existing.containsKey('Source'))
       'Source': 'NovelAI Diffusion V4.5 4BDE2A90',
-    // NovelAI stores full generation parameters in the Comment field as JSON
-    'Comment': jsonEncode(comment),
+    if (hasNaiComment) 'NAIWeaver': appRecord else 'Comment': appRecord,
   };
 
   return Uint8List.fromList(img.PngEncoder().encode(image));
@@ -54,7 +61,7 @@ Uint8List injectMetadata(Map<String, dynamic> data) {
 /// This runs in a separate isolate via compute.
 Map<String, String>? extractMetadata(Uint8List bytes) {
   // Try PNG text chunks first
-  if (isPng(bytes)) return _extractPngTextChunks(bytes);
+  if (isPng(bytes)) return _overlayAppRecord(_extractPngTextChunks(bytes));
 
   // For WebP/JPEG: try to extract NovelAI metadata from EXIF UserComment
   try {
@@ -85,6 +92,26 @@ Map<String, String>? extractMetadata(Uint8List bytes) {
   } catch (_) {
     return null;
   }
+}
+
+/// Merges the app's `NAIWeaver` record into the `Comment` view.
+///
+/// [injectMetadata] keeps NovelAI's canonical `Comment` chunk verbatim and
+/// writes the app's reconstruction (original_prompt, model, styles, …) to a
+/// separate `NAIWeaver` chunk. Every reader in the app parses
+/// `metadata['Comment']`, so present them one merged view — app keys overlay
+/// NovelAI's — while the bytes on disk keep both records intact.
+Map<String, String>? _overlayAppRecord(Map<String, String>? chunks) {
+  final app = chunks?['NAIWeaver'];
+  if (chunks == null || app == null) return chunks;
+  final appJson = parseCommentJson(app);
+  if (appJson == null) return chunks;
+  final naiComment = chunks['Comment'];
+  final naiJson = naiComment == null ? null : parseCommentJson(naiComment);
+  return {
+    ...chunks,
+    'Comment': jsonEncode({...?naiJson, ...appJson}),
+  };
 }
 
 /// Parses PNG tEXt and iTXt chunks directly from raw bytes.
@@ -436,20 +463,31 @@ bool pngSupportsAlpha(Uint8List bytes) {
   return _hasTrnsChunk(bytes);
 }
 
-/// Whether a PNG actually contains at least one non-opaque pixel.
+/// Whether a PNG actually contains at least one *visibly* transparent pixel.
 ///
 /// [pngSupportsAlpha] only reports that the encoding *can* carry alpha, which
 /// is true of every RGBA PNG NovelAI returns — including fully opaque ones. The
 /// preview checkerboard keys off this instead, so it appears only for genuinely
 /// transparent renders. Decodes the image, so cache the result per image rather
 /// than calling it from build().
+///
+/// "Visibly" matters: opaque NovelAI renders (V4.5 and V5 alike) carry bands of
+/// VAE noise at alpha 254/255 — imperceptible, but a strict `< max` scan called
+/// them transparent, so the checkerboard was drawn behind almost every render
+/// and its edge peeked out wherever the scaled image missed the last fractional
+/// pixel (the bottom/right slivers on opaque V5 renders). A pixel counts as
+/// transparent only below [_opaqueAlphaFraction] of full alpha; a real
+/// transparent background sits at or near alpha 0 and clears it easily.
+const double _opaqueAlphaFraction = 0.95;
+
 bool pngHasTransparentPixels(Uint8List bytes) {
   if (!pngSupportsAlpha(bytes)) return false;
   final image = _decodePngSafe(bytes);
   if (image == null) return false;
   if (!image.hasAlpha) return false;
+  final threshold = image.maxChannelValue * _opaqueAlphaFraction;
   for (final pixel in image) {
-    if (pixel.a < pixel.maxChannelValue) return true;
+    if (pixel.a < threshold) return true;
   }
   return false;
 }

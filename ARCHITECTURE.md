@@ -359,7 +359,7 @@ Context-aware floating action buttons rendered on the image viewer. Each button 
 5. `DirectorRefNotifier.buildPayload()` assembles 5 parallel arrays
 6. `VibeTransferNotifier.buildPayload()` assembles 3 parallel arrays
 7. `NovelAIService` asks `buildNaiGenerateBody` for the per-model JSON payload (V4.5/V5 sanitiser), sends via Dio, decompresses ZIP response
-8. `ImageUtils.injectMetadata()` encodes settings into PNG Comment/Description chunks (in Isolate)
+8. `ImageUtils.injectMetadata()` writes the app's settings record into the PNG (in Isolate) — into its own `NAIWeaver` chunk when NovelAI's canonical `Comment` chunk is present (which is kept verbatim), else into `Comment`; `extractMetadata()` hands readers one merged view
 9. Image saved to `output/` folder, `GalleryNotifier` picks it up
 
 ### Img2Img / Inpainting
