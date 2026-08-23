@@ -382,6 +382,14 @@ class GenerationNotifier extends ChangeNotifier {
     _enhanceNotifier = notifier;
     notifier.updateService(_service);
     notifier.updateModel(_state.model);
+    // Live getter, so Enhance always renders with the current session
+    // settings (issue #35) — no re-push needed when a slider moves.
+    notifier.updateRenderSettingsSource(() => (
+          noiseSchedule: _state.noiseSchedule,
+          cfgRescale: _state.cfgRescale,
+          varietyBoostSigma: _state.varietyBoostSigma,
+          transparentBackground: _state.transparentBackground,
+        ));
   }
 
   void updateTextGenNotifier(TextGenNotifier notifier) {
@@ -1441,6 +1449,14 @@ class GenerationNotifier extends ChangeNotifier {
       seedController.text = result.seed!;
     }
 
+    // Parsed once: both the state update and the persist guard below must act
+    // on the same value — checking the raw string while applying the parse
+    // meant an unrecognized id still persisted (and re-propagated) the
+    // current model.
+    final importedModel = categories.contains(ImportCategory.settings)
+        ? NaiModel.tryParse(result.model)
+        : null;
+
     _state = _state.copyWith(
       width: categories.contains(ImportCategory.settings) ? result.width : null,
       height: categories.contains(ImportCategory.settings) ? result.height : null,
@@ -1460,7 +1476,7 @@ class GenerationNotifier extends ChangeNotifier {
           result.hasVarietyBoostKey &&
           result.varietyBoostSigma == null,
       // Unknown / absent model id keeps the current model.
-      model: categories.contains(ImportCategory.settings) ? NaiModel.tryParse(result.model) : null,
+      model: importedModel,
       randomizeSeed: categories.contains(ImportCategory.seed) ? false : null,
       generatedImage: result.imageBytes,
       activeStyleNames: categories.contains(ImportCategory.styles) ? result.activeStyleNames : null,
@@ -1469,8 +1485,8 @@ class GenerationNotifier extends ChangeNotifier {
       interactions: categories.contains(ImportCategory.characters) ? result.interactions : null,
       autoPositioning: categories.contains(ImportCategory.characters) ? result.autoPositioning : null,
     );
-    if (categories.contains(ImportCategory.settings) && result.model != null) {
-      _prefs.setNaiModel(_state.model);
+    if (importedModel != null) {
+      _prefs.setNaiModel(importedModel);
       _propagateModel();
     }
     notifyListeners();
@@ -1525,6 +1541,9 @@ class GenerationNotifier extends ChangeNotifier {
   void applyPreset(GenerationPreset preset) {
     promptController.text = preset.prompt;
     negativePromptController.text = preset.negativePrompt;
+    // Parsed once — see applyImportedMetadata: the persist guard must act on
+    // the parsed model, not the raw string.
+    final pinnedModel = NaiModel.tryParse(preset.model);
     _state = _state.copyWith(
       width: preset.width,
       height: preset.height,
@@ -1539,7 +1558,7 @@ class GenerationNotifier extends ChangeNotifier {
       varietyBoostSigma: preset.varietyBoostSigma,
       clearVarietyBoost: preset.varietyBoostSigma == null,
       // Null = preset pre-dates model pinning; keep the current model.
-      model: NaiModel.tryParse(preset.model),
+      model: pinnedModel,
       characters: List<NaiCharacter>.from(preset.characters),
       interactions: List<NaiInteraction>.from(preset.interactions),
     );
@@ -1553,8 +1572,8 @@ class GenerationNotifier extends ChangeNotifier {
     } else {
       _vibeTransferNotifier?.clearAll();
     }
-    if (preset.model != null) {
-      _prefs.setNaiModel(_state.model);
+    if (pinnedModel != null) {
+      _prefs.setNaiModel(pinnedModel);
       _propagateModel();
     }
     notifyListeners();
@@ -1596,6 +1615,12 @@ class GenerationNotifier extends ChangeNotifier {
         sampler: settings.sampler,
         seed: seed,
         model: _state.model,
+        // Session-wide render settings (issue #35) apply to previews too, so
+        // a preview looks like the render it predicts.
+        noiseSchedule: _state.noiseSchedule,
+        cfgRescale: _state.cfgRescale,
+        varietyBoostSigma: _state.varietyBoostSigma,
+        transparentBackground: _state.transparentBackground,
       );
 
       // Auto-save the preview as well, so it's in the gallery
@@ -1650,6 +1675,12 @@ class GenerationNotifier extends ChangeNotifier {
         characters: processedChars,
         useCoords: request.useCoords,
         model: _state.model,
+        // Session-wide render settings (issue #35): cascade beats must match
+        // what the main renders look like, and record the truth in metadata.
+        noiseSchedule: _state.noiseSchedule,
+        cfgRescale: _state.cfgRescale,
+        varietyBoostSigma: _state.varietyBoostSigma,
+        transparentBackground: _state.transparentBackground,
       );
 
       _lastMetadata = result.metadata;

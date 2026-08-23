@@ -253,11 +253,14 @@ class MetadataImportService {
       cfgRescale = (settings['cfg_rescale'] as num?)?.toDouble();
       hasVarietyBoostKey = settings.containsKey('skip_cfg_above_sigma');
       varietyBoostSigma = (settings['skip_cfg_above_sigma'] as num?)?.toDouble();
-      // Our own PNGs carry the wire id under `model` (since the V5 work);
-      // NovelAI's own exports name it in `Source` ("NovelAI Diffusion V5 …").
-      model = settings['model']?.toString() ??
-          settings['model_name']?.toString() ??
-          metadata['Source']?.toString();
+      // Our own PNGs carry the wire id under `model` (since the V5 work).
+      // Deliberately NOT sniffed from the `Source` text chunk: that string
+      // ("NovelAI Diffusion V4.5 …") never encodes the Curated variant, so it
+      // parses to the Full model — and since essentially every pre-0.9.3 PNG
+      // and NAI-site export has no `model` key, the fallback silently switched
+      // a Curated user to Full (or flipped models entirely) on any settings
+      // import. No explicit key → the user's model is left alone.
+      model = settings['model']?.toString() ?? settings['model_name']?.toString();
       if (settings['seed'] != null) seed = settings['seed'].toString();
 
       // Restore active styles based on smart import toggle

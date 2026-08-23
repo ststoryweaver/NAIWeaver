@@ -80,6 +80,28 @@ void main() {
     expect(r.varietyBoostSigma, isNull);
   });
 
+  test('model imports from an explicit model key', () async {
+    final file = await pngWith({'prompt': '1girl', 'model': 'nai-diffusion-5-full'});
+    final r = await service.parseImageMetadata(file, smartStyleImport: false);
+    expect(r.model, 'nai-diffusion-5-full');
+  });
+
+  test('model is never sniffed from the Source chunk', () async {
+    // NAI-style PNG: `Source` names the family but never the Curated
+    // variant, and the Comment has no `model` key. Sniffing Source parsed
+    // to the Full model and silently switched (and persisted) a Curated
+    // user's model on any settings import — the model must stay unset.
+    final image = img.Image(width: 4, height: 4);
+    image.textData = {
+      'Source': 'NovelAI Diffusion V4.5 4BDE2A90',
+      'Comment': jsonEncode({'prompt': '1girl', 'uc': 'x', 'width': 832}),
+    };
+    final file = File('${tmp.path}/nai.png');
+    await file.writeAsBytes(img.PngEncoder().encode(image));
+    final r = await service.parseImageMetadata(file, smartStyleImport: false);
+    expect(r.model, isNull);
+  });
+
   test('the Comment JSON written by injectMetadata is what we parse', () async {
     // Sanity: the helper used above writes a NovelAI-shaped Comment chunk.
     final file = await pngWith({'prompt': 'x', 'cfg_rescale': 0.5});

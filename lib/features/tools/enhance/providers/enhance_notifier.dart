@@ -6,9 +6,18 @@ import '../../../../core/services/novel_ai_service.dart';
 import '../../../generation/models/nai_character.dart';
 import '../models/enhance_config.dart';
 
+/// Session render settings Enhance mirrors from the main editor (issue #35).
+typedef EnhanceRenderSettings = ({
+  String noiseSchedule,
+  double cfgRescale,
+  double? varietyBoostSigma,
+  bool transparentBackground,
+});
+
 class EnhanceNotifier extends ChangeNotifier {
   NovelAIService? _service;
   NaiModel _model = NaiModel.fallback;
+  EnhanceRenderSettings Function()? _sessionRenderSettings;
 
   static const String defaultNegativePrompt = 'lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]';
 
@@ -51,6 +60,14 @@ class EnhanceNotifier extends ChangeNotifier {
   /// hard-wired to V4.5 Full regardless of the CURATED toggle).
   void updateModel(NaiModel model) {
     _model = model;
+  }
+
+  /// Wires a live view of the main editor's session render settings
+  /// (noise schedule / rescale / Variety+ / Transparent BG, issue #35).
+  /// A getter rather than a pushed copy: these change on every slider move,
+  /// and Enhance must render with what the user currently sees.
+  void updateRenderSettingsSource(EnhanceRenderSettings Function() source) {
+    _sessionRenderSettings = source;
   }
 
   Future<void> setSourceImage(Uint8List bytes) async {
@@ -132,9 +149,15 @@ class EnhanceNotifier extends ChangeNotifier {
           ? '$_negativePrompt, $_styleNegativeContent'
           : _negativePrompt;
 
+      final render = _sessionRenderSettings?.call();
+
       final result = await _service!.generateImage(
         prompt: _prompt,
         negativePrompt: effectiveNegative,
+        noiseSchedule: render?.noiseSchedule,
+        cfgRescale: render?.cfgRescale,
+        varietyBoostSigma: render?.varietyBoostSigma,
+        transparentBackground: render?.transparentBackground ?? false,
         width: outWidth,
         height: outHeight,
         seed: DateTime.now().microsecondsSinceEpoch % 4294967295,
