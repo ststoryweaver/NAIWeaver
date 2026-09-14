@@ -71,21 +71,53 @@ class _AppWindowListener extends WindowListener {
 
   @override
   void onWindowClose() async {
+    // Capture geometry first, then hide immediately. `window_manager.destroy()`
+    // is known to stall several seconds on Windows (Flutter engine + plugin
+    // teardown, worse with ONNX/CUDA still loaded). Hiding the window is what
+    // the user perceives as "closed".
+    Rect? bounds;
+    var maximized = false;
     try {
-      final bounds = await windowManager.getBounds();
-      final maximized = await windowManager.isMaximized();
-      // Don't persist a degenerate rect (can happen if the window was minimized
-      // or mid-animation when closing) — it would make the next launch's window
-      // invisible.
-      if (bounds.width >= 400 && bounds.height >= 300) {
+      bounds = await windowManager
+          .getBounds()
+          .timeout(const Duration(milliseconds: 400));
+    } catch (_) {}
+    try {
+      maximized = await windowManager
+          .isMaximized()
+          .timeout(const Duration(milliseconds: 200));
+    } catch (_) {}
+    try {
+      await windowManager.hide();
+    } catch (_) {}
+
+    try {
+      // Don't persist a degenerate rect (minimized / mid-animation) — it would
+      // make the next launch's window invisible.
+      if (bounds != null && bounds.width >= 400 && bounds.height >= 300) {
         await _prefs.saveWindowState(
-          x: bounds.left, y: bounds.top,
-          w: bounds.width, h: bounds.height,
+          x: bounds.left,
+          y: bounds.top,
+          w: bounds.width,
+          h: bounds.height,
           maximized: maximized,
         );
       }
     } catch (_) {}
-    await windowManager.destroy();
+
+    // Prefer a normal OS close over destroy(): setPreventClose(true) +
+    // destroy() blocks the UI thread on recent Flutter Windows builds.
+    // https://github.com/leanflutter/window_manager/issues/478
+    try {
+      await windowManager.setPreventClose(false);
+      await windowManager.close();
+    } catch (_) {
+      try {
+        await windowManager.destroy();
+      } catch (_) {
+        exit(0);
+      }
+    }
   }
 }
 
@@ -135,7 +167,7 @@ void main() {
     // monitor.
     await windowManager.show();
     await windowManager.focus();
-    windowManager.setPreventClose(true);
+    await windowManager.setPreventClose(true);
     windowManager.addListener(_AppWindowListener(preferencesService));
   }
 
