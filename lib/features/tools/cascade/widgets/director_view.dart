@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/l10n/l10n_extensions.dart';
 import '../../../../core/models/nai_model.dart';
@@ -9,6 +10,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../core/utils/app_snackbar.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/utils/tag_suggestion_helper.dart';
+import '../../../../core/utils/tag_suggestion_keyboard.dart';
 import '../../../../core/widgets/tag_suggestion_overlay.dart';
 import '../providers/cascade_notifier.dart';
 import '../models/cascade_beat.dart';
@@ -45,6 +47,7 @@ class _DirectorViewState extends State<DirectorView> {
 
   // Tag suggestion state
   List<DanbooruTag> _suggestions = [];
+  final TagSuggestionKeyboard _suggestionKeys = TagSuggestionKeyboard();
   Timer? _debounce;
   TextEditingController? _activeSuggestionController;
   ValueChanged<String>? _activeSuggestionOnChanged;
@@ -54,6 +57,8 @@ class _DirectorViewState extends State<DirectorView> {
     super.initState();
     _sceneFocusNode.addListener(_onFocusChanged);
     _envFocusNode.addListener(_onFocusChanged);
+    _attachPromptKeys(_sceneFocusNode);
+    _attachPromptKeys(_envFocusNode);
   }
 
   @override
@@ -94,7 +99,10 @@ class _DirectorViewState extends State<DirectorView> {
           _posFocusNodes.values.any((f) => f.hasFocus) ||
           _negFocusNodes.values.any((f) => f.hasFocus);
       if (!anyFocused && _suggestions.isNotEmpty) {
-        setState(() => _suggestions = []);
+        setState(() {
+          _suggestions = [];
+          _suggestionKeys.reset();
+        });
       }
     });
   }
@@ -108,9 +116,15 @@ class _DirectorViewState extends State<DirectorView> {
     onChanged(value);
     _activeSuggestionController = controller;
     _activeSuggestionOnChanged = onChanged;
+    if (_suggestionKeys.selectedIndex != -1) {
+      _suggestionKeys.reset();
+    }
     _debounce?.cancel();
     if (tagService == null) {
-      setState(() => _suggestions = []);
+      setState(() {
+        _suggestions = [];
+        _suggestionKeys.reset();
+      });
       return;
     }
     final wildcardService = context.read<GenerationNotifier>().wildcardService;
@@ -124,7 +138,10 @@ class _DirectorViewState extends State<DirectorView> {
         wildcardService: wildcardService,
         characterSuggestionsFor: (q) => charLib.suggestionTags(q),
       );
-      setState(() => _suggestions = result.suggestions);
+      setState(() {
+        _suggestions = result.suggestions;
+        _suggestionKeys.reset();
+      });
     });
   }
 
@@ -132,7 +149,40 @@ class _DirectorViewState extends State<DirectorView> {
     if (_activeSuggestionController == null) return;
     TagSuggestionHelper.applyTag(_activeSuggestionController!, tag);
     _activeSuggestionOnChanged?.call(_activeSuggestionController!.text);
-    setState(() => _suggestions = []);
+    setState(() {
+      _suggestions = [];
+      _suggestionKeys.reset();
+    });
+  }
+
+  /// Same bindings as the main prompt: Tab / Shift+Tab cycle the overlay,
+  /// Enter inserts the highlighted chip. With no suggestions, Tab still
+  /// moves to the next field.
+  KeyEventResult _onPromptKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.tab) {
+      final handled = _suggestionKeys.cycle(
+        suggestionCount: _suggestions.length,
+        reverse: HardwareKeyboard.instance.isShiftPressed,
+      );
+      if (handled) setState(() {});
+      return handled ? KeyEventResult.handled : KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+      final tag = _suggestionKeys.accept(_suggestions);
+      if (tag != null) {
+        _onTagSelected(tag);
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _attachPromptKeys(FocusNode node) {
+    node.onKeyEvent = _onPromptKeyEvent;
   }
 
   void _ensureSlotControllers(CascadeBeat beat) {
@@ -143,11 +193,13 @@ class _DirectorViewState extends State<DirectorView> {
       if (!_posFocusNodes.containsKey(i)) {
         final fn = FocusNode();
         fn.addListener(_onFocusChanged);
+        _attachPromptKeys(fn);
         _posFocusNodes[i] = fn;
       }
       if (!_negFocusNodes.containsKey(i)) {
         final fn = FocusNode();
         fn.addListener(_onFocusChanged);
+        _attachPromptKeys(fn);
         _negFocusNodes[i] = fn;
       }
     }
@@ -539,6 +591,7 @@ class _DirectorViewState extends State<DirectorView> {
             child: TagSuggestionOverlay(
               suggestions: _suggestions,
               onTagSelected: _onTagSelected,
+              selectedIndex: _suggestionKeys.selectedIndex,
             ),
           ),
       ],
@@ -873,6 +926,7 @@ class _DirectorViewState extends State<DirectorView> {
             child: TagSuggestionOverlay(
               suggestions: _suggestions,
               onTagSelected: _onTagSelected,
+              selectedIndex: _suggestionKeys.selectedIndex,
             ),
           ),
       ],
