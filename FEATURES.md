@@ -73,6 +73,7 @@
 - **Character Appearance Casting**: Define a character's look once and reuse across multiple beats
 - **Cascade Library**: Save and load cascade configurations via SharedPreferences
 - **Cascade Playback View**: Inline beat-by-beat playback overlay for cascade mode; the ALBUM quick action adds the currently viewed beat and checks albums that image already belongs to
+- **Optional Beat Image Persistence**: Off-by-default setting to save each beat's last generated image to disk and restore it when the cascade is reopened
 - **Unsaved Changes Guard**: Save/discard confirmation dialog when leaving the cascade editor with unsaved modifications
 - **Cast Button**: Save the active cascade to library and return to the main screen in one action
 - **Responsive Navigation**: Labeled "Back to Library" and "Exit Cascade" buttons with mobile/desktop sizing

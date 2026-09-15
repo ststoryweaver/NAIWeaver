@@ -3,6 +3,7 @@
 ## v0.9.5
 
 ### New
+- **Optional persistence of cascade beat images.** Off by default. When enabled (Settings), each beat's last generated image is written to disk and restored the next time that cascade is opened. Deleting a cascade removes its stored images. Contributed by [@freakachu](https://github.com/freakachu).
 - **Cascade editor: per-beat roster and placement.** Add, remove, or drag-reorder character slots on a single beat. Each slot is bound to a cast member, so dropping Character 1 from one beat leaves Character 2 as Character 2 (same appearance, same prompt) rather than shifting everyone down. The add button offers cast members missing from the beat first, then a new character; a character no beat uses any more leaves the cast. Removing a slot also drops interaction tags whose partner left with it. A MANUAL / AI toggle on the slots header overrides placement per beat; older cascades keep the cascade-level default until you flip it. The position grid / freeform canvas now matches the beat's aspect ratio instead of a square. Contributed by [@freakachu](https://github.com/freakachu) (PR #39).
 - **Cascade interactions pick any partner.** The link button on a slot opens a sheet with WITH chips for the other characters on that beat, and a compact direction button that cycles **A → B** → **A ↔ B** (mutual) → **A ← B** (reverse, same character order, flipped arrow). Contributed by [@freakachu](https://github.com/freakachu) (PR #39).
 

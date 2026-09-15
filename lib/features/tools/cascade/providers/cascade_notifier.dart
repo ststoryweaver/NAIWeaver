@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/services/preferences_service.dart';
+import '../../../generation/models/nai_character.dart';
 import '../models/prompt_cascade.dart';
 import '../models/cascade_beat.dart';
-import '../../../generation/models/nai_character.dart';
+import '../services/cascade_preview_store.dart';
 
 class CascadeState {
   final List<PromptCascade> savedCascades;
@@ -95,13 +98,36 @@ class CascadeNotifier extends ChangeNotifier {
 
   String? _savedSnapshot;
 
+  final CascadePreviewStore? previewStore;
+  final PreferencesService? _prefs;
+  bool _persistFallback = false;
+  Future<void> _previewIo = Future.value();
+
+  bool get persistBeatPreviews =>
+      _prefs?.persistCascadeBeatPreviews ?? _persistFallback;
+
   bool get hasUnsavedChanges {
     if (_state.activeCascade == null) return false;
     return json.encode(_state.activeCascade!.toJson()) != _savedSnapshot;
   }
 
-  CascadeNotifier() {
+  CascadeNotifier({this.previewStore, PreferencesService? prefs})
+      : _prefs = prefs {
+    _persistFallback = prefs?.persistCascadeBeatPreviews ?? false;
     _loadFromStorage();
+  }
+
+  /// Completes when disk/memory preview I/O queued so far has finished.
+  @visibleForTesting
+  Future<void> get previewIo => _previewIo;
+
+  Future<void> setPersistBeatPreviews(bool value) async {
+    _persistFallback = value;
+    await _prefs?.setPersistCascadeBeatPreviews(value);
+    if (value) {
+      await _rewritePersistedPreviews();
+    }
+    notifyListeners();
   }
 
   Future<void> _loadFromStorage() async {
@@ -155,6 +181,9 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: {},
     );
     notifyListeners();
+    if (cascade != null) {
+      _enqueuePreviewIo(() => _restorePreviews(cascade.name));
+    }
   }
 
   void exitCascadeMode() {
@@ -209,6 +238,7 @@ class CascadeNotifier extends ChangeNotifier {
     }
     _state = _state.copyWith(beatPreviews: updated, beatMetadata: meta);
     notifyListeners();
+    _enqueuePreviewIo(() => _persistBeat(index, bytes));
   }
 
   /// Binds [basename] to beat [index]; null means the beat's current image
@@ -330,6 +360,7 @@ class CascadeNotifier extends ChangeNotifier {
     }
     _saveToStorage();
     notifyListeners();
+    _enqueuePreviewIo(() => previewStore?.deleteCascade(name) ?? Future.value());
   }
 
   void addBeat() {
@@ -406,6 +437,7 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: _shiftForInsert(_state.beatCaptions, insertAt),
     );
     notifyListeners();
+    _enqueuePreviewIo(_rewritePersistedPreviews);
   }
 
   void removeBeat(int index) {
@@ -434,6 +466,7 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: _shiftForRemoval(_state.beatCaptions, index),
     );
     notifyListeners();
+    _enqueuePreviewIo(_rewritePersistedPreviews);
   }
 
   void reorderBeats(int oldIndex, int newIndex) {
@@ -459,6 +492,46 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: _shiftForReorder(_state.beatCaptions, oldIndex, newIndex),
     );
     notifyListeners();
+    _enqueuePreviewIo(_rewritePersistedPreviews);
+  }
+
+  void _enqueuePreviewIo(Future<void> Function() op) {
+    _previewIo = _previewIo.then((_) => op()).catchError((Object e) {
+      debugPrint('Cascade preview persist error: $e');
+    });
+  }
+
+  Future<void> _persistBeat(int index, Uint8List? bytes) async {
+    if (!persistBeatPreviews || previewStore == null) return;
+    final name = _state.activeCascade?.name;
+    if (name == null) return;
+    if (bytes == null) {
+      await previewStore!.deleteBeat(name, index);
+    } else {
+      await previewStore!.saveBeat(name, index, bytes);
+    }
+  }
+
+  Future<void> _restorePreviews(String cascadeName) async {
+    if (!persistBeatPreviews || previewStore == null) return;
+    final loaded = await previewStore!.load(cascadeName);
+    if (loaded.isEmpty) return;
+    if (_state.activeCascade?.name != cascadeName) return;
+    final merged = Map<int, Uint8List?>.from(_state.beatPreviews);
+    loaded.forEach((k, v) => merged[k] = v);
+    _state = _state.copyWith(beatPreviews: merged);
+    notifyListeners();
+  }
+
+  Future<void> _rewritePersistedPreviews() async {
+    if (!persistBeatPreviews || previewStore == null) return;
+    final name = _state.activeCascade?.name;
+    if (name == null) return;
+    final images = <int, Uint8List>{};
+    _state.beatPreviews.forEach((k, v) {
+      if (v != null) images[k] = v;
+    });
+    await previewStore!.replaceAll(name, images);
   }
 
   /// Re-key an index-keyed cast-time map after a beat at [removed] is deleted:

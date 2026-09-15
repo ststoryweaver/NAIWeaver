@@ -147,6 +147,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Auto-save your prompt, settings, and references for crash recovery';
 
   @override
+  String get settingsPersistCascadePreviews => 'Persist cascade beat images';
+
+  @override
+  String get settingsPersistCascadePreviewsDesc =>
+      'Save each beat\'s last generated image to disk and restore it when you reopen that cascade. Off by default.';
+
+  @override
   String get settingsImg2ImgImportPrompt => 'Img2Img Import Prompt';
 
   @override

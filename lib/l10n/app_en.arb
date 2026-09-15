@@ -48,6 +48,8 @@
   "settingsCharInsertTargetDesc": "Picking a saved character from the prompt box adds a character card instead of inserting its tags into the main prompt",
   "settingsRememberSession": "Remember Session",
   "settingsRememberSessionDesc": "Auto-save your prompt, settings, and references for crash recovery",
+  "settingsPersistCascadePreviews": "Persist cascade beat images",
+  "settingsPersistCascadePreviewsDesc": "Save each beat's last generated image to disk and restore it when you reopen that cascade. Off by default.",
   "settingsImg2ImgImportPrompt": "Img2Img Import Prompt",
   "settingsImg2ImgImportPromptDesc": "Auto-fill img2img prompt when selecting a source image with metadata",
   "settingsSaveToAlbum": "Save to Album",

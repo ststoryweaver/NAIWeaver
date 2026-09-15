@@ -364,6 +364,18 @@ abstract class AppLocalizations {
   /// **'Auto-save your prompt, settings, and references for crash recovery'**
   String get settingsRememberSessionDesc;
 
+  /// No description provided for @settingsPersistCascadePreviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Persist cascade beat images'**
+  String get settingsPersistCascadePreviews;
+
+  /// No description provided for @settingsPersistCascadePreviewsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Save each beat\'s last generated image to disk and restore it when you reopen that cascade. Off by default.'**
+  String get settingsPersistCascadePreviewsDesc;
+
   /// No description provided for @settingsImg2ImgImportPrompt.
   ///
   /// In en, this message translates to:

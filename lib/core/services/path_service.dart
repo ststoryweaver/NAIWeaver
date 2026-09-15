@@ -25,6 +25,7 @@ class PathService {
   String get tagSourcesDir => p.join(baseDir, 'Tags', 'sources');
   String get referenceLibraryFilePath => p.join(baseDir, 'reference_library.json');
   String get canvasSessionDir => p.join(baseDir, 'canvas_sessions');
+  String get cascadePreviewsDir => p.join(baseDir, 'cascade_previews');
   String get charactersDir => p.join(baseDir, 'characters');
   String characterFilePath(String id) => p.join(charactersDir, '$id.json');
   String characterClosetPath(String id) => p.join(charactersDir, id, 'closet.json');
@@ -56,6 +57,7 @@ class PathService {
     await Directory(p.dirname(tagFilePath)).create(recursive: true);
     await Directory(tagSourcesDir).create(recursive: true);
     await Directory(canvasSessionDir).create(recursive: true);
+    await Directory(cascadePreviewsDir).create(recursive: true);
     await Directory(charactersDir).create(recursive: true);
     await Directory(mlModelsDir).create(recursive: true);
     await Directory(soundfontsDir).create(recursive: true);

@@ -145,6 +145,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsRememberSessionDesc => 'クラッシュ復旧のためにプロンプト、設定、参照を自動保存します';
 
   @override
+  String get settingsPersistCascadePreviews => 'カスケードのビート画像を保持';
+
+  @override
+  String get settingsPersistCascadePreviewsDesc =>
+      '各ビートの最後に生成した画像をディスクに保存し、そのカスケードを開き直したときに復元します。既定はオフです。';
+
+  @override
   String get settingsImg2ImgImportPrompt => 'Img2Imgプロンプトインポート';
 
   @override

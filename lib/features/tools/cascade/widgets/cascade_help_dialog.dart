@@ -36,7 +36,8 @@ void showCascadeHelpDialog(BuildContext context) {
                 const SizedBox(height: 8),
                 _paragraph(t, 'Cascade generates multi-beat scene sequences with consistent characters. '
                     'Each beat is one generation with its own environment, character poses, and settings. '
-                    'Character appearances are set once in the casting sheet and applied to all beats.', mobile),
+                    'Character appearances are set once in the casting sheet and applied to all beats. '
+                    'An optional setting (off by default) saves each beat\'s last image to disk so it comes back when you reopen the cascade.', mobile),
 
                 _divider(t),
 

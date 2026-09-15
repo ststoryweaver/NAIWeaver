@@ -30,6 +30,7 @@ import '../../../core/widgets/pin_lock_gate.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../../generation/providers/generation_notifier.dart';
 import '../tools_hub_screen.dart';
+import '../cascade/providers/cascade_notifier.dart';
 import 'demo_image_picker.dart';
 
 class AppSettings extends StatefulWidget {
@@ -128,6 +129,8 @@ class _AppSettingsState extends State<AppSettings> {
           _buildCharInsertTargetToggle(t),
           const SizedBox(height: 12),
           _buildRememberSessionToggle(t),
+          const SizedBox(height: 12),
+          _buildPersistCascadePreviewsToggle(t),
           const SizedBox(height: 12),
           _buildImg2ImgImportPromptToggle(t),
           const SizedBox(height: 12),
@@ -1529,6 +1532,46 @@ class _AppSettingsState extends State<AppSettings> {
                 if (!val) {
                   gen.deleteSessionSnapshot();
                 }
+                setLocalState(() {});
+              },
+              activeThumbColor: t.accent,
+              activeTrackColor: t.borderStrong,
+              inactiveThumbColor: t.textDisabled,
+              inactiveTrackColor: t.borderSubtle,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPersistCascadePreviewsToggle(VisionTokens t) {
+    final prefs = context.read<PreferencesService>();
+    final l = context.l;
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.settingsPersistCascadePreviews.toUpperCase(),
+                    style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l.settingsPersistCascadePreviewsDesc,
+                    style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: prefs.persistCascadeBeatPreviews,
+              onChanged: (val) async {
+                await context.read<CascadeNotifier>().setPersistBeatPreviews(val);
                 setLocalState(() {});
               },
               activeThumbColor: t.accent,

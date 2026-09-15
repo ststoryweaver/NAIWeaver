@@ -40,6 +40,7 @@ import 'features/gallery/ui/gallery_screen.dart';
 import 'features/generation/widgets/character_shelf.dart';
 import 'core/ml/ml_notifier.dart';
 import 'features/tools/cascade/providers/cascade_notifier.dart';
+import 'features/tools/cascade/services/file_cascade_preview_store.dart';
 import 'features/tools/canvas/providers/canvas_notifier.dart';
 import 'features/tools/img2img/providers/img2img_notifier.dart';
 import 'features/tools/cascade/widgets/cascade_playback_view.dart';
@@ -315,7 +316,12 @@ void main() {
           ),
         ),
         ChangeNotifierProvider(
-          create: (_) => CascadeNotifier(),
+          create: (_) => CascadeNotifier(
+            prefs: preferencesService,
+            previewStore: kIsWeb
+                ? null
+                : FileCascadePreviewStore(paths.cascadePreviewsDir),
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) => Img2ImgNotifier(),

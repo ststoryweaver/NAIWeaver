@@ -144,6 +144,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsRememberSessionDesc => '自动保存提示词、设置和参考图，用于崩溃恢复';
 
   @override
+  String get settingsPersistCascadePreviews => '保留级联镜头图像';
+
+  @override
+  String get settingsPersistCascadePreviewsDesc =>
+      '将每个镜头最后生成的图像保存到磁盘，并在再次打开该级联时恢复。默认关闭。';
+
+  @override
   String get settingsImg2ImgImportPrompt => '图生图导入提示词';
 
   @override

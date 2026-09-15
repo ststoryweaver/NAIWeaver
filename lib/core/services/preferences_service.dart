@@ -45,6 +45,8 @@ class PreferencesService {
   static const String _keyImportDisabledCategories = 'import_disabled_categories';
   static const String _keyExportFolderPath = 'export_folder_path';
   static const String _keyCanvasAutoSave = 'canvas_auto_save';
+  static const String _keyPersistCascadeBeatPreviews =
+      'persist_cascade_beat_previews';
   static const String _keyCustomOutputDir = 'custom_output_dir';
   static const String _keySdMigrationSource = 'sd_migration_source';
   static const String _keyFilenamePattern = 'filename_pattern';
@@ -381,6 +383,17 @@ class PreferencesService {
     await _prefs.setBool(_keyCanvasAutoSave, value);
   }
 
+  // — Persist cascade beat previews —
+
+  /// When true, each cascade beat's last generated image is written to disk
+  /// and restored the next time that cascade is opened. Off by default.
+  bool get persistCascadeBeatPreviews =>
+      _prefs.getBool(_keyPersistCascadeBeatPreviews) ?? false;
+
+  Future<void> setPersistCascadeBeatPreviews(bool value) async {
+    await _prefs.setBool(_keyPersistCascadeBeatPreviews, value);
+  }
+
   // — Custom Output Directory —
 
   String get customOutputDir => _prefs.getString(_keyCustomOutputDir) ?? '';
@@ -613,7 +626,7 @@ class PreferencesService {
     _keyRememberSession, _keyLocale, _keyFurryMode, _keyUseCurated,
     _keyNaiModel, _keyModelRenderSettings,
     _keyImg2ImgImportPrompt, _keyShowSeedControl, _keyShowAnlasTracker,
-    _keyCanvasAutoSave, _keyCustomResolutions, _keyCharacterEditorMode,
+    _keyCanvasAutoSave, _keyPersistCascadeBeatPreviews, _keyCustomResolutions, _keyCharacterEditorMode,
     _keyFilenamePattern, _keySavePathPattern,
     _keyShowTooltips, _keyHideTagValues, _keyHonorOutfitState,
     _keyUiStylesExpanded, _keyUiCharShowTitle, _keyUiCharShowUc,

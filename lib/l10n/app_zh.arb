@@ -48,6 +48,8 @@
   "settingsCharInsertTargetDesc": "在提示词框中选择保存的角色时，将添加角色卡片，而不是把标签插入主提示词",
   "settingsRememberSession": "记住会话",
   "settingsRememberSessionDesc": "自动保存提示词、设置和参考图，用于崩溃恢复",
+  "settingsPersistCascadePreviews": "保留级联镜头图像",
+  "settingsPersistCascadePreviewsDesc": "将每个镜头最后生成的图像保存到磁盘，并在再次打开该级联时恢复。默认关闭。",
   "settingsImg2ImgImportPrompt": "图生图导入提示词",
   "settingsImg2ImgImportPromptDesc": "选择带元数据的原图时自动填充图生图提示词",
   "settingsSaveToAlbum": "保存到相册",

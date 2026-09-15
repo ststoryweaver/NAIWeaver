@@ -47,6 +47,8 @@
   "settingsCharInsertTargetDesc": "プロンプト欄で保存キャラを選ぶと、メインプロンプトにタグを挿入せず、キャラクターカードを追加します",
   "settingsRememberSession": "セッション記憶",
   "settingsRememberSessionDesc": "クラッシュ復旧のためにプロンプト、設定、参照を自動保存します",
+  "settingsPersistCascadePreviews": "カスケードのビート画像を保持",
+  "settingsPersistCascadePreviewsDesc": "各ビートの最後に生成した画像をディスクに保存し、そのカスケードを開き直したときに復元します。既定はオフです。",
   "settingsImg2ImgImportPrompt": "Img2Imgプロンプトインポート",
   "settingsImg2ImgImportPromptDesc": "メタデータ付きソース画像選択時にimg2imgプロンプトを自動入力",
   "settingsSaveToAlbum": "アルバムに保存",
