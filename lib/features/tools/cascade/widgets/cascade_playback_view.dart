@@ -703,7 +703,10 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                   // beat's saved filename so the album picker checks *this*
                   // image rather than the last generated one.
                   if (preview != null) {
-                    genNotifier.setGeneratedImage(preview);
+                    genNotifier.setGeneratedImage(
+                      preview,
+                      metadata: cascadeNotifier.state.beatMetadata[index],
+                    );
                     genNotifier.adoptSavedBasename(
                       cascadeNotifier.state.beatSavedBasenames[index],
                     );
@@ -768,11 +771,17 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                         }
                         final result = await genNotifier.generateCascadeBeat(request);
                         if (result != null) {
-                          cascadeNotifier.setBeatPreview(currentIndex, result);
-                          final saved = genNotifier.lastSavedBasename;
-                          if (saved != null) {
-                            cascadeNotifier.setBeatSavedBasename(currentIndex, saved);
-                          }
+                          cascadeNotifier.setBeatPreview(
+                            currentIndex,
+                            result,
+                            metadata: genNotifier.lastMetadata,
+                          );
+                          // Always (re)bind: with auto-save off this clears the
+                          // filename of the render this one just replaced.
+                          cascadeNotifier.setBeatSavedBasename(
+                            currentIndex,
+                            genNotifier.lastSavedBasename,
+                          );
                           if (currentIndex < totalBeats - 1) {
                             cascadeNotifier.selectBeat(currentIndex + 1);
                           }

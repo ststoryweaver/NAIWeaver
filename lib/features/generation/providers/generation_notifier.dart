@@ -311,6 +311,10 @@ class GenerationNotifier extends ChangeNotifier {
   String get stylesFilePath => _presetService.stylesFilePath;
 
   Map<String, dynamic>? _lastMetadata;
+
+  /// Metadata of the image currently on screen (null when unknown, in which
+  /// case SAVE / album actions are disabled rather than writing a wrong record).
+  Map<String, dynamic>? get lastMetadata => _lastMetadata;
   bool _imageSaved = false;
   bool get imageSaved => _imageSaved;
   String? _lastSavedBasename;
@@ -792,10 +796,16 @@ class GenerationNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setGeneratedImage(Uint8List? image) {
+  /// Shows [image] (e.g. a cascade beat preview) in the main viewer. When the
+  /// bytes differ from what is on screen, save/album tracking resets and
+  /// [metadata] becomes the record used for saving it; leaving it null means
+  /// the image cannot be saved from here, which beats embedding the previous
+  /// generation's prompt and seed into it.
+  void setGeneratedImage(Uint8List? image, {Map<String, dynamic>? metadata}) {
     if (!identical(_state.generatedImage, image)) {
       _lastSavedBasename = null;
       _imageSaved = false;
+      _lastMetadata = metadata;
     }
     _state = _state.copyWith(generatedImage: image);
     notifyListeners();

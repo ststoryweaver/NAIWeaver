@@ -97,7 +97,19 @@ class QuickActionOverlay extends StatelessWidget {
             top: saveTop,
             right: 20,
             child: _SaveButton(
-              onTap: () => notifier.saveCurrentImage(),
+              onTap: () async {
+                await notifier.saveCurrentImage();
+                // Same bookkeeping as the album picker: if this is a cascade
+                // beat, remember its filename so switching beats and back
+                // doesn't offer SAVE again (and write a duplicate).
+                final saved = notifier.lastSavedBasename;
+                if (saved != null && context.mounted) {
+                  context.read<CascadeNotifier>().recordBasenameForImage(
+                        notifier.state.generatedImage,
+                        saved,
+                      );
+                }
+              },
               icon: Icons.save_alt,
               label: l.mainSave.toUpperCase(),
               color: t.accentSuccess,
