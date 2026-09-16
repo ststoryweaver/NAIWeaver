@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.9.5
 
 ### New
 - **Cascade editor: per-beat roster and placement.** Add, remove, or drag-reorder character slots on a single beat. Each slot is bound to a cast member, so dropping Character 1 from one beat leaves Character 2 as Character 2 (same appearance, same prompt) rather than shifting everyone down. The add button offers cast members missing from the beat first, then a new character; a character no beat uses any more leaves the cast. Removing a slot also drops interaction tags whose partner left with it. A MANUAL / AI toggle on the slots header overrides placement per beat; older cascades keep the cascade-level default until you flip it. The position grid / freeform canvas now matches the beat's aspect ratio instead of a square. Contributed by [@freakachu](https://github.com/freakachu) (PR #39).
@@ -10,7 +10,6 @@
 - **Cascade prompt fields: tag suggestions actually insert.** Tapping a chip unfocused the field first, so the overlay vanished (and the cursor went invalid) before the insert ran. The suggestion overlay now sits inside the field's tap region so a chip tap no longer unfocuses the field, and insert still works if the selection is already gone.
 - **Cast sheet character fields follow the selected beat.** Appearance boxes listed every slot in the cascade, even when the current beat had fewer characters. Only the cast members on the selected beat are shown, labelled by character, and each field keeps its value when you switch beats.
 - **Cascade album button tracks the viewed beat.** Adding a beat to an album, then tapping another beat, still checked the previous file and refused to add the image on screen. Each beat now remembers its own saved filename: checks are membership of *this* image, clicking an album adds *this* image, and removing it from the gallery album list updates the checks. Cascade (and img2img) generation also records the new file on auto-save instead of keeping a stale name. Contributed by [@freakachu](https://github.com/freakachu) (PR #39).
-
 - **Cascade director: dragging a character while typing no longer swaps prompts.** Slot text fields were tracked by position while the drag list tracked cast identity, so on touch (where a drag does not unfocus the field) the focused field kept the old character's text under the new one and the next keystroke wrote it into the wrong slot. Fields now follow the cast member. Switching beats also discards suggestion chips computed for the previous beat's text.
 - **Position grid on wide beats shows all five rows.** With a landscape resolution the V4.5 grid box got wider than tall but kept square, non-scrolling cells, so the bottom rows were clipped and could not be tapped. The grid now shares the box's height evenly.
 - **Per-beat album / save bookkeeping is complete.** Regenerating a beat with auto-save off now forgets the previous render's filename (the album picker no longer adds the old file); the SAVE button records the filename like the album picker does, so switching beats and back no longer offers a second save of the same image; and each beat keeps its own generation record, so saving a beat after switching back to it embeds *that* beat's prompt and seed rather than the last generated beat's.
@@ -22,6 +21,9 @@
 
 ### Contributors
 - [@freakachu](https://github.com/freakachu) — per-beat cascade roster, placement, interaction targeting, and the cascade fixes above (PR #39)
+
+### Under the hood
+- Full suite at 706 tests (16 new: cast-identity controllers, per-beat metadata, role-aware pruning, model-aware cap, legacy position clamp, append-mode tag insert, landscape position grid); analyzer clean; Windows release build verified locally. The cascade help dialog is still English-only. Touch-specific paths (drag while typing, chip tap region) are not yet verified on a device.
 
 ## v0.9.4
 
