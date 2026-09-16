@@ -1798,6 +1798,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'No characters in this beat. Add one to place or prompt them.';
 
   @override
+  String get interactionEditorTitle => 'INTERACTION EDITOR';
+
+  @override
+  String get interactionActionLabel => 'ACTION';
+
+  @override
+  String get interactionActionHint => 'ENTER ACTION (e.g., hugging)';
+
+  @override
+  String get interactionDirectionLabel => 'DIRECTION';
+
+  @override
+  String get interactionWithLabel => 'WITH';
+
+  @override
+  String get interactionNeedPartner =>
+      'Add another character to set an interaction';
+
+  @override
+  String get interactionSave => 'SAVE INTERACTION';
+
+  @override
   String get cascadeBeatSettings => 'BEAT SETTINGS';
 
   @override

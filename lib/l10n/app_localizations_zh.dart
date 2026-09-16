@@ -1631,7 +1631,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get themeSectionModel => 'MODEL';
+  String get themeSectionModel => '模型';
 
   @override
   String get themeSectionDimSeed => '尺寸 + 种子';
@@ -1754,6 +1754,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cascadeNoCharactersInBeat => '此镜头没有角色。添加后即可放置或填写提示词。';
+
+  @override
+  String get interactionEditorTitle => '互动编辑器';
+
+  @override
+  String get interactionActionLabel => '动作';
+
+  @override
+  String get interactionActionHint => '输入动作（例如 hugging）';
+
+  @override
+  String get interactionDirectionLabel => '方向';
+
+  @override
+  String get interactionWithLabel => '对象';
+
+  @override
+  String get interactionNeedPartner => '请添加另一个角色以设置互动';
+
+  @override
+  String get interactionSave => '保存互动';
 
   @override
   String get cascadeBeatSettings => '镜头设置';

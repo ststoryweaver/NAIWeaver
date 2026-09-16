@@ -3358,6 +3358,48 @@ abstract class AppLocalizations {
   /// **'No characters in this beat. Add one to place or prompt them.'**
   String get cascadeNoCharactersInBeat;
 
+  /// No description provided for @interactionEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'INTERACTION EDITOR'**
+  String get interactionEditorTitle;
+
+  /// No description provided for @interactionActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTION'**
+  String get interactionActionLabel;
+
+  /// No description provided for @interactionActionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'ENTER ACTION (e.g., hugging)'**
+  String get interactionActionHint;
+
+  /// No description provided for @interactionDirectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DIRECTION'**
+  String get interactionDirectionLabel;
+
+  /// No description provided for @interactionWithLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'WITH'**
+  String get interactionWithLabel;
+
+  /// No description provided for @interactionNeedPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another character to set an interaction'**
+  String get interactionNeedPartner;
+
+  /// No description provided for @interactionSave.
+  ///
+  /// In en, this message translates to:
+  /// **'SAVE INTERACTION'**
+  String get interactionSave;
+
   /// No description provided for @cascadeBeatSettings.
   ///
   /// In en, this message translates to:

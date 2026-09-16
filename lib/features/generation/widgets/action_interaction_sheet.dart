@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/theme_extensions.dart';
 import '../../../core/theme/vision_tokens.dart';
+import '../../../core/l10n/l10n_extensions.dart';
 import '../../../core/widgets/tag_suggestion_overlay.dart';
 import '../../../core/services/tag_service.dart';
 import '../models/nai_character.dart';
@@ -278,7 +279,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'WITH',
+          context.l.interactionWithLabel,
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: t.fontSize(8),
@@ -289,7 +290,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
         const SizedBox(height: 8),
         if (partners.isEmpty)
           Text(
-            'Add another character to set an interaction',
+            context.l.interactionNeedPartner,
             style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10)),
           )
         else
@@ -371,7 +372,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'INTERACTION EDITOR',
+                  context.l.interactionEditorTitle,
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: t.fontSize(12),
@@ -398,7 +399,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
             ),
             const SizedBox(height: 24),
             Text(
-              'ACTION',
+              context.l.interactionActionLabel,
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: t.fontSize(9),
@@ -417,7 +418,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
                 height: 1.4,
               ),
               decoration: InputDecoration(
-                hintText: 'ENTER ACTION (e.g., hugging)',
+                hintText: context.l.interactionActionHint,
                 hintStyle: TextStyle(
                   fontSize: t.fontSize(9),
                   color: t.textMinimal,
@@ -446,7 +447,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
             ),
             const SizedBox(height: 20),
             Text(
-              'DIRECTION',
+              context.l.interactionDirectionLabel,
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: t.fontSize(9),
@@ -495,7 +496,7 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
                 ),
               ),
               child: Text(
-                'SAVE INTERACTION',
+                context.l.interactionSave,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,

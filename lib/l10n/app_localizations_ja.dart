@@ -1763,6 +1763,27 @@ class AppLocalizationsJa extends AppLocalizations {
       'このビートにはキャラクターがいません。追加して配置やプロンプトを設定できます。';
 
   @override
+  String get interactionEditorTitle => 'インタラクションエディター';
+
+  @override
+  String get interactionActionLabel => 'アクション';
+
+  @override
+  String get interactionActionHint => 'アクションを入力（例: hugging）';
+
+  @override
+  String get interactionDirectionLabel => '方向';
+
+  @override
+  String get interactionWithLabel => '相手';
+
+  @override
+  String get interactionNeedPartner => 'インタラクションを設定するには別のキャラクターを追加してください';
+
+  @override
+  String get interactionSave => 'インタラクションを保存';
+
+  @override
   String get cascadeBeatSettings => 'ビート設定';
 
   @override
