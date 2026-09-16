@@ -409,8 +409,9 @@ user's tuned steps/scale on model switch.
 
 ### S6. Prompt features: auto-Text, new tags, presets
 
-- `autoText` (V5): if the base prompt contains a quoted string (`"…"` or `「…」`) and no `Text:` block, append
-  `\nText: <quoted>` at the very end (frontend convenience; replicate in the prompt pre-processor, off for V4.5).
+- `autoText` (V5): collect quoted strings (`"…"` or `「…」`) from the base prompt *and* character prompts; append
+  `, teXt: <quoted>` at the very end of the base caption (after style suffixes), with a blank line between quotes.
+  A manual `Text:` / `teXt:` block disables it. Off for V4.5.
 - Tag DB: add `depthness`, `attractive male`, `low/medium/high/ultra complexity`, `has alpha`, `alpha transparency`,
   `transparent background`, `meta:novel era`, `meta:golden era`, `visual novel art|bg|cg|chibi|sprite` to autocomplete
   (flag as V5).

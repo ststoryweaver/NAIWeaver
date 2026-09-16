@@ -32,7 +32,7 @@ The app keeps a per-model capability table in `lib/core/models/nai_model.dart` (
 | `deliberate_euler_ancestral_bug` / `prefer_brownian` | — | `false` / `true` with `k_euler_ancestral` |
 | `straight_alpha` / `tag_hint_transparent_background` | — | `true` when Transparent BG is on (RGBA PNG result) |
 | `ddim` sampler | — | remapped to `k_euler_ancestral` |
-| auto `Text:` block | — | quoted `"…"` / `「…」` in the prompt appended as `\nText: …` |
+| auto `teXt:` block | — | quoted `"…"` / `「…」` in the base *and* character prompts appended as `, teXt: …` (blank line between quotes; last thing in the base caption) |
 | `upscaled_enhance` (Enhance "Max") | — | `true` on an `img2img` request sent at the source's own (64-rounded) dimensions; the result comes back at 2×, or scaled to the 3,145,728 px cap when 2× would exceed it |
 
 `GET https://image.novelai.net/user/subscription` (bearer) returns `{tier, active, trainingStepsLeft{fixedTrainingStepsLeft, purchasedTrainingSteps}, usage?}`; `usage = {percent, isNegative, timeUntilNextPercent}` is the Opus V5 allowance (absent below Opus). `api.novelai.net` is kept only as a fallback.

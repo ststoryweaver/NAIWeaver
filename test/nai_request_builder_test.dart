@@ -503,7 +503,7 @@ void main() {
       expect(v5p['prefer_brownian'], true);
     });
 
-    test('autoText: quoted strings become a Text: block, manual Text: wins', () {
+    test('autoText: quoted strings become a teXt: block, manual Text: wins', () {
       final a = buildNaiGenerateBody(
         model: NaiModel.v5Full,
         prompt: 'a sign reading "OPEN", neon',
@@ -511,8 +511,11 @@ void main() {
         height: 64,
         seed: 1,
       );
-      expect(a['input'], 'a sign reading "OPEN", neon\nText: OPEN');
-      expect(_params(a)['v4_prompt']['caption']['base_caption'], 'a sign reading "OPEN", neon\nText: OPEN');
+      expect(a['input'], 'a sign reading "OPEN", neon, teXt: OPEN');
+      expect(
+        _params(a)['v4_prompt']['caption']['base_caption'],
+        'a sign reading "OPEN", neon, teXt: OPEN',
+      );
 
       final b = buildNaiGenerateBody(
         model: NaiModel.v5Full,
@@ -530,13 +533,57 @@ void main() {
         height: 64,
         seed: 1,
       );
-      expect(c['input'], '看板に「営業中」\nText: 営業中');
+      expect(c['input'], '看板に「営業中」, teXt: 営業中');
     });
 
-    test('applyAutoText joins multiple quotes and ignores empty ones', () {
-      expect(applyAutoText('"A" and "B" and ""'), '"A" and "B" and ""\nText: A, B');
+    test('applyAutoText joins multiple quotes with a blank line and ignores empty ones', () {
+      expect(
+        applyAutoText('1girl, standing, "hello world", "test string", indoors'),
+        '1girl, standing, "hello world", "test string", indoors, teXt: hello world\n\ntest string',
+      );
+      expect(applyAutoText('"A" and "B" and ""'), '"A" and "B" and "", teXt: A\n\nB');
       expect(applyAutoText('no quotes'), 'no quotes');
       expect(applyAutoText('x\ntext: already'), 'x\ntext: already');
+      expect(
+        applyAutoText('indoors, teXt: already'),
+        'indoors, teXt: already',
+      );
+    });
+
+    test('autoText collects quotes from character prompts onto the base caption', () {
+      final body = buildNaiGenerateBody(
+        model: NaiModel.v5Full,
+        prompt: 'indoors, "from base"',
+        width: 64,
+        height: 64,
+        seed: 1,
+        characters: [
+          _char('1girl, "hello there"', 0.2, 0.3),
+          _char('1boy, "hi"', 0.7, 0.3),
+        ],
+      );
+      expect(
+        body['input'],
+        'indoors, "from base", teXt: from base\n\nhello there\n\nhi',
+      );
+      final chars = _params(body)['v4_prompt']['caption']['char_captions'] as List;
+      expect(chars[0]['char_caption'], '1girl, "hello there"');
+      expect(chars[1]['char_caption'], '1boy, "hi"');
+    });
+
+    test('autoText lands after the style suffix', () {
+      final body = buildNaiGenerateBody(
+        model: NaiModel.v5Full,
+        prompt: '1girl, "hello"',
+        promptSuffix: ', very aesthetic, amazing quality',
+        width: 64,
+        height: 64,
+        seed: 1,
+      );
+      expect(
+        body['input'],
+        '1girl, "hello", very aesthetic, amazing quality, teXt: hello',
+      );
     });
 
     test('body is JSON-encodable', () {

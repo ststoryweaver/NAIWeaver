@@ -78,9 +78,6 @@ Map<String, dynamic> buildNaiGenerateBody({
   final alphaTag = transparent ? ', transparent background' : '';
   String inputPrompt = sanitizePromptForNai(
       '${promptPrefix ?? ''}$prompt$alphaTag${promptSuffix ?? ''}');
-  if (caps.autoText) {
-    inputPrompt = applyAutoText(inputPrompt);
-  }
 
   final effectiveNegativePrompt = sanitizePromptForNai(negativePrompt);
 
@@ -88,6 +85,19 @@ Map<String, dynamic> buildNaiGenerateBody({
   final effectiveCharacters = characters.length > caps.maxCharacters
       ? characters.sublist(0, caps.maxCharacters)
       : characters;
+
+  // NovelAI's web UI collects quoted strings from the base prompt *and*
+  // every character prompt, then appends them as a `teXt:` block at the
+  // very end of the base caption (after style suffixes). Manual `Text:` /
+  // `teXt:` disables the auto path.
+  if (caps.autoText) {
+    inputPrompt = applyAutoText(
+      inputPrompt,
+      extraSources: effectiveCharacters.map(
+        (c) => sanitizePromptForNai(c.prompt),
+      ),
+    );
+  }
   final bool isMultiCharacter = effectiveCharacters.isNotEmpty;
 
   Map<String, dynamic> centerJson(NaiCoordinate c) => caps.freeformPosition
@@ -266,19 +276,36 @@ Map<String, dynamic> buildNaiGenerateBody({
 double _round3(double v) => (v * 1000).round() / 1000;
 
 final RegExp _quotedText = RegExp(r'"([^"\n]+)"|「([^」\n]+)」');
-final RegExp _hasTextBlock = RegExp(r'(^|\n)\s*Text:', caseSensitive: false);
+/// Manual `Text:` / `teXt:` (any casing) already in the prompt, as its own
+/// comma-or-newline-delimited tag, disables auto-collection.
+final RegExp _hasTextBlock = RegExp(
+  r'(?:^|[\n,])\s*teXt\s*:',
+  caseSensitive: false,
+);
 
-/// NovelAI V5 "auto text": when the prompt quotes a string (`"..."` or
-/// `「...」`) and has no explicit `Text:` block, the frontend appends
-/// `\nText: <quoted>` so the model renders it. Multiple quoted strings are
-/// joined with `, `. A manual `Text:` block disables the auto path.
-String applyAutoText(String prompt) {
+List<String> extractQuotedStrings(String text) => _quotedText
+    .allMatches(text)
+    .map((m) => (m.group(1) ?? m.group(2) ?? '').trim())
+    .where((s) => s.isNotEmpty)
+    .toList();
+
+/// NovelAI V5 "auto text": quoted strings (`"..."` or `「...」`) in the base
+/// prompt and in [extraSources] (character prompts) are collected, in order,
+/// and appended to the base prompt as `, teXt: …` — the last thing in the
+/// caption, after style suffixes. Multiple quotes are separated by a blank
+/// line (`\n\n`); the quotes themselves stay in their original positions.
+/// A manual `Text:` / `teXt:` block disables this.
+String applyAutoText(
+  String prompt, {
+  Iterable<String> extraSources = const [],
+}) {
   if (_hasTextBlock.hasMatch(prompt)) return prompt;
-  final quoted = _quotedText
-      .allMatches(prompt)
-      .map((m) => (m.group(1) ?? m.group(2) ?? '').trim())
-      .where((s) => s.isNotEmpty)
-      .toList();
+  final quoted = <String>[
+    ...extractQuotedStrings(prompt),
+    for (final src in extraSources) ...extractQuotedStrings(src),
+  ];
   if (quoted.isEmpty) return prompt;
-  return '$prompt\nText: ${quoted.join(', ')}';
+  final trimmed = prompt.trimRight();
+  final sep = trimmed.endsWith(',') ? ' ' : ', ';
+  return '$trimmed${sep}teXt: ${quoted.join('\n\n')}';
 }
