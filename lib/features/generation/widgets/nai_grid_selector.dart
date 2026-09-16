@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/theme/vision_tokens.dart';
 import '../../../core/utils/nai_coordinate_utils.dart';
 import '../models/nai_character.dart';
 
@@ -40,40 +41,51 @@ class NaiGridSelector extends StatelessWidget {
       );
     }
 
+    // Five rows of five Expanded cells rather than a GridView: the box follows
+    // the target aspect ratio, and a non-scrolling GridView with square cells
+    // overflowed (clipping the bottom rows) whenever the box was wider than
+    // tall. Expanded cells simply share whatever height the box has.
     return AspectRatio(
       aspectRatio: aspectRatio > 0 ? aspectRatio : 1,
       child: Container(
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           border: Border.all(color: t.borderStrong),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: GridView.builder(
-          padding: const EdgeInsets.all(8),
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 5,
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-          ),
-          itemCount: 25,
-          itemBuilder: (context, index) {
-            final coord = NaiCoordinateUtils.getCoordinateFromIndex(index);
-            final isSelected =
-                coord.x == selectedCoordinate.x &&
-                coord.y == selectedCoordinate.y;
-
-            return InkWell(
-              onTap: () => onCoordinateSelected(coord),
-              borderRadius: BorderRadius.circular(4),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected ? t.accent : t.textMinimal,
-                  borderRadius: BorderRadius.circular(4),
-                  border: isSelected ? null : Border.all(color: t.textMinimal),
+        child: Column(
+          children: [
+            for (int row = 0; row < 5; row++) ...[
+              if (row > 0) const SizedBox(height: 4),
+              Expanded(
+                child: Row(
+                  children: [
+                    for (int col = 0; col < 5; col++) ...[
+                      if (col > 0) const SizedBox(width: 4),
+                      Expanded(child: _cell(t, row * 5 + col)),
+                    ],
+                  ],
                 ),
               ),
-            );
-          },
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cell(VisionTokens t, int index) {
+    final coord = NaiCoordinateUtils.getCoordinateFromIndex(index);
+    final isSelected =
+        coord.x == selectedCoordinate.x && coord.y == selectedCoordinate.y;
+    return InkWell(
+      onTap: () => onCoordinateSelected(coord),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? t.accent : t.textMinimal,
+          borderRadius: BorderRadius.circular(4),
+          border: isSelected ? null : Border.all(color: t.textMinimal),
         ),
       ),
     );
