@@ -85,22 +85,22 @@ class _TagSuggestionOverlayState extends State<TagSuggestionOverlay> {
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: t.borderMedium),
                 ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.3,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (hasCharacterSuggestions) _honorToggle(context, t),
-                Flexible(
-                  // Part of the originating TextField's tap group: on desktop
-                  // a TextField unfocuses itself on pointer-down outside its
-                  // TapRegion, which would tear this overlay down before a
-                  // chip's onTap could fire. Inside the group, a chip tap
-                  // counts as "inside" the field and focus is kept.
-                  child: TextFieldTapRegion(
+          // The whole panel (chips *and* the outfit-state toggle) is part of
+          // the originating TextField's tap group: on desktop a TextField
+          // unfocuses itself on pointer-down outside its TapRegion, which
+          // would tear this overlay down before a tap could land. Inside the
+          // group, a tap here counts as "inside" the field and focus is kept.
+          child: TextFieldTapRegion(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.3,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (hasCharacterSuggestions) _honorToggle(context, t),
+                  Flexible(
                     child: Listener(
                       onPointerSignal: (pointerSignal) {
                         if (pointerSignal is PointerScrollEvent) {
@@ -219,7 +219,9 @@ class _TagSuggestionOverlayState extends State<TagSuggestionOverlay> {
                                         tag.typeName != 'saved_character') ...[
                                       const SizedBox(width: 4),
                                       Text(
-                                        NumberFormat.compact().format(tag.count),
+                                        NumberFormat.compact().format(
+                                          tag.count,
+                                        ),
                                         style: TextStyle(
                                           color: color.withValues(alpha: 0.4),
                                           fontSize: t.fontSize(8),
@@ -235,8 +237,8 @@ class _TagSuggestionOverlayState extends State<TagSuggestionOverlay> {
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

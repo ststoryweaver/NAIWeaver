@@ -137,18 +137,34 @@ class TagSuggestionHelper {
   static void applyTag(TextEditingController controller, DanbooruTag tag) {
     final text = controller.text;
     final selection = controller.selection;
-    // Tapping a suggestion often unfocuses the field first, which makes
-    // selection invalid (baseOffset == -1). Fall back to the end of the
-    // text so the tag still inserts instead of throwing / no-op'ing.
-    final cursorPosition = (!selection.isValid || selection.baseOffset < 0)
-        ? text.length
-        : selection.baseOffset.clamp(0, text.length);
-    final beforeCursor = text.substring(0, cursorPosition);
-    final afterCursor = text.substring(cursorPosition);
-
-    final lastDelimiter = beforeCursor.lastIndexOf(RegExp(r'[,|]'));
-    final prefix = beforeCursor.substring(0, lastDelimiter + 1);
-    final currentSection = beforeCursor.substring(lastDelimiter + 1);
+    // With no valid selection (the field was unfocused, or its text was
+    // replaced programmatically before the chip tap landed) there is no
+    // "current word" to replace: the trailing comma-section is a complete tag
+    // the user already typed, so *append* after it instead of overwriting it.
+    final appendMode = !selection.isValid || selection.baseOffset < 0;
+    final String beforeCursor;
+    final String afterCursor;
+    final String prefix;
+    final String currentSection;
+    if (appendMode) {
+      afterCursor = '';
+      currentSection = '';
+      final trimmed = text.trimRight();
+      if (trimmed.isEmpty) {
+        beforeCursor = prefix = '';
+      } else if (trimmed.endsWith(',') || trimmed.endsWith('|')) {
+        beforeCursor = prefix = '$trimmed ';
+      } else {
+        beforeCursor = prefix = '$trimmed, ';
+      }
+    } else {
+      final cursorPosition = selection.baseOffset.clamp(0, text.length);
+      beforeCursor = text.substring(0, cursorPosition);
+      afterCursor = text.substring(cursorPosition);
+      final lastDelimiter = beforeCursor.lastIndexOf(RegExp(r'[,|]'));
+      prefix = beforeCursor.substring(0, lastDelimiter + 1);
+      currentSection = beforeCursor.substring(lastDelimiter + 1);
+    }
     final spacer = currentSection.startsWith(' ') ? ' ' : '';
 
     // Shortcut insertion (e.g. "artist:") — insert without trailing comma
