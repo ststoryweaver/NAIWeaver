@@ -7,11 +7,11 @@ import 'package:naiweaver/core/utils/tag_suggestion_keyboard.dart';
 DanbooruTag _t(String name) => DanbooruTag(tag: name, count: 1);
 
 DanbooruTag _char(String name, String expansion) => DanbooruTag(
-      tag: name,
-      count: 0,
-      typeName: 'saved_character',
-      expansion: expansion,
-    );
+  tag: name,
+  count: 0,
+  typeName: 'saved_character',
+  expansion: expansion,
+);
 
 void main() {
   group('TagSuggestionKeyboard.cycle', () {
@@ -49,7 +49,11 @@ void main() {
   });
 
   group('TagSuggestionKeyboard.accept', () {
-    final suggestions = [_t('1girl'), _t('1boy'), _char('male bro', '1boy, short hair')];
+    final suggestions = [
+      _t('1girl'),
+      _t('1boy'),
+      _char('male bro', '1boy, short hair'),
+    ];
 
     test('Enter with nothing highlighted does not insert', () {
       final keys = TagSuggestionKeyboard();
@@ -71,7 +75,10 @@ void main() {
       final keys = TagSuggestionKeyboard();
       keys.cycle(suggestionCount: suggestions.length, reverse: false); // 1girl
       keys.cycle(suggestionCount: suggestions.length, reverse: false); // 1boy
-      keys.cycle(suggestionCount: suggestions.length, reverse: false); // male bro
+      keys.cycle(
+        suggestionCount: suggestions.length,
+        reverse: false,
+      ); // male bro
       final inserted = keys.accept(suggestions);
       expect(inserted?.typeName, 'saved_character');
       expect(inserted?.tag, 'male bro');

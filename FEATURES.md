@@ -27,7 +27,7 @@
 
 ## Prompt Engineering
 - **Syntax Highlighting**: NAI prompt syntax highlighting for `{emphasis}`, `[de-emphasis]`, and `N::strength` patterns
-- **Keyboard Tag Navigation**: Tab/Shift+Tab to cycle through tag suggestions, Enter to accept
+- **Keyboard Tag Navigation**: Tab/Shift+Tab to cycle through tag suggestions, Enter to accept — the cascade director uses the same bindings
 - **Strength Prefix Suggestions**: Tag suggestions work inside strength prefixes (e.g. `2::1gi`)
 - **Danbooru Tag Library**: Bundled high-frequency Danbooru tag database with intelligent auto-suggest and auto-completion as you type, backed by a sorted-name prefix index (binary search) so even a large imported list stays responsive; substring and alias passes only run when the prefix pass hasn't filled the list
 - **Imported Tag Lists (Tag Sources)**: Tag Library → *Tag lists* imports a1111-tagcomplete style CSV, header CSV in any column order (including e621's `db_export` dump, gzipped or not), a JSON array/map, or one-tag-per-line text. The importer sniffs the shape, lets you fix the column mapping, and asks which **category numbering** the file uses (Danbooru / e621 / merged / custom, with an auto-guess). Pick a minimum post count, which categories to keep, and whether underscores become spaces. Each list is stored separately from the bundled data and can be toggled, reordered (priority on name collisions; the bundled list always wins and absorbs extra aliases), renamed, updated from a newer file, exported or deleted. Suggestions from an imported list carry a source badge; favourites and example images set on imported tags live in a sidecar that survives re-import; imported lists ride along in `.vpack` backups

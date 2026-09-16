@@ -1,14 +1,28 @@
 # Changelog
 
-## v0.9.5
+## Unreleased
 
 ### New
 - **Optional persistence of cascade beat images.** Off by default. When enabled (Settings), each beat's last generated image is written to disk and restored the next time that cascade is opened. Deleting a cascade removes its stored images. Contributed by [@freakachu](https://github.com/freakachu).
+- **Cascade director: Tab cycles tag suggestions.** Tab / Shift+Tab walk the overlay, Enter inserts the highlighted chip — the same bindings as the main prompt. With no suggestions, Tab still moves focus. Contributed by [@freakachu](https://github.com/freakachu).
+
+### Fixes
+- **V5 auto-`teXt:` matches the NovelAI web UI.** Quoted strings (`"…"` / `「…」`) from the base prompt *and* character prompts are collected (quotes left in place) and appended as `, teXt: …` at the very end of the base caption, after style suffixes. Multiple quotes are separated by a blank line. A manual `Text:` / `teXt:` block still disables auto-collection. Contributed by [@freakachu](https://github.com/freakachu).
+- **Windows: closing the window no longer stalls for several seconds.** Clicking X was intercepted so bounds could be saved, then `windowManager.destroy()` blocked the UI thread. The window now hides immediately, geometry is persisted, and the OS close proceeds. Contributed by [@freakachu](https://github.com/freakachu).
+
+### Contributors
+- [@freakachu](https://github.com/freakachu) — cascade beat-image persistence, Tab cycling in the director, V5 auto-`teXt:`, and the Windows close stall
+
+### Under the hood
+- Full suite at 724 tests (18 new: Tab cycling, overlay highlight, beat-preview persistence, V5 auto-`teXt:` collection); analyzer clean aside from the pre-existing `onReorder` deprecation infos.
+
+## v0.9.5
+
+### New
 - **Cascade editor: per-beat roster and placement.** Add, remove, or drag-reorder character slots on a single beat. Each slot is bound to a cast member, so dropping Character 1 from one beat leaves Character 2 as Character 2 (same appearance, same prompt) rather than shifting everyone down. The add button offers cast members missing from the beat first, then a new character; a character no beat uses any more leaves the cast. Removing a slot also drops interaction tags whose partner left with it. A MANUAL / AI toggle on the slots header overrides placement per beat; older cascades keep the cascade-level default until you flip it. The position grid / freeform canvas now matches the beat's aspect ratio instead of a square. Contributed by [@freakachu](https://github.com/freakachu) (PR #39).
 - **Cascade interactions pick any partner.** The link button on a slot opens a sheet with WITH chips for the other characters on that beat, and a compact direction button that cycles **A → B** → **A ↔ B** (mutual) → **A ← B** (reverse, same character order, flipped arrow). Contributed by [@freakachu](https://github.com/freakachu) (PR #39).
 
 ### Fixes
-- **V5 auto-`teXt:` matches the NovelAI web UI.** Quoted strings (`"…"` / `「…」`) from the base prompt *and* character prompts are collected (quotes left in place) and appended as `, teXt: …` at the very end of the base caption, after style suffixes. Multiple quotes are separated by a blank line. A manual `Text:` / `teXt:` block still disables auto-collection. Contributed by [@freakachu](https://github.com/freakachu).
 - **Cascade prompt fields: tag suggestions actually insert.** Tapping a chip unfocused the field first, so the overlay vanished (and the cursor went invalid) before the insert ran. The suggestion overlay now sits inside the field's tap region so a chip tap no longer unfocuses the field, and insert still works if the selection is already gone.
 - **Cast sheet character fields follow the selected beat.** Appearance boxes listed every slot in the cascade, even when the current beat had fewer characters. Only the cast members on the selected beat are shown, labelled by character, and each field keeps its value when you switch beats.
 - **Cascade album button tracks the viewed beat.** Adding a beat to an album, then tapping another beat, still checked the previous file and refused to add the image on screen. Each beat now remembers its own saved filename: checks are membership of *this* image, clicking an album adds *this* image, and removing it from the gallery album list updates the checks. Cascade (and img2img) generation also records the new file on auto-save instead of keeping a stale name. Contributed by [@freakachu](https://github.com/freakachu) (PR #39).

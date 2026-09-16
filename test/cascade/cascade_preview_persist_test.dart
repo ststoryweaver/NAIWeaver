@@ -8,24 +8,23 @@ import 'package:naiweaver/features/tools/cascade/models/prompt_cascade.dart';
 import 'package:naiweaver/features/tools/cascade/providers/cascade_notifier.dart';
 import 'package:naiweaver/features/tools/cascade/services/cascade_preview_store.dart';
 import 'package:naiweaver/features/tools/cascade/services/file_cascade_preview_store.dart';
-import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 Uint8List _bytes(int tag) => Uint8List.fromList([tag, tag + 1, tag + 2]);
 
 PromptCascade _cascade(String name, int beats) => PromptCascade(
-      name: name,
-      characterCount: 1,
-      beats: List.generate(
-        beats,
-        (_) => CascadeBeat(
-          characterSlots: [
-            BeatCharacterSlot(position: NaiCoordinate(x: 0.5, y: 0.5)),
-          ],
-          environmentTags: '',
-        ),
-      ),
-    );
+  name: name,
+  characterCount: 1,
+  beats: List.generate(
+    beats,
+    (_) => CascadeBeat(
+      characterSlots: [
+        BeatCharacterSlot(position: NaiCoordinate(x: 0.5, y: 0.5)),
+      ],
+      environmentTags: '',
+    ),
+  ),
+);
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));

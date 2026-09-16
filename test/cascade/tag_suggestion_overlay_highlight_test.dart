@@ -82,7 +82,9 @@ void main() {
 
     for (final label in ['1girl', '1boy', 'male bro']) {
       final box = tester.widget<Container>(
-        find.ancestor(of: find.text(label), matching: find.byType(Container)).first,
+        find
+            .ancestor(of: find.text(label), matching: find.byType(Container))
+            .first,
       );
       final border = (box.decoration as BoxDecoration).border!;
       expect(border.top.width, 0.5, reason: '$label should not be highlighted');

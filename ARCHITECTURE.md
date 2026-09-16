@@ -85,6 +85,7 @@ lib/
 │   │   ├── nai_coordinate_utils.dart      # Character positioning math
 │   │   ├── responsive.dart                # Shared utilities: isMobile(), isDesktopPlatform(), responsiveFont(), touchTarget()
 │   │   ├── tag_suggestion_helper.dart     # Tag auto-complete logic shared across features
+│   │   ├── tag_suggestion_keyboard.dart   # Tab / Shift+Tab / Enter bindings for a suggestion overlay
 │   │   ├── app_snackbar.dart              # Reusable snackbar helper + top-centre overlay toast (used by the gallery viewer)
 │   │   ├── file_picker_helper.dart        # Centralized cross-platform file picker (pickImageFiles, pickCustomFiles)
 │   │   └── timestamp_utils.dart           # EXIF date extraction and timestamp utilities
@@ -226,9 +227,11 @@ lib/
         │   │   ├── prompt_cascade.dart     # PromptCascade, CascadeBeat models
         │   │   └── cascade_character.dart  # Character slot definitions
         │   ├── providers/
-        │   │   └── cascade_notifier.dart   # Cascade state machine with unsaved-changes detection
+        │   │   └── cascade_notifier.dart   # Cascade state machine with unsaved-changes detection and optional beat-preview persistence
         │   ├── services/
-        │   │   └── cascade_stitching_service.dart  # Beat prompt assembly
+        │   │   ├── cascade_stitching_service.dart  # Beat prompt assembly
+        │   │   ├── cascade_preview_store.dart      # Beat-preview persistence interface
+        │   │   └── file_cascade_preview_store.dart # Disk-backed images under cascade_previews/
         │   └── widgets/
         │       ├── cascade_editor.dart     # Timeline editor UI with unsaved-changes guard and Cast button
         │       ├── cascade_playback_view.dart  # Main-screen playback overlay with responsive controls
