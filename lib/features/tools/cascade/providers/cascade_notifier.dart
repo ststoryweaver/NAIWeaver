@@ -22,6 +22,11 @@ class CascadeState {
   /// of whatever was last generated.
   final Map<int, String> beatSavedBasenames;
 
+  /// Generation metadata (prompt, seed, settings) for each beat preview, so
+  /// saving a beat after switching back to it embeds *its* record rather than
+  /// the last generated beat's. Cast-time state, like [beatPreviews].
+  final Map<int, Map<String, dynamic>> beatMetadata;
+
   /// Free-text narration captions per beat index. Cast-time state for *this*
   /// run (like [characterAppearances]) — narration shown over the beat preview,
   /// never part of the saved cascade and never baked into [beatPreviews] bytes.
@@ -40,6 +45,7 @@ class CascadeState {
     this.globalInjection = "",
     this.beatPreviews = const {},
     this.beatSavedBasenames = const {},
+    this.beatMetadata = const {},
     this.beatCaptions = const {},
     this.captionsVisible = true,
   });
@@ -56,6 +62,7 @@ class CascadeState {
     String? globalInjection,
     Map<int, Uint8List?>? beatPreviews,
     Map<int, String>? beatSavedBasenames,
+    Map<int, Map<String, dynamic>>? beatMetadata,
     Map<int, String>? beatCaptions,
     bool? captionsVisible,
   }) {
@@ -73,6 +80,7 @@ class CascadeState {
       globalInjection: globalInjection ?? this.globalInjection,
       beatPreviews: beatPreviews ?? this.beatPreviews,
       beatSavedBasenames: beatSavedBasenames ?? this.beatSavedBasenames,
+      beatMetadata: beatMetadata ?? this.beatMetadata,
       beatCaptions: beatCaptions ?? this.beatCaptions,
       captionsVisible: captionsVisible ?? this.captionsVisible,
     );
@@ -143,6 +151,7 @@ class CascadeNotifier extends ChangeNotifier {
       globalInjection: "",
       beatPreviews: {},
       beatSavedBasenames: {},
+      beatMetadata: {},
       beatCaptions: {},
     );
     notifyListeners();
@@ -157,6 +166,7 @@ class CascadeNotifier extends ChangeNotifier {
       globalInjection: "",
       beatPreviews: {},
       beatSavedBasenames: {},
+      beatMetadata: {},
       beatCaptions: {},
     );
     notifyListeners();
@@ -181,16 +191,36 @@ class CascadeNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setBeatPreview(int index, Uint8List? bytes) {
+  /// Records a freshly generated (or cleared) preview for [index]. Pass the
+  /// generation [metadata] so a later save of this beat embeds the right
+  /// record; a missing/null [metadata] drops any stale entry.
+  void setBeatPreview(
+    int index,
+    Uint8List? bytes, {
+    Map<String, dynamic>? metadata,
+  }) {
     final updated = Map<int, Uint8List?>.from(_state.beatPreviews);
     updated[index] = bytes;
-    _state = _state.copyWith(beatPreviews: updated);
+    final meta = Map<int, Map<String, dynamic>>.from(_state.beatMetadata);
+    if (metadata == null) {
+      meta.remove(index);
+    } else {
+      meta[index] = metadata;
+    }
+    _state = _state.copyWith(beatPreviews: updated, beatMetadata: meta);
     notifyListeners();
   }
 
-  void setBeatSavedBasename(int index, String basename) {
+  /// Binds [basename] to beat [index]; null means the beat's current image
+  /// is not on disk (e.g. it was just regenerated with auto-save off), so any
+  /// stale filename from an earlier render is forgotten.
+  void setBeatSavedBasename(int index, String? basename) {
     final updated = Map<int, String>.from(_state.beatSavedBasenames);
-    updated[index] = basename;
+    if (basename == null) {
+      updated.remove(index);
+    } else {
+      updated[index] = basename;
+    }
     _state = _state.copyWith(beatSavedBasenames: updated);
     notifyListeners();
   }
@@ -263,6 +293,7 @@ class CascadeNotifier extends ChangeNotifier {
       globalInjection: "",
       beatPreviews: {},
       beatSavedBasenames: {},
+      beatMetadata: {},
       beatCaptions: {},
     );
     notifyListeners();
@@ -371,6 +402,7 @@ class CascadeNotifier extends ChangeNotifier {
       selectedBeatIndex: insertAt,
       beatPreviews: _shiftForInsert(_state.beatPreviews, insertAt),
       beatSavedBasenames: _shiftForInsert(_state.beatSavedBasenames, insertAt),
+      beatMetadata: _shiftForInsert(_state.beatMetadata, insertAt),
       beatCaptions: _shiftForInsert(_state.beatCaptions, insertAt),
     );
     notifyListeners();
@@ -398,6 +430,7 @@ class CascadeNotifier extends ChangeNotifier {
       selectedBeatIndex: newSelectedIndex,
       beatPreviews: _shiftForRemoval(_state.beatPreviews, index),
       beatSavedBasenames: _shiftForRemoval(_state.beatSavedBasenames, index),
+      beatMetadata: _shiftForRemoval(_state.beatMetadata, index),
       beatCaptions: _shiftForRemoval(_state.beatCaptions, index),
     );
     notifyListeners();
@@ -422,6 +455,7 @@ class CascadeNotifier extends ChangeNotifier {
         oldIndex,
         newIndex,
       ),
+      beatMetadata: _shiftForReorder(_state.beatMetadata, oldIndex, newIndex),
       beatCaptions: _shiftForReorder(_state.beatCaptions, oldIndex, newIndex),
     );
     notifyListeners();
@@ -562,14 +596,18 @@ class CascadeNotifier extends ChangeNotifier {
   /// Adds a slot to the selected beat. [castIndex] picks an existing cast
   /// member who is not yet on the beat; omit it to add a brand-new character
   /// to the cast. Both the beat's slot count and the cast size are capped at
-  /// [PromptCascade.maxCharacterSlots].
-  void addCharacterToActiveBeat({int? castIndex}) {
+  /// [maxSlots], which callers set from the active model's character limit
+  /// (6 on V4.5, 32 on V5); the default is the V4.5 figure.
+  void addCharacterToActiveBeat({
+    int? castIndex,
+    int maxSlots = PromptCascade.maxCharacterSlots,
+  }) {
     if (_state.activeCascade == null || _state.selectedBeatIndex == null) {
       return;
     }
     final cascade = _state.activeCascade!;
     final beat = cascade.beats[_state.selectedBeatIndex!];
-    if (beat.characterSlots.length >= PromptCascade.maxCharacterSlots) return;
+    if (beat.characterSlots.length >= maxSlots) return;
 
     final int who;
     if (castIndex != null) {
@@ -577,7 +615,7 @@ class CascadeNotifier extends ChangeNotifier {
       if (beat.characterSlots.any((s) => s.castIndex == castIndex)) return;
       who = castIndex;
     } else {
-      if (cascade.characterCount >= PromptCascade.maxCharacterSlots) return;
+      if (cascade.characterCount >= maxSlots) return;
       who = cascade.characterCount;
     }
 
@@ -609,22 +647,39 @@ class CascadeNotifier extends ChangeNotifier {
   }
 
   /// Every interaction tags both parties (`source#x` + `target#x`, or
-  /// `mutual#x` on each). A tag whose action name appears on no *other* slot
+  /// `mutual#x` on each). A tag whose counterpart appears on no *other* slot
   /// has lost its partner, typically because that slot was removed, and is
-  /// dropped so a lone `target#hug` never reaches the prompt.
+  /// dropped so a lone `target#hug` never reaches the prompt. The counterpart
+  /// is role-aware: `source#x` needs a `target#x`, `target#x` a `source#x`,
+  /// `mutual#x` another `mutual#x`; two sources of the same action do not
+  /// keep each other alive.
   @visibleForTesting
   static List<BeatCharacterSlot> pruneOrphanActionTags(
     List<BeatCharacterSlot> slots,
   ) {
-    String actionOf(String tag) {
+    (String?, String) split(String tag) {
       final hash = tag.indexOf('#');
-      return hash < 0 ? tag : tag.substring(hash + 1);
+      return hash < 0
+          ? (null, tag)
+          : (tag.substring(0, hash), tag.substring(hash + 1));
+    }
+
+    bool isCounterpart(String tag, String other) {
+      final (role, action) = split(tag);
+      final (otherRole, otherAction) = split(other);
+      if (action != otherAction) return false;
+      return switch (role) {
+        'source' => otherRole == 'target',
+        'target' => otherRole == 'source',
+        'mutual' => otherRole == 'mutual',
+        _ => true, // legacy/unknown role: any same-named action pairs
+      };
     }
 
     bool hasPartner(int self, String tag) {
       for (final (j, other) in slots.indexed) {
         if (j == self) continue;
-        if (other.actionTags.any((o) => actionOf(o) == actionOf(tag))) {
+        if (other.actionTags.any((o) => isCounterpart(tag, o))) {
           return true;
         }
       }

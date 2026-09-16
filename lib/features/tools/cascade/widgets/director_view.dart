@@ -12,7 +12,6 @@ import '../../../../core/utils/tag_suggestion_helper.dart';
 import '../../../../core/widgets/tag_suggestion_overlay.dart';
 import '../providers/cascade_notifier.dart';
 import '../models/cascade_beat.dart';
-import '../models/prompt_cascade.dart';
 import '../../../characters/providers/character_library_notifier.dart';
 import '../../../generation/widgets/nai_grid_selector.dart';
 import '../../../generation/widgets/action_interaction_sheet.dart';
@@ -34,6 +33,10 @@ class _DirectorViewState extends State<DirectorView> {
   final FocusNode _sceneFocusNode = FocusNode();
   final TextEditingController _envController = TextEditingController();
   final FocusNode _envFocusNode = FocusNode();
+  // Keyed by the slot's castIndex, not its position in the beat: the
+  // ReorderableListView keys its items by cast identity too, so when a slot is
+  // dragged its (possibly focused) controller travels with it instead of
+  // staying behind under whichever character now sits at that index.
   final Map<int, TextEditingController> _posControllers = {};
   final Map<int, TextEditingController> _negControllers = {};
   final Map<int, FocusNode> _posFocusNodes = {};
@@ -132,8 +135,9 @@ class _DirectorViewState extends State<DirectorView> {
     setState(() => _suggestions = []);
   }
 
-  void _ensureSlotControllers(int slotCount) {
-    for (int i = 0; i < slotCount; i++) {
+  void _ensureSlotControllers(CascadeBeat beat) {
+    for (final slot in beat.characterSlots) {
+      final i = slot.castIndex;
       _posControllers.putIfAbsent(i, () => TextEditingController());
       _negControllers.putIfAbsent(i, () => TextEditingController());
       if (!_posFocusNodes.containsKey(i)) {
@@ -154,10 +158,20 @@ class _DirectorViewState extends State<DirectorView> {
   }
 
   void _syncControllers(CascadeBeat beat, int beatIndex) {
-    final slotCount = beat.characterSlots.length;
-    _ensureSlotControllers(slotCount);
+    _ensureSlotControllers(beat);
     final beatChanged = _lastBeatIndex != beatIndex;
     _lastBeatIndex = beatIndex;
+
+    if (beatChanged) {
+      // A programmatic `.text =` below resets the field's selection, and on
+      // touch platforms the field may still hold focus, so chips computed for
+      // the previous beat's text would otherwise linger and insert into the
+      // new beat's prompt. Drop them here (we are inside build; no setState).
+      _suggestions = [];
+      _activeSuggestionController = null;
+      _activeSuggestionOnChanged = null;
+      _debounce?.cancel();
+    }
 
     if (beatChanged || !_sceneFocusNode.hasFocus) {
       _assignIfChanged(_sceneController, beat.sceneTags);
@@ -165,18 +179,13 @@ class _DirectorViewState extends State<DirectorView> {
     if (beatChanged || !_envFocusNode.hasFocus) {
       _assignIfChanged(_envController, beat.environmentTags);
     }
-    for (int i = 0; i < slotCount; i++) {
+    for (final slot in beat.characterSlots) {
+      final i = slot.castIndex;
       if (beatChanged || !_posFocusNodes[i]!.hasFocus) {
-        _assignIfChanged(
-          _posControllers[i]!,
-          beat.characterSlots[i].positivePrompt,
-        );
+        _assignIfChanged(_posControllers[i]!, slot.positivePrompt);
       }
       if (beatChanged || !_negFocusNodes[i]!.hasFocus) {
-        _assignIfChanged(
-          _negControllers[i]!,
-          beat.characterSlots[i].negativePrompt,
-        );
+        _assignIfChanged(_negControllers[i]!, slot.negativePrompt);
       }
     }
   }
@@ -319,10 +328,15 @@ class _DirectorViewState extends State<DirectorView> {
     final slotCount = beat.characterSlots.length;
     final castCount = notifier.state.activeCascade?.characterCount ?? 0;
     final missing = notifier.castMembersMissingFromActiveBeat();
-    final canAddNew = castCount < PromptCascade.maxCharacterSlots;
-    final canAdd =
-        slotCount < PromptCascade.maxCharacterSlots &&
-        (missing.isNotEmpty || canAddNew);
+    // The active model decides how many characters a render may carry
+    // (6 on V4.5, 32 on V5); the request builder truncates beyond that.
+    final maxSlots = context
+        .read<GenerationNotifier>()
+        .state
+        .model
+        .maxCharacters;
+    final canAddNew = castCount < maxSlots;
+    final canAdd = slotCount < maxSlots && (missing.isNotEmpty || canAddNew);
     final menuStyle = TextStyle(
       color: t.textPrimary,
       fontSize: t.fontSize(10),
@@ -341,8 +355,10 @@ class _DirectorViewState extends State<DirectorView> {
           color: t.surfaceHigh,
           padding: const EdgeInsets.all(6),
           constraints: const BoxConstraints(minWidth: 160),
-          onSelected: (v) =>
-              notifier.addCharacterToActiveBeat(castIndex: v < 0 ? null : v),
+          onSelected: (v) => notifier.addCharacterToActiveBeat(
+            castIndex: v < 0 ? null : v,
+            maxSlots: maxSlots,
+          ),
           itemBuilder: (_) => [
             for (final i in missing)
               PopupMenuItem<int>(
@@ -738,8 +754,8 @@ class _DirectorViewState extends State<DirectorView> {
                     _buildPromptField(
                       label: l.cascadePositivePrompt,
                       hint: l.cascadeCharHint,
-                      controller: _posControllers[index]!,
-                      focusNode: _posFocusNodes[index]!,
+                      controller: _posControllers[slot.castIndex]!,
+                      focusNode: _posFocusNodes[slot.castIndex]!,
                       onChanged: (val) {
                         final updatedSlots = List<BeatCharacterSlot>.from(
                           beat.characterSlots,
@@ -757,8 +773,8 @@ class _DirectorViewState extends State<DirectorView> {
                     _buildPromptField(
                       label: l.cascadeNegativePrompt,
                       hint: l.cascadeAvoidHint,
-                      controller: _negControllers[index]!,
-                      focusNode: _negFocusNodes[index]!,
+                      controller: _negControllers[slot.castIndex]!,
+                      focusNode: _negFocusNodes[slot.castIndex]!,
                       onChanged: (val) {
                         final updatedSlots = List<BeatCharacterSlot>.from(
                           beat.characterSlots,

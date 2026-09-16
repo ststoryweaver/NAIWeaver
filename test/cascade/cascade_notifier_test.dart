@@ -357,4 +357,107 @@ void main() {
       expect(added.useCoords, isFalse);
     });
   });
+
+  group('CascadeNotifier per-beat save bookkeeping', () {
+    test('setBeatSavedBasename(null) forgets a stale filename', () {
+      final n = _seeded(2);
+      n.setBeatSavedBasename(1, 'old.png');
+      expect(n.state.beatSavedBasenames[1], 'old.png');
+
+      // A regenerate with auto-save off yields no filename: the previous
+      // render's name must not stick to the new pixels.
+      n.setBeatSavedBasename(1, null);
+
+      expect(n.state.beatSavedBasenames.containsKey(1), isFalse);
+      expect(n.state.beatSavedBasenames, isEmpty);
+    });
+
+    test(
+      'setBeatPreview stores metadata per beat and drops it when absent',
+      () {
+        final n = _seeded(2);
+        n.setBeatPreview(0, _preview(10), metadata: {'seed': 1});
+        n.setBeatPreview(1, _preview(11), metadata: {'seed': 2});
+        expect(n.state.beatMetadata[0], {'seed': 1});
+        expect(n.state.beatMetadata[1], {'seed': 2});
+
+        n.setBeatPreview(0, _preview(12));
+
+        expect(n.state.beatMetadata.containsKey(0), isFalse);
+        expect(n.state.beatMetadata[1], {'seed': 2});
+      },
+    );
+
+    test('beat metadata travels with its beat on remove and reorder', () {
+      final n = _seeded(3);
+      for (var i = 0; i < 3; i++) {
+        n.setBeatPreview(i, _preview(i), metadata: {'beat': i});
+      }
+
+      n.removeBeat(0);
+      expect(n.state.beatMetadata[0], {'beat': 1});
+      expect(n.state.beatMetadata[1], {'beat': 2});
+
+      n.reorderBeats(0, 2);
+      expect(n.state.beatMetadata[0], {'beat': 2});
+      expect(n.state.beatMetadata[1], {'beat': 1});
+    });
+
+    test('exiting cascade mode clears beat metadata', () {
+      final n = _seeded(1);
+      n.setBeatPreview(0, _preview(0), metadata: {'beat': 0});
+      n.exitCascadeMode();
+      expect(n.state.beatMetadata, isEmpty);
+    });
+  });
+
+  group('CascadeNotifier.pruneOrphanActionTags roles', () {
+    BeatCharacterSlot slot(List<String> tags) => BeatCharacterSlot(
+      position: NaiCoordinate(x: 0.5, y: 0.5),
+      actionTags: tags,
+    );
+
+    test('two sources of the same action do not keep each other', () {
+      final pruned = CascadeNotifier.pruneOrphanActionTags([
+        slot(['source#hug']),
+        slot(['source#hug']),
+      ]);
+      expect(pruned[0].actionTags, isEmpty);
+      expect(pruned[1].actionTags, isEmpty);
+    });
+
+    test('source and target pair up; a mutual needs another mutual', () {
+      final pruned = CascadeNotifier.pruneOrphanActionTags([
+        slot(['source#hug', 'mutual#kiss']),
+        slot(['target#hug']),
+        slot(['source#kiss']),
+      ]);
+      expect(pruned[0].actionTags, ['source#hug']);
+      expect(pruned[1].actionTags, ['target#hug']);
+      expect(pruned[2].actionTags, isEmpty);
+    });
+
+    test('mutual pairs survive', () {
+      final pruned = CascadeNotifier.pruneOrphanActionTags([
+        slot(['mutual#holding hands']),
+        slot(['mutual#holding hands']),
+      ]);
+      expect(pruned[0].actionTags, ['mutual#holding hands']);
+      expect(pruned[1].actionTags, ['mutual#holding hands']);
+    });
+  });
+
+  group('CascadeNotifier slot cap follows the model', () {
+    test('default cap is six, a V5-sized cap admits more', () {
+      final n = CascadeNotifier();
+      n.createNewCascade('cast', 6);
+      n.addCharacterToActiveBeat();
+      expect(n.state.activeCascade!.beats.single.characterSlots.length, 6);
+
+      n.addCharacterToActiveBeat(maxSlots: 32);
+      expect(n.state.activeCascade!.beats.single.characterSlots.length, 7);
+      expect(n.state.activeCascade!.characterCount, 7);
+      expect(n.state.characterAppearances.length, 7);
+    });
+  });
 }

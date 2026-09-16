@@ -87,6 +87,27 @@ void main() {
       expect(explicit.toJson().containsKey('useCoords'), isTrue);
     });
 
+    test('out-of-range legacy positions load as the centre', () {
+      // Pre-0.9.5 slots defaulted to (2, 2), outside NovelAI's 0..1 space.
+      final legacy = BeatCharacterSlot.fromJson({
+        'position': {'x': 2, 'y': 2},
+      });
+      expect(legacy.position.x, 0.5);
+      expect(legacy.position.y, 0.5);
+
+      // Real grid and freeform values are untouched.
+      final grid = BeatCharacterSlot.fromJson({
+        'position': {'x': 0.1, 'y': 0.9},
+      });
+      expect(grid.position.x, 0.1);
+      expect(grid.position.y, 0.9);
+      final free = BeatCharacterSlot.fromJson({
+        'position': {'x': 0.333, 'y': 1.0},
+      });
+      expect(free.position.x, 0.333);
+      expect(free.position.y, 1.0);
+    });
+
     test('castIndex round-trips and legacy slots fall back to position', () {
       final beat = CascadeBeat(
         characterSlots: [

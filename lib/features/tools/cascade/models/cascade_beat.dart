@@ -41,8 +41,18 @@ class BeatCharacterSlot {
       final legacy = json['actionTag'] as String?;
       tags = (legacy != null && legacy.isNotEmpty) ? [legacy] : const [];
     }
+    // Slots created before v0.9.5 defaulted to (2, 2), a placeholder outside
+    // NovelAI's 0..1 coordinate space that was sent verbatim under manual
+    // placement. Anything out of range is treated as "never positioned" and
+    // lands on the centre, which is what new slots get.
+    final rawPosition = NaiCoordinate.fromJson(json['position']);
+    final inRange =
+        rawPosition.x >= 0 &&
+        rawPosition.x <= 1 &&
+        rawPosition.y >= 0 &&
+        rawPosition.y <= 1;
     return BeatCharacterSlot(
-      position: NaiCoordinate.fromJson(json['position']),
+      position: inRange ? rawPosition : NaiCoordinate(x: 0.5, y: 0.5),
       castIndex: (json['castIndex'] as int?) ?? fallbackCastIndex,
       actionTags: tags,
       positivePrompt: json['positivePrompt'] ?? "",

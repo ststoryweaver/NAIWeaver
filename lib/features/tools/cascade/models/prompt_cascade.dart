@@ -1,7 +1,9 @@
 import 'cascade_beat.dart';
 
 class PromptCascade {
-  /// Upper bound matching the create-cascade slot picker (0–6).
+  /// Default upper bound on slots per beat / cast size, matching the
+  /// create-cascade slot picker (0–6) and V4.5's character limit. The director
+  /// raises it to the active model's limit (32 on V5) when adding characters.
   static const int maxCharacterSlots = 6;
 
   final String name;
