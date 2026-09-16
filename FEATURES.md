@@ -66,7 +66,7 @@
 
 ## Cascade System
 - **Multi-Beat Scenes**: Define sequential beats with character slots, environment tags, per-beat prompts, and custom resolutions per beat
-- **Per-Beat Roster**: Add, remove, or drag-reorder character slots on a single beat (max 6); slots are bound to cast members so identity survives removal and reorder, and the cast sheet only shows the characters on the selected beat
+- **Per-Beat Roster**: Add, remove, or drag-reorder character slots on a single beat (up to the active model's character limit: 6 on V4.5, 32 on V5); slots are bound to cast members so identity survives removal and reorder, and the cast sheet only shows the characters on the selected beat
 - **Per-Beat Placement**: MANUAL / AI toggle per beat; the position grid matches the beat's aspect ratio
 - **Action Interactions**: Pick any other character as the partner; cycle forward / mutual / reverse from a single direction button
 - **Prompt Stitching Service**: Assembles final prompts from character appearances + environment + global styles
