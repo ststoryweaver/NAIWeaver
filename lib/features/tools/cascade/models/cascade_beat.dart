@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../../../generation/models/nai_character.dart';
 
 class BeatCharacterSlot {
@@ -86,6 +88,15 @@ class BeatCharacterSlot {
 }
 
 class CascadeBeat {
+  /// Stable across edits and reordering; clones receive a new identity.
+  final String id;
+  static final _random = Random.secure();
+
+  static String _newId() => List.generate(
+    16,
+    (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ).join();
+
   final List<BeatCharacterSlot> characterSlots;
 
   /// Scene/action/composition tags for this beat (e.g. "2girls, hugging,
@@ -110,6 +121,7 @@ class CascadeBeat {
   final bool? useCoords;
 
   CascadeBeat({
+    String? id,
     required this.characterSlots,
     required this.environmentTags,
     this.sceneTags = "",
@@ -120,9 +132,13 @@ class CascadeBeat {
     this.height = 1216,
     this.activeStyleNames = const [],
     this.useCoords,
-  });
+  }) : id = id ?? _newId();
 
-  factory CascadeBeat.fromJson(Map<String, dynamic> json) => CascadeBeat(
+  factory CascadeBeat.fromJson(
+    Map<String, dynamic> json, {
+    String? fallbackId,
+  }) => CascadeBeat(
+    id: json['id'] as String? ?? fallbackId,
     characterSlots: [
       for (final (i, e) in (json['characterSlots'] as List).indexed)
         BeatCharacterSlot.fromJson(e, fallbackCastIndex: i),
@@ -140,6 +156,7 @@ class CascadeBeat {
 
   Map<String, dynamic> toJson() => {
     'characterSlots': characterSlots.map((e) => e.toJson()).toList(),
+    'id': id,
     'sceneTags': sceneTags,
     'environmentTags': environmentTags,
     'sampler': sampler,
@@ -166,6 +183,7 @@ class CascadeBeat {
     Object? useCoords = _unset,
   }) {
     return CascadeBeat(
+      id: id,
       characterSlots: characterSlots ?? this.characterSlots,
       sceneTags: sceneTags ?? this.sceneTags,
       environmentTags: environmentTags ?? this.environmentTags,

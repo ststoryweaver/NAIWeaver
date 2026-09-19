@@ -75,6 +75,8 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
   // Gesture dispatch state (see _onInteractionStart)
   _SurfaceGesture _gesture = _SurfaceGesture.none;
   bool _ignoreSyntheticInteraction = false;
+  final Set<int> _pointers = {};
+  bool _multiPointerGesture = false;
   Offset? _gestureStartNormalized;
   Offset? _lastNormalized;
   final GlobalKey<_CanvasCursorPreviewState> _cursorPreviewKey =
@@ -327,19 +329,26 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
           child: Stack(
             children: [
               Listener(
-                // Mouse-only input: middle-mouse pan latch and wheel zoom.
-                // Painting and pinch-zoom run through the InteractiveViewer's
-                // interaction callbacks below — the same design as
-                // mask_canvas.dart, where the rationale is documented.
+                // Cancel before the scale recognizer ends the one-finger
+                // interaction; otherwise that transition commits the stroke.
                 onPointerDown: (event) {
+                  if (_pointers.isEmpty) _multiPointerGesture = false;
+                  _pointers.add(event.pointer);
+                  if (_pointers.length > 1) {
+                    _multiPointerGesture = true;
+                    _abortGesture(notifier);
+                  }
                   if (event.buttons & kMiddleMouseButton != 0) {
                     setState(() => _middleMouseHeld = true);
                   }
                 },
                 onPointerUp: (event) {
+                  _pointers.remove(event.pointer);
                   if (_middleMouseHeld) setState(() => _middleMouseHeld = false);
                 },
                 onPointerCancel: (event) {
+                  _pointers.remove(event.pointer);
+                  _abortGesture(notifier);
                   if (_middleMouseHeld) setState(() => _middleMouseHeld = false);
                 },
                 onPointerSignal: (event) {
@@ -621,7 +630,7 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
       _ignoreSyntheticInteraction = true;
       return;
     }
-    if (_isPanMode || details.pointerCount >= 2) {
+    if (_isPanMode || _multiPointerGesture || details.pointerCount >= 2) {
       _abortGesture(notifier);
       return;
     }
@@ -702,7 +711,7 @@ class _CanvasPaintSurfaceState extends State<CanvasPaintSurface> {
     if (_ignoreSyntheticInteraction) return;
     // A second finger landed mid-gesture → this became a pinch. Abandon the
     // partial gesture and let the viewer scale.
-    if (details.pointerCount >= 2) {
+    if (_multiPointerGesture || details.pointerCount >= 2) {
       _abortGesture(notifier);
       return;
     }

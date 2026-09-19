@@ -282,6 +282,7 @@ class _SavedRefsSheetState extends State<SavedRefsSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.4,
       ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
         color: t.surfaceHigh,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),

@@ -176,6 +176,24 @@ void main() {
     });
   });
 
+  testWidgets('repeated pinches accept a second finger in the lower half', (tester) async {
+    await pumpMainStack(tester, expanded: false, image: _png(1216, 832));
+    final controller = tester.widget<InteractiveViewer>(find.byType(InteractiveViewer)).transformationController!;
+    for (var i = 0; i < 3; i++) {
+      final before = controller.value.getMaxScaleOnAxis();
+      final first = await tester.startGesture(const Offset(160, 200), pointer: 1);
+      await first.moveBy(const Offset(0, -25));
+      final second = await tester.startGesture(const Offset(240, 560), pointer: 2);
+      await second.moveBy(const Offset(0, 20));
+      await first.moveBy(const Offset(0, -40));
+      await second.moveBy(const Offset(0, 40));
+      expect(controller.value.getMaxScaleOnAxis(), greaterThan(before));
+      await second.up();
+      await first.up();
+      await tester.pumpAndSettle();
+    }
+  });
+
   group('main-screen Stack hit testing (mobile, settings panel expanded)', () {
     testWidgets('the expanded panel covers the image bottom, the image top stays reachable', (tester) async {
       await pumpMainStack(tester, expanded: true);

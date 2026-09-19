@@ -90,6 +90,15 @@ class CascadeState {
   }
 }
 
+/// Ownership captured before an asynchronous beat render starts.
+class CascadeGenerationTarget {
+  final CascadeNotifier _owner;
+  final int _session;
+  final String _beatId;
+
+  CascadeGenerationTarget._(this._owner, this._session, this._beatId);
+}
+
 class CascadeNotifier extends ChangeNotifier {
   static const String _storageKey = 'saved_prompt_cascades';
 
@@ -102,6 +111,9 @@ class CascadeNotifier extends ChangeNotifier {
   final PreferencesService? _prefs;
   bool _persistFallback = false;
   Future<void> _previewIo = Future.value();
+  int _previewSession = 0;
+  int _persistenceEpoch = 0;
+  bool _disposed = false;
 
   bool get persistBeatPreviews =>
       _prefs?.persistCascadeBeatPreviews ?? _persistFallback;
@@ -112,7 +124,7 @@ class CascadeNotifier extends ChangeNotifier {
   }
 
   CascadeNotifier({this.previewStore, PreferencesService? prefs})
-      : _prefs = prefs {
+    : _prefs = prefs {
     _persistFallback = prefs?.persistCascadeBeatPreviews ?? false;
     _loadFromStorage();
   }
@@ -121,13 +133,28 @@ class CascadeNotifier extends ChangeNotifier {
   @visibleForTesting
   Future<void> get previewIo => _previewIo;
 
+  /// Used by shutdown to finish accepted writes before the process exits.
+  Future<void> flushPreviews() => _previewIo;
+
   Future<void> setPersistBeatPreviews(bool value) async {
     _persistFallback = value;
-    await _prefs?.setPersistCascadeBeatPreviews(value);
-    if (value) {
-      await _rewritePersistedPreviews();
-    }
+    final epoch = ++_persistenceEpoch;
+    final session = _previewSession;
+    final cascade = _state.activeCascade;
+    final current = value ? _previewSnapshot() : <String, CascadePreview?>{};
+    final preferenceWrite = _prefs?.setPersistCascadeBeatPreviews(value);
+    _enqueuePreviewIo(() async {
+      await preferenceWrite;
+      if (!value || cascade == null || previewStore == null) return;
+      await _restorePreviews(cascade.name, session, epoch);
+      // Merge, rather than replacing disk with an empty/unloaded map. Capture
+      // ownership at the toggle, even if another cascade opens while loading.
+      for (final entry in current.entries) {
+        await _persistBeat(cascade.name, entry.key, entry.value);
+      }
+    });
     notifyListeners();
+    await _previewIo;
   }
 
   Future<void> _loadFromStorage() async {
@@ -148,22 +175,25 @@ class CascadeNotifier extends ChangeNotifier {
       debugPrint('Error loading cascades: $e');
       _state = _state.copyWith(isLoading: false);
     }
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
-  Future<void> _saveToStorage() async {
+  Future<bool> _saveToStorage() async {
+    final jsonString = json.encode(
+      _state.savedCascades.map((e) => e.toJson()).toList(),
+    );
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonString = json.encode(
-        _state.savedCascades.map((e) => e.toJson()).toList(),
-      );
-      await prefs.setString(_storageKey, jsonString);
+      return await prefs.setString(_storageKey, jsonString);
     } catch (e) {
       debugPrint('Error saving cascades: $e');
+      return false;
     }
   }
 
   void setActiveCascade(PromptCascade? cascade) {
+    final session = ++_previewSession;
+    final epoch = _persistenceEpoch;
     _savedSnapshot = cascade != null ? json.encode(cascade.toJson()) : null;
     _state = _state.copyWith(
       activeCascade: cascade,
@@ -181,12 +211,13 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: {},
     );
     notifyListeners();
-    if (cascade != null) {
-      _enqueuePreviewIo(() => _restorePreviews(cascade.name));
+    if (cascade != null && persistBeatPreviews && previewStore != null) {
+      _enqueuePreviewIo(() => _restorePreviews(cascade.name, session, epoch));
     }
   }
 
   void exitCascadeMode() {
+    ++_previewSession;
     _state = _state.copyWith(
       clearActiveCascade: true,
       clearSelectedBeatIndex: true,
@@ -220,6 +251,51 @@ class CascadeNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  CascadeGenerationTarget? captureGenerationTarget(String beatId) {
+    if (_disposed ||
+        !(_state.activeCascade?.beats.any((beat) => beat.id == beatId) ??
+            false)) {
+      return null;
+    }
+    return CascadeGenerationTarget._(this, _previewSession, beatId);
+  }
+
+  /// Discard renders from a closed/replaced session or a removed beat. Resolve
+  /// the stable ID again so an in-flight render follows a reordered beat.
+  void completeBeatGeneration(
+    CascadeGenerationTarget target,
+    Uint8List bytes, {
+    Map<String, dynamic>? metadata,
+    String? savedBasename,
+  }) {
+    if (_disposed ||
+        !identical(target._owner, this) ||
+        target._session != _previewSession) {
+      return;
+    }
+    final beats = _state.activeCascade?.beats;
+    if (beats == null) return;
+    final index = beats.indexWhere((beat) => beat.id == target._beatId);
+    if (index < 0) return;
+
+    final basenames = Map<int, String>.from(_state.beatSavedBasenames);
+    if (savedBasename == null) {
+      basenames.remove(index);
+    } else {
+      basenames[index] = savedBasename;
+    }
+    // Only advance if the user is still on the rendered beat. Publish all
+    // changes together so listeners cannot switch sessions between mutations.
+    _state = _state.copyWith(
+      beatSavedBasenames: basenames,
+      selectedBeatIndex:
+          _state.selectedBeatIndex == index && index < beats.length - 1
+          ? index + 1
+          : _state.selectedBeatIndex,
+    );
+    setBeatPreview(index, bytes, metadata: metadata);
+  }
+
   /// Records a freshly generated (or cleared) preview for [index]. Pass the
   /// generation [metadata] so a later save of this beat embeds the right
   /// record; a missing/null [metadata] drops any stale entry.
@@ -228,6 +304,9 @@ class CascadeNotifier extends ChangeNotifier {
     Uint8List? bytes, {
     Map<String, dynamic>? metadata,
   }) {
+    final cascade = _state.activeCascade;
+    if (cascade == null || index < 0 || index >= cascade.beats.length) return;
+    final beatId = cascade.beats[index].id;
     final updated = Map<int, Uint8List?>.from(_state.beatPreviews);
     updated[index] = bytes;
     final meta = Map<int, Map<String, dynamic>>.from(_state.beatMetadata);
@@ -237,8 +316,13 @@ class CascadeNotifier extends ChangeNotifier {
       meta[index] = metadata;
     }
     _state = _state.copyWith(beatPreviews: updated, beatMetadata: meta);
+    if (persistBeatPreviews && previewStore != null) {
+      final preview = bytes == null
+          ? null
+          : CascadePreview(bytes, metadata: metadata);
+      _enqueuePreviewIo(() => _persistBeat(cascade.name, beatId, preview));
+    }
     notifyListeners();
-    _enqueuePreviewIo(() => _persistBeat(index, bytes));
   }
 
   /// Binds [basename] to beat [index]; null means the beat's current image
@@ -297,6 +381,7 @@ class CascadeNotifier extends ChangeNotifier {
     int characterCount, {
     bool useCoords = true,
   }) {
+    ++_previewSession;
     final newCascade = PromptCascade(
       name: name,
       characterCount: characterCount,
@@ -346,7 +431,16 @@ class CascadeNotifier extends ChangeNotifier {
 
     _savedSnapshot = json.encode(_state.activeCascade!.toJson());
     _state = _state.copyWith(savedCascades: updatedList);
-    _saveToStorage();
+    final cascade = _state.activeCascade!;
+    final ids = cascade.beats.map((b) => b.id).toSet();
+    final saved = _saveToStorage();
+    if (persistBeatPreviews && previewStore != null) {
+      _enqueuePreviewIo(() async {
+        // Only collect orphan images after the corresponding beat structure
+        // has been explicitly saved. Discard leaves the saved mapping intact.
+        if (await saved) await previewStore!.retainBeats(cascade.name, ids);
+      });
+    }
     notifyListeners();
   }
 
@@ -356,11 +450,13 @@ class CascadeNotifier extends ChangeNotifier {
         .toList();
     _state = _state.copyWith(savedCascades: updatedList);
     if (_state.activeCascade?.name == name) {
-      _state = _state.copyWith(activeCascade: null, selectedBeatIndex: null);
+      setActiveCascade(null);
     }
-    _saveToStorage();
+    final saved = _saveToStorage();
+    _enqueuePreviewIo(() async {
+      if (await saved) await previewStore?.deleteCascade(name);
+    });
     notifyListeners();
-    _enqueuePreviewIo(() => previewStore?.deleteCascade(name) ?? Future.value());
   }
 
   void addBeat() {
@@ -437,7 +533,6 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: _shiftForInsert(_state.beatCaptions, insertAt),
     );
     notifyListeners();
-    _enqueuePreviewIo(_rewritePersistedPreviews);
   }
 
   void removeBeat(int index) {
@@ -466,7 +561,6 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: _shiftForRemoval(_state.beatCaptions, index),
     );
     notifyListeners();
-    _enqueuePreviewIo(_rewritePersistedPreviews);
   }
 
   void reorderBeats(int oldIndex, int newIndex) {
@@ -492,7 +586,6 @@ class CascadeNotifier extends ChangeNotifier {
       beatCaptions: _shiftForReorder(_state.beatCaptions, oldIndex, newIndex),
     );
     notifyListeners();
-    _enqueuePreviewIo(_rewritePersistedPreviews);
   }
 
   void _enqueuePreviewIo(Future<void> Function() op) {
@@ -501,37 +594,73 @@ class CascadeNotifier extends ChangeNotifier {
     });
   }
 
-  Future<void> _persistBeat(int index, Uint8List? bytes) async {
-    if (!persistBeatPreviews || previewStore == null) return;
-    final name = _state.activeCascade?.name;
-    if (name == null) return;
-    if (bytes == null) {
-      await previewStore!.deleteBeat(name, index);
+  Future<void> _persistBeat(
+    String name,
+    String id,
+    CascadePreview? preview,
+  ) async {
+    if (preview == null) {
+      await previewStore!.deleteBeat(name, id);
     } else {
-      await previewStore!.saveBeat(name, index, bytes);
+      await previewStore!.saveBeat(name, id, preview);
     }
   }
 
-  Future<void> _restorePreviews(String cascadeName) async {
-    if (!persistBeatPreviews || previewStore == null) return;
+  Future<void> _restorePreviews(
+    String cascadeName,
+    int session,
+    int epoch,
+  ) async {
+    if (_disposed ||
+        session != _previewSession ||
+        epoch != _persistenceEpoch ||
+        !persistBeatPreviews ||
+        previewStore == null) {
+      return;
+    }
     final loaded = await previewStore!.load(cascadeName);
-    if (loaded.isEmpty) return;
-    if (_state.activeCascade?.name != cascadeName) return;
+    if (_disposed ||
+        loaded.isEmpty ||
+        session != _previewSession ||
+        epoch != _persistenceEpoch ||
+        !persistBeatPreviews) {
+      return;
+    }
+    final cascade = _state.activeCascade;
+    if (cascade == null || cascade.name != cascadeName) return;
     final merged = Map<int, Uint8List?>.from(_state.beatPreviews);
-    loaded.forEach((k, v) => merged[k] = v);
-    _state = _state.copyWith(beatPreviews: merged);
+    final metadata = Map<int, Map<String, dynamic>>.from(_state.beatMetadata);
+    for (final (index, beat) in cascade.beats.indexed) {
+      final preview = loaded[beat.id];
+      // containsKey also preserves an explicit clear while load was pending.
+      if (preview == null || merged.containsKey(index)) continue;
+      merged[index] = preview.bytes;
+      if (preview.metadata != null) metadata[index] = preview.metadata!;
+    }
+    _state = _state.copyWith(beatPreviews: merged, beatMetadata: metadata);
     notifyListeners();
   }
 
-  Future<void> _rewritePersistedPreviews() async {
-    if (!persistBeatPreviews || previewStore == null) return;
-    final name = _state.activeCascade?.name;
-    if (name == null) return;
-    final images = <int, Uint8List>{};
-    _state.beatPreviews.forEach((k, v) {
-      if (v != null) images[k] = v;
-    });
-    await previewStore!.replaceAll(name, images);
+  Map<String, CascadePreview?> _previewSnapshot() {
+    final cascade = _state.activeCascade;
+    if (cascade == null) return {};
+    return {
+      for (final entry in _state.beatPreviews.entries)
+        if (entry.key >= 0 && entry.key < cascade.beats.length)
+          cascade.beats[entry.key].id: entry.value == null
+              ? null
+              : CascadePreview(
+                  entry.value!,
+                  metadata: _state.beatMetadata[entry.key],
+                ),
+    };
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    ++_previewSession;
+    super.dispose();
   }
 
   /// Re-key an index-keyed cast-time map after a beat at [removed] is deleted:

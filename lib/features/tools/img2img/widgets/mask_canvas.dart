@@ -29,6 +29,8 @@ class _MaskCanvasState extends State<MaskCanvas> {
   final FocusNode _keyboardFocusNode = FocusNode();
   bool _spaceHeld = false;
   bool _middleMouseHeld = false;
+  final Set<int> _pointers = {};
+  bool _multiPointerGesture = false;
   final GlobalKey<_CursorPreviewState> _cursorKey = GlobalKey<_CursorPreviewState>();
 
   // Committed-stroke raster cache
@@ -365,19 +367,29 @@ class _MaskCanvasState extends State<MaskCanvas> {
             }
           },
           child: Listener(
-            // Finger counting and stroke cancellation now live in the viewer's
-            // onInteraction* handlers (via ScaleStartDetails.pointerCount). This
-            // Listener only handles mouse-specific input: middle-mouse pan and
-            // wheel zoom, which never reach the scale recognizer.
+            // Scale gestures end/restart whenever the pointer count changes.
+            // Cancel before the recognizer can commit that partial stroke, and
+            // keep painting disabled until a fresh contact sequence begins.
             onPointerDown: (event) {
+              if (_pointers.isEmpty) _multiPointerGesture = false;
+              _pointers.add(event.pointer);
+              if (_pointers.length > 1) {
+                _multiPointerGesture = true;
+                _strokeActive = false;
+                notifier.cancelStroke();
+              }
               if (event.buttons & kMiddleMouseButton != 0) {
                 setState(() => _middleMouseHeld = true);
               }
             },
             onPointerUp: (event) {
+              _pointers.remove(event.pointer);
               if (_middleMouseHeld) setState(() => _middleMouseHeld = false);
             },
             onPointerCancel: (event) {
+              _pointers.remove(event.pointer);
+              _strokeActive = false;
+              notifier.cancelStroke();
               if (_middleMouseHeld) setState(() => _middleMouseHeld = false);
             },
             onPointerSignal: (event) {
@@ -545,7 +557,8 @@ class _MaskCanvasState extends State<MaskCanvas> {
     }
     // Two-plus fingers, or an explicit pan-mode drag: hand the gesture to the
     // viewer (zoom/pan). Don't start a brush stroke.
-    if (isPanMode || details.pointerCount >= 2) {
+    if (details.pointerCount >= 2) _multiPointerGesture = true;
+    if (isPanMode || _multiPointerGesture) {
       _strokeActive = false;
       notifier.cancelStroke();
       return;
@@ -564,13 +577,14 @@ class _MaskCanvasState extends State<MaskCanvas> {
     // A second finger landed mid-stroke → this became a pinch. Abandon the
     // partial one-finger stroke and let the viewer scale.
     if (details.pointerCount >= 2) {
+      _multiPointerGesture = true;
       if (_strokeActive) {
         _strokeActive = false;
         notifier.cancelStroke();
       }
       return;
     }
-    if (!_strokeActive || isPanMode) return;
+    if (!_strokeActive || isPanMode || _multiPointerGesture) return;
     final normalized = _toScene(details.localFocalPoint);
     if (normalized != null) {
       notifier.addStrokePoint(normalized);
@@ -585,7 +599,11 @@ class _MaskCanvasState extends State<MaskCanvas> {
     }
     if (_strokeActive) {
       _strokeActive = false;
-      notifier.endStroke();
+      if (_multiPointerGesture || details.pointerCount > 0) {
+        notifier.cancelStroke();
+      } else {
+        notifier.endStroke();
+      }
     }
   }
 

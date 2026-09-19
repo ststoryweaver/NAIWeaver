@@ -1,9 +1,42 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:naiweaver/features/generation/models/nai_character.dart';
 import 'package:naiweaver/features/tools/cascade/models/cascade_beat.dart';
+import 'package:naiweaver/features/tools/cascade/models/prompt_cascade.dart';
 import 'package:naiweaver/features/tools/cascade/services/cascade_stitching_service.dart';
 
 void main() {
+  test(
+    'beat identity survives edits and JSON; new beats have distinct IDs',
+    () {
+      final beat = CascadeBeat(characterSlots: [], environmentTags: 'forest');
+      expect(beat.copyWith(sceneTags: 'running').id, beat.id);
+      expect(CascadeBeat.fromJson(beat.toJson()).id, beat.id);
+      expect(
+        CascadeBeat(characterSlots: [], environmentTags: 'forest').id,
+        isNot(beat.id),
+      );
+    },
+  );
+
+  test('legacy cascade beat identities are repeatable across launches', () {
+    final json = {
+      'name': 'story',
+      'characterCount': 0,
+      'beats': [
+        {'characterSlots': [], 'environmentTags': 'first'},
+        {'characterSlots': [], 'environmentTags': 'second'},
+      ],
+    };
+    final first = PromptCascade.fromJson(json);
+    final second = PromptCascade.fromJson(json);
+    expect(first.beats.map((b) => b.id), ['legacy_0', 'legacy_1']);
+    expect(second.beats.map((b) => b.id), first.beats.map((b) => b.id));
+    expect(
+      PromptCascade.fromJson(first.toJson()).beats.map((b) => b.id),
+      first.beats.map((b) => b.id),
+    );
+  });
+
   group('BeatCharacterSlot action tags', () {
     test('round-trips multiple action tags through JSON', () {
       final slot = BeatCharacterSlot(

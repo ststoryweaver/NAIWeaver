@@ -358,7 +358,9 @@ class _ActionInteractionSheetState extends State<ActionInteractionSheet> {
     return Container(
       color: t.surfaceMid,
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            16,
         left: 24,
         right: 24,
         top: 16,

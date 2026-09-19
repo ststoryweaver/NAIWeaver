@@ -150,6 +150,14 @@ flutter build web         # Web build
 3. Enter your NovelAI API key
 4. Start generating
 
+### Cascade preview persistence
+
+On native platforms, **TOOLS > SETTINGS** offers optional persistence of Cascade beat previews. It is off by default. Enabling it restores each beat's last image and generation metadata when that story is reopened; deleting the story removes its stored previews. Web does not show this setting because browser persistence is not implemented.
+
+Generation results stay attached to their originating story session and beat, including when beats move. Exiting or replacing the story discards its pending Cascade completion. Switching the viewed beat during saving or exporting preserves the new image's own metadata and filename.
+
+See the [0.9.6 changelog](CHANGELOG.md#v096-unreleased) for the current candidate and the [release checklist](docs/releases/0.9.6.md) for validation status and known limitations.
+
 ## Project Structure
 
 ```

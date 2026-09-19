@@ -1074,122 +1074,126 @@ class _InteractionsSection extends StatelessWidget {
           return Container(
             color: t.surfaceMid,
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom +
+                  MediaQuery.of(ctx).padding.bottom +
+                  16,
               left: 24,
               right: 24,
               top: 16,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l.charEditorAddInteraction.toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: t.fontSize(12),
-                    letterSpacing: 4,
-                    color: t.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Type selector chips
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: () => setSheetState(() {
-                        isMutual = false;
-                        selectedTargets.clear();
-                      }),
-                      borderRadius: BorderRadius.circular(2),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: !isMutual ? t.accent : t.borderSubtle,
-                          borderRadius: BorderRadius.circular(2),
-                          border: Border.all(color: !isMutual ? t.accent : t.textMinimal, width: 0.5),
-                        ),
-                        child: Text(
-                          l.charEditorSourceTarget,
-                          style: chipStyle.copyWith(color: !isMutual ? t.background : t.textTertiary),
-                        ),
-                      ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l.charEditorAddInteraction.toUpperCase(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: t.fontSize(12),
+                      letterSpacing: 4,
+                      color: t.textPrimary,
                     ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => setSheetState(() {
-                        isMutual = true;
-                        selectedTargets.clear();
-                      }),
-                      borderRadius: BorderRadius.circular(2),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isMutual ? t.accent : t.borderSubtle,
-                          borderRadius: BorderRadius.circular(2),
-                          border: Border.all(color: isMutual ? t.accent : t.textMinimal, width: 0.5),
-                        ),
-                        child: Text(
-                          l.charEditorMutual,
-                          style: chipStyle.copyWith(color: isMutual ? t.background : t.textTertiary),
+                  ),
+                  const SizedBox(height: 20),
+                  // Type selector chips
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: () => setSheetState(() {
+                          isMutual = false;
+                          selectedTargets.clear();
+                        }),
+                        borderRadius: BorderRadius.circular(2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: !isMutual ? t.accent : t.borderSubtle,
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(color: !isMutual ? t.accent : t.textMinimal, width: 0.5),
+                          ),
+                          child: Text(
+                            l.charEditorSourceTarget,
+                            style: chipStyle.copyWith(color: !isMutual ? t.background : t.textTertiary),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => setSheetState(() {
+                          isMutual = true;
+                          selectedTargets.clear();
+                        }),
+                        borderRadius: BorderRadius.circular(2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isMutual ? t.accent : t.borderSubtle,
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(color: isMutual ? t.accent : t.textMinimal, width: 0.5),
+                          ),
+                          child: Text(
+                            l.charEditorMutual,
+                            style: chipStyle.copyWith(color: isMutual ? t.background : t.textTertiary),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (isMutual) ...[
+                    Text(l.charEditorParticipants.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(9), letterSpacing: 2, color: t.textDisabled)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: List.generate(characters.length, (i) => buildCharChip(i, selectedSources)),
+                    ),
+                  ] else ...[
+                    Text(l.charEditorSelectSource.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(9), letterSpacing: 2, color: t.textDisabled)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: List.generate(characters.length, (i) => buildCharChip(i, selectedSources, excluded: selectedTargets)),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(l.charEditorSelectTarget.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(9), letterSpacing: 2, color: t.textDisabled)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: List.generate(characters.length, (i) => buildCharChip(i, selectedTargets, excluded: selectedSources)),
                     ),
                   ],
-                ),
-                const SizedBox(height: 20),
-                if (isMutual) ...[
-                  Text(l.charEditorParticipants.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(9), letterSpacing: 2, color: t.textDisabled)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: List.generate(characters.length, (i) => buildCharChip(i, selectedSources)),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: canContinue
+                        ? () {
+                            Navigator.pop(ctx);
+                            _openInteractionEditor(
+                              context,
+                              sourceIndices: selectedSources.toList()..sort(),
+                              targetIndices: isMutual ? [] : (selectedTargets.toList()..sort()),
+                              type: isMutual ? InteractionType.mutual : InteractionType.sourceTarget,
+                            );
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: t.accent,
+                      foregroundColor: t.background,
+                      disabledBackgroundColor: t.borderSubtle,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
+                    child: Text(
+                      l.charEditorContinue,
+                      style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2, fontSize: t.fontSize(10)),
+                    ),
                   ),
-                ] else ...[
-                  Text(l.charEditorSelectSource.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(9), letterSpacing: 2, color: t.textDisabled)),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: List.generate(characters.length, (i) => buildCharChip(i, selectedSources, excluded: selectedTargets)),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(l.charEditorSelectTarget.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: t.fontSize(9), letterSpacing: 2, color: t.textDisabled)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: List.generate(characters.length, (i) => buildCharChip(i, selectedTargets, excluded: selectedSources)),
-                  ),
                 ],
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: canContinue
-                      ? () {
-                          Navigator.pop(ctx);
-                          _openInteractionEditor(
-                            context,
-                            sourceIndices: selectedSources.toList()..sort(),
-                            targetIndices: isMutual ? [] : (selectedTargets.toList()..sort()),
-                            type: isMutual ? InteractionType.mutual : InteractionType.sourceTarget,
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: t.accent,
-                    foregroundColor: t.background,
-                    disabledBackgroundColor: t.borderSubtle,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                  ),
-                  child: Text(
-                    l.charEditorContinue,
-                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2, fontSize: t.fontSize(10)),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
+              ),
             ),
           );
         },

@@ -231,7 +231,7 @@ lib/
         │   ├── services/
         │   │   ├── cascade_stitching_service.dart  # Beat prompt assembly
         │   │   ├── cascade_preview_store.dart      # Beat-preview persistence interface
-        │   │   └── file_cascade_preview_store.dart # Disk-backed images under cascade_previews/
+        │   │   └── file_cascade_preview_store.dart # Atomic image + metadata records under cascade_previews/.v2/<hashed name>/
         │   └── widgets/
         │       ├── cascade_editor.dart     # Timeline editor UI with unsaved-changes guard and Cast button
         │       ├── cascade_playback_view.dart  # Main-screen playback overlay with responsive controls
@@ -332,6 +332,18 @@ Each feature follows the pattern: `features/{name}/models/`, `providers/`, `serv
 
 ### Immutable State Updates
 All notifiers create new list/object instances on mutation (never mutate in place), then call `notifyListeners()`.
+
+### Cascade Preview Persistence
+Beats carry stable IDs through JSON and `copyWith`; clones get fresh IDs. Old cascades receive deterministic `legacy_N` IDs so their indexed preview files can migrate. The notifier captures cascade/beat ownership before queuing writes and uses session tokens to reject stale loads. Preview pruning happens only after the edited cascade is saved successfully, preserving the original images when edits are discarded. Enabling persistence merges existing records with current images and explicit clears.
+
+The file store hashes cascade names and beat IDs, writes image bytes and generation metadata together in checksummed JSON records, and publishes replacements with a same-directory rename. It rejects linked storage directories, skips unreadable records individually, and deletes only recognized preview files without recursive directory deletion. Legacy migration reads only exact-name child directories and removes an old file only after its new record is written. Desktop shutdown briefly drains the notifier's accepted preview writes before closing.
+
+Before awaiting a render, playback captures a `CascadeGenerationTarget` containing the notifier owner, session token, and stable beat ID. Completion rejects old sessions and removed beats, resolves reordered beats by ID, and advances only if the rendered beat is still selected. `GenerationNotifier.generateCascadeBeat` returns a `CascadeGenerationResult` containing that call's bytes, metadata, and saved basename. Auto-export uses the same generation record; a late save updates viewer bookkeeping only if that image is still displayed. Playback never reconstructs a completed render from the viewer's mutable metadata getters.
+
+The persistence setting is available only on native platforms. Web supplies no preview store and hides the setting; it does not promise restoration across browser sessions.
+
+### Canvas and Mask Pointer Lifecycles
+CanvasPaintSurface and MaskCanvas observe raw pointer arrival and cancellation before InteractiveViewer's scale callbacks can commit a one-finger stroke. A second pointer cancels the active gesture and latches multi-pointer suppression until all contacts end. A remaining pinch finger cannot begin painting; a fresh contact can. This keeps pinch zoom and mouse painting on the same interaction path without leaving partial strokes.
 
 ### PNG Metadata Round-Trip
 Generation settings are embedded in PNG text chunks as JSON. Drag-and-drop import reads these chunks to reconstruct settings, enabling generate-save-reimport workflows.

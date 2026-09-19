@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/tag_category.dart';
 import '../services/preferences_service.dart';
 import '../services/tag_service.dart';
+import '../utils/tag_suggestion_helper.dart';
 import '../theme/theme_extensions.dart';
 
 /// Shared tag suggestion overlay used across the main generation screen
@@ -44,14 +45,12 @@ class TagSuggestionOverlay extends StatefulWidget {
 
 class _TagSuggestionOverlayState extends State<TagSuggestionOverlay> {
   void _selectTag(DanbooruTag tag) {
-    if (tag.typeName == 'saved_character' &&
-        tag.flatExpansion != null &&
-        !context.read<PreferencesService>().honorOutfitState) {
-      // Honor-state toggle is off → insert the flat (non-state-routed) variant.
-      widget.onTagSelected(tag.copyWith(expansion: () => tag.flatExpansion));
-      return;
-    }
-    widget.onTagSelected(tag);
+    widget.onTagSelected(
+      TagSuggestionHelper.resolveSelection(
+        tag,
+        honorOutfitState: context.read<PreferencesService>().honorOutfitState,
+      ),
+    );
   }
 
   Widget _buildContent(BuildContext context) {

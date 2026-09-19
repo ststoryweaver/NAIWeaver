@@ -74,6 +74,7 @@ references/
 
 # Session snapshots
 session_snapshot.json
+/cascade_previews/
 
 # Windows reserved device names
 nul

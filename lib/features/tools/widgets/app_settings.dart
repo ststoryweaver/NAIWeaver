@@ -129,8 +129,10 @@ class _AppSettingsState extends State<AppSettings> {
           _buildCharInsertTargetToggle(t),
           const SizedBox(height: 12),
           _buildRememberSessionToggle(t),
-          const SizedBox(height: 12),
-          _buildPersistCascadePreviewsToggle(t),
+          if (!kIsWeb) ...[
+            const SizedBox(height: 12),
+            _buildPersistCascadePreviewsToggle(t),
+          ],
           const SizedBox(height: 12),
           _buildImg2ImgImportPromptToggle(t),
           const SizedBox(height: 12),
@@ -1572,7 +1574,7 @@ class _AppSettingsState extends State<AppSettings> {
               value: prefs.persistCascadeBeatPreviews,
               onChanged: (val) async {
                 await context.read<CascadeNotifier>().setPersistBeatPreviews(val);
-                setLocalState(() {});
+                if (context.mounted) setLocalState(() {});
               },
               activeThumbColor: t.accent,
               activeTrackColor: t.borderStrong,

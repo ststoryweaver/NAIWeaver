@@ -34,6 +34,7 @@ import '../../../core/services/styles.dart';
 import '../../gallery/providers/gallery_notifier.dart';
 import '../../tools/providers/tag_library_notifier.dart';
 import '../models/nai_character.dart';
+import '../models/cascade_generation_result.dart';
 import '../models/character_preset.dart';
 import '../../tools/cascade/services/cascade_stitching_service.dart';
 import '../../tools/img2img/services/img2img_request_builder.dart';
@@ -281,6 +282,7 @@ class GenerationNotifier extends ChangeNotifier {
   GenerationState get state => _state;
 
   late NovelAIService _service;
+  final NovelAIService Function(String) _serviceFactory;
   NovelAIService get service => _service;
   late final WildcardProcessor _wildcardProcessor;
   final TagService _tagService;
@@ -345,15 +347,17 @@ class GenerationNotifier extends ChangeNotifier {
     required String outputDir,
     required String presetsFilePath,
     required String stylesFilePath,
+    NovelAIService Function(String) serviceFactory = NovelAIService.new,
     GalleryNotifier? galleryNotifier,
     CharacterLibraryNotifier? characterLibrary,
-  }) : _prefs = preferences,
+  }) : _serviceFactory = serviceFactory,
+       _prefs = preferences,
        _tagService = tagService,
        _wildcardService = wildcardService,
        _outputDir = outputDir,
        _galleryNotifier = galleryNotifier,
        _characterLibrary = characterLibrary {
-    _service = NovelAIService('');
+    _service = _serviceFactory('');
     _wildcardProcessor = WildcardProcessor(wildcardDir: wildcardService.wildcardDir, wildcardService: _wildcardService);
     _presetService = PresetFileService(presetsFilePath: presetsFilePath, stylesFilePath: stylesFilePath);
     _sessionService = SessionSnapshotService(
@@ -444,7 +448,7 @@ class GenerationNotifier extends ChangeNotifier {
     // off; the session snapshot (restored below) refreshes it when on.
     _render.memory = ModelSettingsMemory.decode(_prefs.modelRenderSettings);
     final remembered = _render.memory.entryFor(_prefs.naiModel.family);
-    _service = NovelAIService(apiKey);
+    _service = _serviceFactory(apiKey);
     _textService = NaiTextService(apiKey);
     _vibeTransferNotifier?.updateService(_service);
     _directorToolsNotifier?.updateService(_service);
@@ -560,7 +564,7 @@ class GenerationNotifier extends ChangeNotifier {
 
   Future<void> updateApiKey(String key) async {
     await _prefs.setApiKey(key);
-    _service = NovelAIService(key);
+    _service = _serviceFactory(key);
     _textService = NaiTextService(key);
     _vibeTransferNotifier?.updateService(_service);
     _directorToolsNotifier?.updateService(_service);
@@ -998,11 +1002,15 @@ class GenerationNotifier extends ChangeNotifier {
     await file.writeAsBytes(bytes);
   }
 
-  Future<void> _autoExportIfEnabled(Uint8List bytes) async {
+  Future<void> _autoExportIfEnabled(
+    Uint8List bytes, {
+    Map<String, dynamic>? metadata,
+  }) async {
     if (!_prefs.autoExportToDevice) return;
+    final exportMetadata = metadata ?? _lastMetadata;
     try {
-      final fallbackName = _lastMetadata != null
-          ? _buildFileName(_lastMetadata!)
+      final fallbackName = exportMetadata != null
+          ? _buildFileName(exportMetadata)
           : 'Gen_${DateFormat('yyyyMMdd_HHmmssSSS').format(DateTime.now())}';
 
       // Custom folder takes priority on all platforms — but a legacy plain
@@ -1015,17 +1023,17 @@ class GenerationNotifier extends ChangeNotifier {
           !kIsWeb &&
           !SafExportService.isStalePlainPath(customFolder)) {
         final target = await _patternedTarget(
-            customFolder, _lastMetadata ?? const {}, fallbackName);
+            customFolder, exportMetadata ?? const {}, fallbackName);
         await _exportToFolder(bytes, target.dir, target.base);
         return;
       }
 
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         await _exportBytesToMobileGallery(
-            bytes, _patternedName(_lastMetadata, fallbackName));
+            bytes, _patternedName(exportMetadata, fallbackName));
       } else if (!kIsWeb) {
         final target = await _patternedTarget(
-            _outputDir, _lastMetadata ?? const {}, fallbackName);
+            _outputDir, exportMetadata ?? const {}, fallbackName);
         await _exportToFolder(bytes, target.dir, target.base);
       }
     } catch (e) {
@@ -1763,7 +1771,7 @@ class GenerationNotifier extends ChangeNotifier {
     }
   }
 
-  Future<Uint8List?> generateCascadeBeat(CascadeStitchedRequest request) async {
+  Future<CascadeGenerationResult?> generateCascadeBeat(CascadeStitchedRequest request) async {
     _state = _state.copyWith(isLoading: true, hasAuthError: false);
     notifyListeners();
 
@@ -1812,17 +1820,27 @@ class GenerationNotifier extends ChangeNotifier {
       _lastSavedBasename = null;
       _state = _state.copyWith(generatedImage: result.imageBytes);
 
+      // Navigation can replace the viewer's metadata while save/export awaits.
+      // Keep this render's record local throughout both operations.
+      String? savedBasename;
       if (_state.autoSaveImages) {
         final savedFile = await _saveToDisk(result.imageBytes, result.metadata);
         if (savedFile != null) {
+          savedBasename = p.basename(savedFile.path);
           _galleryNotifier?.addFile(savedFile, DateTime.now());
-          _imageSaved = true;
-          _lastSavedBasename = p.basename(savedFile.path);
-          await _autoExportIfEnabled(result.imageBytes);
+          if (identical(_state.generatedImage, result.imageBytes)) {
+            _imageSaved = true;
+            _lastSavedBasename = savedBasename;
+          }
+          await _autoExportIfEnabled(result.imageBytes, metadata: result.metadata);
         }
       }
 
-      return result.imageBytes;
+      return CascadeGenerationResult(
+        imageBytes: result.imageBytes,
+        metadata: result.metadata,
+        savedBasename: savedBasename,
+      );
     } on UnauthorizedException {
       _state = _state.copyWith(hasAuthError: true);
       return null;
@@ -2071,5 +2089,3 @@ class GenerationNotifier extends ChangeNotifier {
     super.dispose();
   }
 }
-
-

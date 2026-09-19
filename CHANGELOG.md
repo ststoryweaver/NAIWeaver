@@ -1,12 +1,20 @@
 # Changelog
 
-## Unreleased
+## v0.9.6 (unreleased)
 
 ### New
-- **Optional persistence of cascade beat images.** Off by default. When enabled (Settings), each beat's last generated image is written to disk and restored the next time that cascade is opened. Deleting a cascade removes its stored images. Contributed by [@freakachu](https://github.com/freakachu).
+- **Optional persistence of cascade beat images on native platforms.** Off by default. When enabled (Settings), each beat's last generated image and generation metadata are written to disk and restored the next time that cascade is opened. Deleting a cascade removes its stored images. The setting is hidden on web, where preview persistence is not supported. Contributed by [@freakachu](https://github.com/freakachu).
 - **Cascade director: Tab cycles tag suggestions.** Tab / Shift+Tab walk the overlay, Enter inserts the highlighted chip — the same bindings as the main prompt. With no suggestions, Tab still moves focus. Contributed by [@freakachu](https://github.com/freakachu).
 
 ### Fixes
+- **Late Cascade generations cannot overwrite another story.** Completion belongs to the session and stable beat ID that started it. Switching stories, exiting and reopening, deleting a beat, or closing playback discards stale completions; reordering beats keeps the result with its original beat. Navigating to another beat does not move the selection back.
+- **Cascade images keep their own metadata and saved filename.** Navigating while auto-save or auto-export is running no longer pairs the new image with another beat's prompt or seed, changes that beat's save tracking, or names the export using the wrong generation record.
+- **Pinching no longer leaves a paint or mask stroke behind.** Adding a second finger cancels the in-progress stroke before zoom starts. Lifting or cancelling one finger does not resume painting until all fingers are lifted and a fresh stroke begins; mouse painting is preserved.
+- **Mobile editor sheets respect the keyboard and safe area.** Character, interaction, reference, and vibe editors keep their controls reachable on small screens; reference and vibe sheets scroll, and long reference titles no longer crowd the header actions.
+- **Cascade previews stay with their beats.** Stable beat IDs preserve saved image mappings when edits are discarded; queued writes retain their original cascade, and late loads cannot replace newly generated or cleared previews. Re-enabling persistence merges existing images instead of deleting them. Restored previews include generation metadata so normal gallery saving works.
+- **Cascade preview storage is confined to its own files.** Hashed cascade and beat keys prevent dot names, reserved names, and case collisions from reaching unrelated data. Image and metadata records are replaced atomically, corrupt records are skipped independently, and legacy preview files migrate on load.
+- **Keyboard character insertion respects outfit state.** Enter and clicking a suggestion now share the same handling of the “honor outfit state” option.
+- **Desktop shutdown is bounded and runs once.** Repeated close events share one operation, queued preview writes get a chance to finish, and stalled plugin calls have timeouts and a fallback.
 - **V5 auto-`teXt:` matches the NovelAI web UI.** Quoted strings (`"…"` / `「…」`) from the base prompt *and* character prompts are collected (quotes left in place) and appended as `, teXt: …` at the very end of the base caption, after style suffixes. Multiple quotes are separated by a blank line. A manual `Text:` / `teXt:` block still disables auto-collection. Contributed by [@freakachu](https://github.com/freakachu).
 - **Windows: closing the window no longer stalls for several seconds.** Clicking X was intercepted so bounds could be saved, then `windowManager.destroy()` blocked the UI thread. The window now hides immediately, geometry is persisted, and the OS close proceeds. Contributed by [@freakachu](https://github.com/freakachu).
 
@@ -14,7 +22,12 @@
 - [@freakachu](https://github.com/freakachu) — cascade beat-image persistence, Tab cycling in the director, V5 auto-`teXt:`, and the Windows close stall
 
 ### Under the hood
-- Full suite at 724 tests (18 new: Tab cycling, overlay highlight, beat-preview persistence, V5 auto-`teXt:` collection); analyzer clean aside from the pre-existing `onReorder` deprecation infos.
+- Full suite: **786 passed, 1 live API test skipped**; static analysis clean. Regression coverage includes Cascade session/beat ownership, save/export metadata, preview storage and migration, native/web setting availability, keyboard insertion, bounded shutdown, mobile sheets, and paint/mask pointer lifecycles. Live API calls and physical-device smoke tests are separate from this suite.
+
+### Known limitations
+- SAM 2.1 segmentation's encoder/decoder tensor mismatch ([#1](https://github.com/ststoryweaver/NAIWeaver/issues/1)) remains unresolved. Runtime-library packaging does not fix that model contract.
+- Browser preview persistence is not implemented. Existing metadata-import, original-image-format, and autocomplete feature requests remain open; this release does not claim to resolve every item in those issues.
+- See the [0.9.6 release checklist](docs/releases/0.9.6.md) for artifact and device validation still required before publication.
 
 ## v0.9.5
 

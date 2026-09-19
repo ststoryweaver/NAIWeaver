@@ -14,6 +14,19 @@ class TagSuggestionResult {
 
 /// Shared logic for tag auto-suggestion across prompt text fields.
 class TagSuggestionHelper {
+  /// Shared by pointer and keyboard selection so insertion preferences agree.
+  static DanbooruTag resolveSelection(
+    DanbooruTag tag, {
+    required bool honorOutfitState,
+  }) {
+    if (tag.typeName == 'saved_character' &&
+        tag.flatExpansion != null &&
+        !honorOutfitState) {
+      return tag.copyWith(expansion: () => tag.flatExpansion);
+    }
+    return tag;
+  }
+
   static const _categoryPrefixes = {'artist:': 'artist'};
 
   /// Extracts the current word at the cursor and returns matching tag suggestions.

@@ -748,6 +748,8 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                 onPressed: genNotifier.state.isLoading
                     ? null
                     : () async {
+                        final target = cascadeNotifier.captureGenerationTarget(currentBeat.id);
+                        if (target == null) return;
                         // render() throws synchronously if cast-time state is
                         // malformed (e.g. fewer appearances than character
                         // slots). Catch it so the tap surfaces an error instead
@@ -770,21 +772,13 @@ class _CascadePlaybackViewState extends State<CascadePlaybackView> {
                           return;
                         }
                         final result = await genNotifier.generateCascadeBeat(request);
-                        if (result != null) {
-                          cascadeNotifier.setBeatPreview(
-                            currentIndex,
-                            result,
-                            metadata: genNotifier.lastMetadata,
+                        if (mounted && result != null) {
+                          cascadeNotifier.completeBeatGeneration(
+                            target,
+                            result.imageBytes,
+                            metadata: result.metadata,
+                            savedBasename: result.savedBasename,
                           );
-                          // Always (re)bind: with auto-save off this clears the
-                          // filename of the render this one just replaced.
-                          cascadeNotifier.setBeatSavedBasename(
-                            currentIndex,
-                            genNotifier.lastSavedBasename,
-                          );
-                          if (currentIndex < totalBeats - 1) {
-                            cascadeNotifier.selectBeat(currentIndex + 1);
-                          }
                         }
                       },
                 style: ElevatedButton.styleFrom(

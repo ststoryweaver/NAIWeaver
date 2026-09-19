@@ -45,94 +45,98 @@ class _VibeTransferEditorSheetState extends State<VibeTransferEditorSheet> {
     return Container(
       color: t.surfaceMid,
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            16,
         left: 24,
         right: 24,
         top: 16,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.l.refVibeEditorTitle,
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: t.fontSize(12),
-                  letterSpacing: 4,
-                  color: t.textPrimary,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  context.l.refVibeEditorTitle,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: t.fontSize(12),
+                    letterSpacing: 4,
+                    color: t.textPrimary,
+                  ),
                 ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  EnabledToggle(
-                    enabled: _enabled,
-                    accent: t.accentVibeTransfer,
-                    onTap: () {
-                      setState(() => _enabled = !_enabled);
-                      widget.onToggleEnabled();
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  IconButton(
-                    onPressed: () {
-                      widget.onRemove();
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(Icons.delete_outline, color: t.accentDanger, size: 18),
-                    constraints: const BoxConstraints(),
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    EnabledToggle(
+                      enabled: _enabled,
+                      accent: t.accentVibeTransfer,
+                      onTap: () {
+                        setState(() => _enabled = !_enabled);
+                        widget.onToggleEnabled();
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      onPressed: () {
+                        widget.onRemove();
+                        Navigator.pop(context);
+                      },
+                      icon: Icon(Icons.delete_outline, color: t.accentDanger, size: 18),
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
 
-          // Image preview
-          Center(
-            child: Container(
-              height: 160,
-              width: 160,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: t.accentVibeTransfer, width: 1.5),
-                image: DecorationImage(
-                  image: MemoryImage(widget.vibe.originalImageBytes),
-                  fit: BoxFit.cover,
+            // Image preview
+            Center(
+              child: Container(
+                height: 160,
+                width: 160,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: t.accentVibeTransfer, width: 1.5),
+                  image: DecorationImage(
+                    image: MemoryImage(widget.vibe.originalImageBytes),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // Strength slider
-          _buildSlider(
-            label: context.l.refStrength,
-            value: _strength,
-            onChanged: (v) {
-              setState(() => _strength = v);
-              widget.onStrengthChanged(v);
-            },
-          ),
-          const SizedBox(height: 16),
+            // Strength slider
+            _buildSlider(
+              label: context.l.refStrength,
+              value: _strength,
+              onChanged: (v) {
+                setState(() => _strength = v);
+                widget.onStrengthChanged(v);
+              },
+            ),
+            const SizedBox(height: 16),
 
-          // Info Extracted slider
-          _buildSlider(
-            label: context.l.refInfoExtracted,
-            value: _infoExtracted,
-            onChanged: (v) {
-              setState(() => _infoExtracted = v);
-              widget.onInfoExtractedChanged(v);
-            },
-          ),
-          const SizedBox(height: 24),
-        ],
+            // Info Extracted slider
+            _buildSlider(
+              label: context.l.refInfoExtracted,
+              value: _infoExtracted,
+              onChanged: (v) {
+                setState(() => _infoExtracted = v);
+                widget.onInfoExtractedChanged(v);
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

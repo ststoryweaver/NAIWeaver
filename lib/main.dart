@@ -18,6 +18,7 @@ import 'core/l10n/locale_notifier.dart';
 import 'core/l10n/l10n_extensions.dart';
 import 'core/services/path_service.dart';
 import 'core/services/preferences_service.dart';
+import 'core/services/app_window_listener.dart';
 import 'core/services/update_service.dart';
 import 'core/widgets/update_prompt.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -66,62 +67,6 @@ import 'core/services/wiki_service.dart';
 import 'core/services/wildcard_service.dart';
 import 'package:audio_service/audio_service.dart';
 
-class _AppWindowListener extends WindowListener {
-  final PreferencesService _prefs;
-  _AppWindowListener(this._prefs);
-
-  @override
-  void onWindowClose() async {
-    // Capture geometry first, then hide immediately. `window_manager.destroy()`
-    // is known to stall several seconds on Windows (Flutter engine + plugin
-    // teardown, worse with ONNX/CUDA still loaded). Hiding the window is what
-    // the user perceives as "closed".
-    Rect? bounds;
-    var maximized = false;
-    try {
-      bounds = await windowManager
-          .getBounds()
-          .timeout(const Duration(milliseconds: 400));
-    } catch (_) {}
-    try {
-      maximized = await windowManager
-          .isMaximized()
-          .timeout(const Duration(milliseconds: 200));
-    } catch (_) {}
-    try {
-      await windowManager.hide();
-    } catch (_) {}
-
-    try {
-      // Don't persist a degenerate rect (minimized / mid-animation) — it would
-      // make the next launch's window invisible.
-      if (bounds != null && bounds.width >= 400 && bounds.height >= 300) {
-        await _prefs.saveWindowState(
-          x: bounds.left,
-          y: bounds.top,
-          w: bounds.width,
-          h: bounds.height,
-          maximized: maximized,
-        );
-      }
-    } catch (_) {}
-
-    // Prefer a normal OS close over destroy(): setPreventClose(true) +
-    // destroy() blocks the UI thread on recent Flutter Windows builds.
-    // https://github.com/leanflutter/window_manager/issues/478
-    try {
-      await windowManager.setPreventClose(false);
-      await windowManager.close();
-    } catch (_) {
-      try {
-        await windowManager.destroy();
-      } catch (_) {
-        exit(0);
-      }
-    }
-  }
-}
-
 void main() {
   runZonedGuarded(() async {
   // Rescales Android mouse-wheel deltas so one notch ≈ one text line
@@ -136,6 +81,7 @@ void main() {
   );
   final preferencesService = PreferencesService(prefs, secureStorage);
   await preferencesService.migrateApiKey();
+  CascadeNotifier? cascadeNotifier;
 
   // Restore window state on desktop
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
@@ -169,7 +115,10 @@ void main() {
     await windowManager.show();
     await windowManager.focus();
     await windowManager.setPreventClose(true);
-    windowManager.addListener(_AppWindowListener(preferencesService));
+    windowManager.addListener(AppWindowListener(
+      preferencesService,
+      flushPendingWrites: () => cascadeNotifier?.flushPreviews() ?? Future.value(),
+    ));
   }
 
   final customOut = preferencesService.customOutputDir;
@@ -316,7 +265,7 @@ void main() {
           ),
         ),
         ChangeNotifierProvider(
-          create: (_) => CascadeNotifier(
+          create: (_) => cascadeNotifier = CascadeNotifier(
             prefs: preferencesService,
             previewStore: kIsWeb
                 ? null

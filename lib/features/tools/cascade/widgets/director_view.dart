@@ -22,6 +22,7 @@ import '../../../generation/providers/generation_notifier.dart';
 import '../../../generation/widgets/settings_panel.dart';
 import '../../../../core/widgets/custom_resolution_dialog.dart';
 import '../../../../core/services/tag_service.dart';
+import '../../../../core/services/preferences_service.dart';
 
 class DirectorView extends StatefulWidget {
   const DirectorView({super.key});
@@ -147,7 +148,13 @@ class _DirectorViewState extends State<DirectorView> {
 
   void _onTagSelected(DanbooruTag tag) {
     if (_activeSuggestionController == null) return;
-    TagSuggestionHelper.applyTag(_activeSuggestionController!, tag);
+    TagSuggestionHelper.applyTag(
+      _activeSuggestionController!,
+      TagSuggestionHelper.resolveSelection(
+        tag,
+        honorOutfitState: context.read<PreferencesService>().honorOutfitState,
+      ),
+    );
     _activeSuggestionOnChanged?.call(_activeSuggestionController!.text);
     setState(() {
       _suggestions = [];
@@ -1123,13 +1130,7 @@ class _DirectorViewState extends State<DirectorView> {
               child: _buildCompactDropdown(
                 label: l.cascadeSampler,
                 value: beat.sampler,
-                items: [
-                  'k_euler_ancestral',
-                  'k_euler',
-                  'k_dpmpp_2s_ancestral',
-                  'k_dpmpp_2m',
-                  'k_dpmpp_sde',
-                ],
+                items: context.watch<GenerationNotifier>().state.model.samplers,
                 onChanged: (val) =>
                     notifier.updateActiveBeat(beat.copyWith(sampler: val)),
               ),

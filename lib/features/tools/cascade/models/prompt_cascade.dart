@@ -26,7 +26,10 @@ class PromptCascade {
   factory PromptCascade.fromJson(Map<String, dynamic> json) => PromptCascade(
     name: json['name'],
     characterCount: json['characterCount'],
-    beats: (json['beats'] as List).map((e) => CascadeBeat.fromJson(e)).toList(),
+    beats: [
+      for (final (i, beat) in (json['beats'] as List).indexed)
+        CascadeBeat.fromJson(beat, fallbackId: 'legacy_$i'),
+    ],
     metadata: json['metadata'] ?? {},
     useCoords: json['useCoords'] ?? true,
   );
