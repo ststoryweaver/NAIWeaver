@@ -1,0 +1,51 @@
+{
+  "app-id": "dev.naiweaver.app",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "49",
+  "sdk": "org.gnome.Sdk",
+  "command": "naiweaver",
+  "finish-args": [
+    "--share=network",
+    "--share=ipc",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri",
+    "--socket=pulseaudio",
+    "--talk-name=org.freedesktop.secrets",
+    "--filesystem=home"
+  ],
+  "modules": [
+    {
+      "name": "zenity",
+      "buildsystem": "meson",
+      "config-opts": ["-Dwebkitgtk=false", "-Dmanpage=false"],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://download.gnome.org/sources/zenity/4.2/zenity-4.2.0.tar.xz",
+          "sha256": "5f983340c6fa55f4fab5a9769d0771b2cdf1365e2c158ac11cc16ffd892f6bcd"
+        }
+      ]
+    },
+    {
+      "name": "naiweaver",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/naiweaver /app/bin",
+        "cp -a bundle/. /app/naiweaver/",
+        "install -Dm755 naiweaver.sh /app/bin/naiweaver",
+        "install -Dm644 dev.naiweaver.app.desktop /app/share/applications/dev.naiweaver.app.desktop",
+        "gdk-pixbuf-thumbnailer -s 256 logo.png app-icon.png",
+        "install -Dm644 app-icon.png /app/share/icons/hicolor/256x256/apps/dev.naiweaver.app.png",
+        "install -Dm644 LICENSE /app/share/licenses/dev.naiweaver.app/LICENSE"
+      ],
+      "sources": [
+        {"type": "dir", "path": "../../../build/linux/x64/release/bundle", "dest": "bundle"},
+        {"type": "file", "path": "naiweaver.sh"},
+        {"type": "file", "path": "dev.naiweaver.app.desktop"},
+        {"type": "file", "path": "../../../assets/logo.png"},
+        {"type": "file", "path": "../../../LICENSE"}
+      ]
+    }
+  ]
+}

@@ -72,7 +72,19 @@ set_target_properties(${BINARY_NAME}
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
+# flutter_onnxruntime 1.6.3 otherwise prefers an arbitrary system installation.
+# Use its supported CPU runtime consistently, including on developer machines
+# with a different ONNX Runtime installed. FORCE also repairs old CMake caches.
+set(USE_SYSTEM_ONNXRUNTIME OFF CACHE BOOL "Bundle ONNX Runtime" FORCE)
+set(ONNXRUNTIME_VERSION "1.22.0" CACHE STRING "Bundled ONNX Runtime version" FORCE)
 include(flutter/generated_plugins.cmake)
+
+# Flutter copies plugin targets with install(FILES), so their build RPATH must
+# already work after relocation. ONNX Runtime lives beside this plugin in lib/.
+set_target_properties(flutter_onnxruntime_plugin PROPERTIES
+  BUILD_WITH_INSTALL_RPATH TRUE
+  INSTALL_RPATH "$ORIGIN"
+)
 
 
 # === Installation ===
@@ -105,6 +117,17 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endforeach(bundled_library)
+
+# The plugin only exports libonnxruntime.so. Preserve the versioned library and
+# symlinks too: ELF consumers load the SONAME, not necessarily the bare .so name.
+foreach(onnxruntime_library ${flutter_onnxruntime_bundled_libraries})
+  get_filename_component(onnxruntime_lib_dir "${onnxruntime_library}" DIRECTORY)
+  install(DIRECTORY "${onnxruntime_lib_dir}/"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime
+    FILES_MATCHING PATTERN "libonnxruntime.so*"
+  )
+endforeach()
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")

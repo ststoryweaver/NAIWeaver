@@ -5,12 +5,14 @@
 ### New
 - **Optional persistence of cascade beat images on native platforms.** Off by default. When enabled (Settings), each beat's last generated image and generation metadata are written to disk and restored the next time that cascade is opened. Deleting a cascade removes its stored images. The setting is hidden on web, where preview persistence is not supported. Contributed by [@freakachu](https://github.com/freakachu).
 - **Cascade director: Tab cycles tag suggestions.** Tab / Shift+Tab walk the overlay, Enter inserts the highlighted chip — the same bindings as the main prompt. With no suggestions, Tab still moves focus. Contributed by [@freakachu](https://github.com/freakachu).
+- **Experimental Linux Flatpak packaging.** A separate CI workflow packages the Linux bundle, checks its libraries, and installs/launches it under a virtual display. English, Japanese, and Chinese builds can be selected manually. This is a testing route, not a Flathub release or a verified Steam Deck build; see the [Linux guide](docs/linux.md).
 
 ### Fixes
 - **Late Cascade generations cannot overwrite another story.** Completion belongs to the session and stable beat ID that started it. Switching stories, exiting and reopening, deleting a beat, or closing playback discards stale completions; reordering beats keeps the result with its original beat. Navigating to another beat does not move the selection back.
 - **Cascade images keep their own metadata and saved filename.** Navigating while auto-save or auto-export is running no longer pairs the new image with another beat's prompt or seed, changes that beat's save tracking, or names the export using the wrong generation record.
 - **Pinching no longer leaves a paint or mask stroke behind.** Adding a second finger cancels the in-progress stroke before zoom starts. Lifting or cancelling one finger does not resume painting until all fingers are lifted and a fresh stroke begins; mouse painting is preserved.
 - **Mobile editor sheets respect the keyboard and safe area.** Character, interaction, reference, and vibe editors keep their controls reachable on small screens; reference and vibe sheets scroll, and long reference titles no longer crowd the header actions.
+- **Linux bundles pin the supported ONNX Runtime.** Source builds bundle CPU runtime 1.22.0, preserve its versioned libraries and symlinks, and set the plugin's relative library search path. AppImage packaging checks that the runtime resolves inside the relocated bundle and exposes the expected C API. Linux and Steam Deck installation/troubleshooting instructions are included.
 - **Cascade previews stay with their beats.** Stable beat IDs preserve saved image mappings when edits are discarded; queued writes retain their original cascade, and late loads cannot replace newly generated or cleared previews. Re-enabling persistence merges existing images instead of deleting them. Restored previews include generation metadata so normal gallery saving works.
 - **Cascade preview storage is confined to its own files.** Hashed cascade and beat keys prevent dot names, reserved names, and case collisions from reaching unrelated data. Image and metadata records are replaced atomically, corrupt records are skipped independently, and legacy preview files migrate on load.
 - **Keyboard character insertion respects outfit state.** Enter and clicking a suggestion now share the same handling of the “honor outfit state” option.
@@ -25,7 +27,7 @@
 - Full suite: **786 passed, 1 live API test skipped**; static analysis clean. Regression coverage includes Cascade session/beat ownership, save/export metadata, preview storage and migration, native/web setting availability, keyboard insertion, bounded shutdown, mobile sheets, and paint/mask pointer lifecycles. Live API calls and physical-device smoke tests are separate from this suite.
 
 ### Known limitations
-- SAM 2.1 segmentation's encoder/decoder tensor mismatch ([#1](https://github.com/ststoryweaver/NAIWeaver/issues/1)) remains unresolved. Runtime-library packaging does not fix that model contract.
+- SAM 2.1 segmentation's encoder/decoder tensor mismatch ([#1](https://github.com/ststoryweaver/NAIWeaver/issues/1)) remains a known legacy limitation, not a 0.9.6 release blocker. Runtime-library packaging does not fix that model contract.
 - Browser preview persistence is not implemented. Existing metadata-import, original-image-format, and autocomplete feature requests remain open; this release does not claim to resolve every item in those issues.
 - See the [0.9.6 release checklist](docs/releases/0.9.6.md) for artifact and device validation still required before publication.
 

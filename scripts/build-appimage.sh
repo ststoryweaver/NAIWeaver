@@ -30,6 +30,9 @@ mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
 #   └── data/              (flutter_assets, icudtl.dat)
 cp -a "$BUNDLE_DIR/"* "$APPDIR/"
 
+echo "==> Checking bundled ONNX Runtime..."
+bash "$SCRIPT_DIR/check-linux-onnx.sh" "$APPDIR"
+
 # Copy .desktop file and icon into AppDir root (required by AppImage spec)
 cp "$DESKTOP_SRC" "$APPDIR/naiweaver.desktop"
 cp "$ICON_SRC" "$APPDIR/naiweaver.png"

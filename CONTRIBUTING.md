@@ -4,10 +4,13 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ## Development Setup
 
-1. Install Flutter (stable channel, SDK ^3.10.7)
+1. Install Flutter stable with Dart SDK ^3.10.7
 2. Clone the repository
 3. Run `flutter pub get`
 4. Run `flutter run -d windows` (or `-d chrome` for web)
+
+For Linux dependencies, native runtime details, and AppImage packaging, see the
+[Linux setup guide](docs/linux.md).
 
 ## Code Style
 

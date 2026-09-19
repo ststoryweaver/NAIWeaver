@@ -70,7 +70,10 @@ Settings	APIキー、自動保存、シェルフの表示設定、キャラク�
 
     NovelAI APIキー (サブスクリプションが必要です)
 
-    Flutter SDK ^3.10.7 (stable channel)
+    ソースからビルドする場合: Dart SDK ^3.10.7 を含む Flutter (stable channel)
+
+Linux のインストールとトラブルシューティング: [Linux ガイド（英語）](docs/linux.md)。
+このソースからの Linux ビルドには ONNX Runtime 1.22.0 (CPU) が同梱されるため、システムの ONNX パッケージをダウングレードする必要はありません。
 
 クイックスタート (Quick Start)
 クローン (Clone)

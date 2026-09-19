@@ -1,0 +1,60 @@
+name: Experimental Flatpak
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/flatpak.yml'
+      - 'linux/**'
+      - 'lib/**'
+      - 'pubspec.*'
+      - 'scripts/*flatpak.sh'
+      - 'scripts/check-linux-onnx.sh'
+  workflow_dispatch:
+    inputs:
+      locale:
+        description: Default language
+        type: choice
+        options: [en, ja, zh]
+        default: en
+
+permissions:
+  contents: read
+
+jobs:
+  build-flatpak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BUILD_LOCALE: ${{ inputs.locale || 'en' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev libsecret-1-dev curl python3 flatpak flatpak-builder xvfb xauth xdotool dbus-x11 gnome-keyring libgl1-mesa-dri
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user --noninteractive flathub org.gnome.Platform//49 org.gnome.Sdk//49
+      - run: flutter pub get
+      - name: Build Linux bundle
+        run: flutter build linux --release --dart-define=DEFAULT_LOCALE="$BUILD_LOCALE"
+      - name: Build and check Flatpak
+        run: bash scripts/build-flatpak.sh "$BUILD_LOCALE"
+      - name: Install and launch the packaged application
+        run: |
+          flatpak install --user --noninteractive build/flatpak/*.flatpak
+          timeout 90s dbus-run-session -- xvfb-run -a -s '-screen 0 1280x800x24' bash scripts/smoke-test-flatpak.sh
+      - name: Upload launch log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-launch-log-${{ env.BUILD_LOCALE }}
+          path: build/flatpak/smoke-test.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: experimental-flatpak-${{ env.BUILD_LOCALE }}
+          path: build/flatpak/*.flatpak
+          if-no-files-found: error

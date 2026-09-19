@@ -103,9 +103,24 @@ Token-based theming with 8 built-in themes (OLED Dark, Soft Dark, Midnight, Past
 ## Requirements
 
 - A NovelAI API key (subscription required)
-- Flutter SDK ^3.10.7 (stable channel)
+- For building from source: Flutter stable with Dart SDK ^3.10.7 (the SDK constraint in `pubspec.yaml` is a **Dart** version)
 
-### GPU Acceleration (Optional)
+### Linux Installation
+
+Download the x86_64 AppImage from [Releases](https://github.com/ststoryweaver/NAIWeaver/releases), then run:
+
+```bash
+chmod +x NAIWeaver-x86_64.AppImage
+./NAIWeaver-x86_64.AppImage
+```
+
+Use the downloaded filename if you chose a localized build. Flutter is only required for source builds. See the [Linux installation and troubleshooting guide](docs/linux.md) for system dependencies, FUSE errors, and source-build instructions.
+
+Steam Deck users: see the [Steam Deck notes](docs/linux.md#steam-deck) and [experimental Flatpak build instructions](docs/linux.md#experimental-flatpak). Flatpak is currently a manual test build, pending verification on Deck hardware.
+
+Linux builds from this source bundle **ONNX Runtime 1.22.0 (CPU)**, matching the locked `flutter_onnxruntime` 1.6.3 plugin. You do not need to install or downgrade your system's ONNX packages. Older AppImages may be missing the versioned runtime library; the guide includes a per-app workaround.
+
+### GPU Acceleration on Windows (Optional)
 
 On-device ML features (background removal, upscaling, segmentation) work on CPU out of the box. For faster inference on NVIDIA GPUs, install:
 
@@ -117,12 +132,14 @@ Ensure `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.x\bin` is on your
 
 If CUDA is not installed, the app automatically falls back to **DirectML** (Windows) or **CPU**.
 
+The bundled Linux runtime uses CPU inference; installing CUDA alone does not add GPU support to that build.
+
 ## Quick Start
 
 ```bash
 # Clone
-git clone https://github.com/YOUR_USERNAME/naiweaver.git  # Replace with your repo URL
-cd naiweaver
+git clone https://github.com/ststoryweaver/NAIWeaver.git
+cd NAIWeaver
 
 # Install dependencies
 flutter pub get
@@ -142,6 +159,8 @@ flutter build linux        # Linux release
 flutter build apk         # Android APK
 flutter build web         # Web build
 ```
+
+On Linux, install the [build prerequisites](docs/linux.md#building-from-source) first. To package an AppImage, run `bash scripts/build-appimage.sh`. Keep the entire `build/linux/x64/release/bundle/` directory together when distributing a plain Linux build.
 
 ## Configuration
 
