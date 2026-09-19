@@ -35,8 +35,7 @@
         "cp -a bundle/. /app/naiweaver/",
         "install -Dm755 naiweaver.sh /app/bin/naiweaver",
         "install -Dm644 dev.naiweaver.app.desktop /app/share/applications/dev.naiweaver.app.desktop",
-        "gdk-pixbuf-thumbnailer -s 256 logo.png app-icon.png",
-        "install -Dm644 app-icon.png /app/share/icons/hicolor/256x256/apps/dev.naiweaver.app.png",
+        "install -Dm644 logo.png /app/share/icons/hicolor/512x512/apps/dev.naiweaver.app.png",
         "install -Dm644 LICENSE /app/share/licenses/dev.naiweaver.app/LICENSE"
       ],
       "sources": [
