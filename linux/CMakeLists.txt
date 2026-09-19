@@ -122,6 +122,12 @@ endforeach(bundled_library)
 # symlinks too: ELF consumers load the SONAME, not necessarily the bare .so name.
 foreach(onnxruntime_library ${flutter_onnxruntime_bundled_libraries})
   get_filename_component(onnxruntime_lib_dir "${onnxruntime_library}" DIRECTORY)
+  # The plugin's relocatable $ORIGIN RPATH cannot find the downloaded SONAME
+  # while linking the runner. Supply a link-time-only search path; do not bake
+  # the build machine's download directory into the installed runtime path.
+  target_link_options(${BINARY_NAME} PRIVATE
+    "-Wl,-rpath-link,${onnxruntime_lib_dir}"
+  )
   install(DIRECTORY "${onnxruntime_lib_dir}/"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime
