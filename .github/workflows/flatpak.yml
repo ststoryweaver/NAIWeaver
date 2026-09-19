@@ -39,6 +39,8 @@ jobs:
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user --noninteractive flathub org.gnome.Platform//49 org.gnome.Sdk//49
       - run: flutter pub get
+      - run: flutter analyze --no-pub
+      - run: flutter test --no-pub
       - name: Build Linux bundle
         run: flutter build linux --release --dart-define=DEFAULT_LOCALE="$BUILD_LOCALE"
       - name: Build and check Flatpak
