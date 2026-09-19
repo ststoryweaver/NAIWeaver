@@ -18,12 +18,16 @@ tree for testing. It has not yet been verified on Steam Deck hardware.
 
 ## Experimental Flatpak
 
-The **Experimental Flatpak** GitHub Actions workflow builds
-an x86_64 `.flatpak` artifact for the selected default language. It does not
-publish a release or submit the application to Flathub. Until a tested build is
-attached to a release, obtain it from a successful workflow run's artifacts and
-extract the artifact ZIP first. Run it manually to select a language; relevant
-pull requests also trigger an English build.
+Starting with 0.9.6, [Releases](https://github.com/ststoryweaver/NAIWeaver/releases)
+include x86_64 `.flatpak` bundles for English, Japanese, and Chinese alongside
+the AppImages. Download the file for your preferred default language. These
+bundles are not distributed through Flathub and Steam Deck hardware testing
+remains pending.
+
+The separate **Experimental Flatpak** GitHub Actions workflow also builds test
+artifacts without publishing a release. Run it manually to select a language;
+relevant pull requests trigger an English build. Extract the artifact ZIP first
+when using a workflow artifact instead of a release download.
 
 On Steam Deck in Desktop Mode, install the downloaded file in Konsole:
 
@@ -82,7 +86,7 @@ Flutter UI initialized correctly or that interactive features work.
 This is an experimental binary packaging route, not a Flathub source-build
 manifest. Staging files remain under `build/flatpak/` for diagnosis.
 
-Before adding Flatpak to regular releases, test on a Steam Deck: cold launch,
+Before claiming Steam Deck support, test on a Steam Deck: cold launch,
 API-key save and reload, generation, file open/save and drag-and-drop, clipboard,
 custom export folders/SD cards, ONNX model inference, and any supported audio
 features. Check both the default Wayland session and X11 where available. The

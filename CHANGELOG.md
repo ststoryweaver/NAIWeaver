@@ -1,11 +1,11 @@
 # Changelog
 
-## v0.9.6 (unreleased)
+## v0.9.6
 
 ### New
 - **Optional persistence of cascade beat images on native platforms.** Off by default. When enabled (Settings), each beat's last generated image and generation metadata are written to disk and restored the next time that cascade is opened. Deleting a cascade removes its stored images. The setting is hidden on web, where preview persistence is not supported. Contributed by [@freakachu](https://github.com/freakachu).
 - **Cascade director: Tab cycles tag suggestions.** Tab / Shift+Tab walk the overlay, Enter inserts the highlighted chip — the same bindings as the main prompt. With no suggestions, Tab still moves focus. Contributed by [@freakachu](https://github.com/freakachu).
-- **Experimental Linux Flatpak packaging.** A separate CI workflow packages the Linux bundle, checks its libraries, and installs/launches it under a virtual display. English, Japanese, and Chinese builds can be selected manually. This is a testing route, not a Flathub release or a verified Steam Deck build; see the [Linux guide](docs/linux.md).
+- **Linux Flatpak downloads.** Release builds now include English, Japanese, and Chinese Flatpak bundles alongside the AppImages. CI checks their libraries and installs/launches them under a virtual display. Flatpak support remains experimental, with no Flathub listing or verified Steam Deck support; see the [Linux guide](docs/linux.md).
 
 ### Fixes
 - **Late Cascade generations cannot overwrite another story.** Completion belongs to the session and stable beat ID that started it. Switching stories, exiting and reopening, deleting a beat, or closing playback discards stale completions; reordering beats keeps the result with its original beat. Navigating to another beat does not move the selection back.

@@ -116,7 +116,7 @@ chmod +x NAIWeaver-x86_64.AppImage
 
 Use the downloaded filename if you chose a localized build. Flutter is only required for source builds. See the [Linux installation and troubleshooting guide](docs/linux.md) for system dependencies, FUSE errors, and source-build instructions.
 
-Steam Deck users: see the [Steam Deck notes](docs/linux.md#steam-deck) and [experimental Flatpak build instructions](docs/linux.md#experimental-flatpak). Flatpak is currently a manual test build, pending verification on Deck hardware.
+Steam Deck users: see the [Steam Deck notes](docs/linux.md#steam-deck) and [experimental Flatpak installation instructions](docs/linux.md#experimental-flatpak). Releases from 0.9.6 include Flatpak bundles; verification on Deck hardware remains pending.
 
 Linux builds from this source bundle **ONNX Runtime 1.22.0 (CPU)**, matching the locked `flutter_onnxruntime` 1.6.3 plugin. You do not need to install or downgrade your system's ONNX packages. Older AppImages may be missing the versioned runtime library; the guide includes a per-app workaround.
 
@@ -175,7 +175,7 @@ On native platforms, **TOOLS > SETTINGS** offers optional persistence of Cascade
 
 Generation results stay attached to their originating story session and beat, including when beats move. Exiting or replacing the story discards its pending Cascade completion. Switching the viewed beat during saving or exporting preserves the new image's own metadata and filename.
 
-See the [0.9.6 changelog](CHANGELOG.md#v096-unreleased) for the current candidate and the [release checklist](docs/releases/0.9.6.md) for validation status and known limitations.
+See the [0.9.6 changelog](CHANGELOG.md#v096) and the [release checklist](docs/releases/0.9.6.md) for validation status and known limitations.
 
 ## Project Structure
 
